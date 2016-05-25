@@ -1,13 +1,13 @@
 #ifndef SDL_GL_HPP
 #define SDL_GL_HPP
 
-#include <vector>
-#include <memory>
-#include <string>
-#include <fstream>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include <fstream>
+#include <memory>
+#include <string>
+#include <vector>
 
 class SdlGl {
  public:
@@ -21,7 +21,6 @@ class SdlGl {
   unsigned int frame_number = 0;
 
   int pixel_width, pixel_height;
-  float viewspace_width, viewspace_height;
 };
 
 #endif

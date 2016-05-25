@@ -1,5 +1,6 @@
 #include "sdl_gl.hpp"
 #include <iostream>
+#include "gl_error.hpp"
 
 using namespace std;
 
@@ -7,15 +8,7 @@ void SdlGl::setViewport(int new_width, int new_height) {
   pixel_width = new_width;
   pixel_height = new_height;
 
-  glViewport(0, 0, (GLsizei)pixel_width, (GLsizei)pixel_height);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-
-  viewspace_width = 2.0f * max((float)pixel_width / pixel_height, 1.0f);
-  viewspace_height = 2.0f * max((float)pixel_height / pixel_width, 1.0f);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  GL_CALL(glViewport(0, 0, (GLsizei)pixel_width, (GLsizei)pixel_height));
 }
 
 void SdlGl::SDL_die(string error) {
@@ -51,6 +44,7 @@ void SdlGl::initDisplay(int windowCount) {
 
   glewExperimental = GL_TRUE;
   glewInit();
+  GL_CALL();
   cout << glGetString(GL_VENDOR) << "\n";
   cout << glGetString(GL_RENDERER) << "\n";
   cout << glGetString(GL_VERSION) << "\n";

@@ -2,15 +2,17 @@
 
 #include <iostream>
 #include <vector>
+#include "draw_2dbuf.hpp"
 #include "dtime.hpp"
+#include "gl_error.hpp"
 #include "sdl_gl.hpp"
-
 
 class UbootGlApp {
  public:
   UbootGlApp() {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
+    Draw2DBuf::init();
     lastFrameTime = dtime();
     iterationCounter = 0;
   }
@@ -37,9 +39,10 @@ class UbootGlApp {
   }
   void draw() {
     SDL_GL_MakeCurrent(vis.windows[0], vis.gl_context);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    
+    Draw2DBuf::draw(NULL, 400, 400, vis.pixel_width, vis.pixel_height);
+
     SDL_GL_SwapWindow(vis.windows[0]);
   }
 
