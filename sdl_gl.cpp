@@ -20,7 +20,7 @@ void glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
                    GLsizei length, const GLchar *message,
                    const void *userParam) {
   // ignore non-significant error/warning codes
-  if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+  // if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
   std::cout << "---------------" << std::endl;
   std::cout << "Debug message (" << id << "): " << message << std::endl;
@@ -93,8 +93,8 @@ void glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
       break;
   }
   std::cout << std::endl;
-
 }
+
 void SdlGl::initDisplay(int windowCount) {
   if (windowCount < 1) return;
   if (SDL_Init(SDL_INIT_VIDEO) == -1) SDL_die("SDL_Init");
@@ -133,8 +133,8 @@ void SdlGl::initDisplay(int windowCount) {
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(glDebugOutput, nullptr);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
-                          GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE,
+                          GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
   }
 
   cout << glGetString(GL_VENDOR) << "\n";
