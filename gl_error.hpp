@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GL/glew.h>
+
 #define GL_CALL(CALL) \
   CALL;               \
   printOglError(#CALL, __FILE__, __LINE__)
