@@ -8,5 +8,5 @@ uniform vec2 bounds;
 void main(void) {
   float tv = texture(tex, (FragCoord + 1.0f) * 0.5f).r;
   tv = (tv - bounds.x) / (bounds.y - bounds.x);
-  gl_FragColor = vec4(tv, tv, tv, 1.0);
+  gl_FragColor = vec4(tv * tv, tv , sqrt(tv), 1.0);
 }
