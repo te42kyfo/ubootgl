@@ -11,12 +11,15 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim(500, 500) {
+  UbootGlApp() : sim(1.0, 1000.0, 1026, 1026) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
     DrawText::init();
-    lastFrameTime = dtime();
+    last_frame_time = dtime();
+    render_time = 0;
+    simulation_time = 0;
+    simulation_steps = 0;
     iteration_counter = 0;
     scale = 1.0;
   }
@@ -37,15 +40,31 @@ class UbootGlApp {
     double t1 = dtime();
     while (dtime() - t1 < 0.02) {
       sim.step();
+      simulation_steps++;
     }
-
+    double t2 = dtime();
+    simulation_time += t2 - t1;
     draw();
+    double t3 = dtime();
+    render_time += t3 - t2;
+
     iteration_counter++;
-    double thisFrameTime = dtime();
-    if (thisFrameTime - lastFrameTime > 0.5) {
-      frame_rate = iteration_counter / (thisFrameTime - lastFrameTime);
+    double this_frame_time = dtime();
+    if (this_frame_time - last_frame_time > 0.5) {
+      frame_rate = iteration_counter / (this_frame_time - last_frame_time);
+      std::cout << std::setw(3) << std::fixed << std::setprecision(1)
+                << simulation_time / iteration_counter * 1000.0 << "("
+                << simulation_time / simulation_steps * 1000.0 << ") "
+                << std::setw(3) << render_time / iteration_counter * 1000.0
+                << " "
+                << (this_frame_time - last_frame_time) / iteration_counter *
+                       1000.0
+                << "\n";
       iteration_counter = 0;
-      lastFrameTime = thisFrameTime;
+      last_frame_time = this_frame_time;
+      render_time = 0;
+      simulation_time = 0;
+      simulation_steps = 0;
     }
   }
   void draw() {
@@ -61,7 +80,10 @@ class UbootGlApp {
   }
   double frame_rate;
   float scale;
-  double lastFrameTime;
+  double last_frame_time;
+  double simulation_time;
+  double render_time;
+  int simulation_steps;
   uint iteration_counter;
   SdlGl vis;
   Simulation sim;

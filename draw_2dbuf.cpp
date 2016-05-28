@@ -18,6 +18,8 @@ vector<unsigned int> line_indices(4 * 2);
 GLint scalar_tex_shader_tex_uloc, scalar_tex_shader_aspect_ratio_uloc,
     scalar_tex_shader_origin_uloc, scalar_tex_shader_bounds_uloc,
     line_shader_aspect_ratio_uloc, line_shader_origin_uloc;
+float tex_min;
+float tex_max;
 
 void init() {
   scalar_tex_shader = loadShader("./scale_translate2D.vert",
@@ -84,12 +86,16 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   float ratio_x = 0;
   float ratio_y = 0;
 
-  float tex_min = texture_buffer[0];
-  float tex_max = texture_buffer[0];
+  float new_tex_min = texture_buffer[0];
+  float new_tex_max = texture_buffer[0];
+#pragma omp parallel for reduction(min : new_tex_min) \
+    reduction(max : new_tex_max)
   for (int i = 0; i < tex_width * tex_height; i++) {
-    tex_min = min(tex_min, texture_buffer[i]);
-    tex_max = max(tex_max, texture_buffer[i]);
+    new_tex_min = min(new_tex_min, texture_buffer[i]);
+    new_tex_max = max(new_tex_max, texture_buffer[i]);
   }
+  tex_min = 0.9 * tex_min + 0.1 * new_tex_min;
+  tex_max = 0.9 * tex_max + 0.1 * new_tex_max;
 
   pegToOne(ratio_x, ratio_y,
            (float)screen_height / screen_width * tex_width / tex_height, 1.0f);
@@ -127,8 +133,10 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glUniform2f(scalar_tex_shader_bounds_uloc, 0.0, 1.0));
   GL_CALL(glUniform2f(scalar_tex_shader_origin_uloc, 0.76, 0.0));
   GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
-  DrawText::draw(to_string(tex_min), 0.80, -0.9, 0.03, screen_width, screen_height);
-  DrawText::draw(to_string(tex_max), 0.80, 0.9, 0.03, screen_width, screen_height);
+  DrawText::draw(to_string(tex_min), 0.80, -0.9, 0.03, screen_width,
+                 screen_height);
+  DrawText::draw(to_string(tex_max), 0.80, 0.9, 0.03, screen_width,
+                 screen_height);
 
   // Draw Border
   GL_CALL(glUseProgram(line_shader));
