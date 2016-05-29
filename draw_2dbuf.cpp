@@ -1,11 +1,11 @@
 #include "draw_2dbuf.hpp"
 #include <GL/glew.h>
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include "draw_text.hpp"
 #include "gl_error.hpp"
 #include "load_shader.hpp"
-
 using namespace std;
 
 namespace Draw2DBuf {
@@ -18,8 +18,9 @@ vector<unsigned int> line_indices(4 * 2);
 GLint scalar_tex_shader_tex_uloc, scalar_tex_shader_aspect_ratio_uloc,
     scalar_tex_shader_origin_uloc, scalar_tex_shader_bounds_uloc,
     line_shader_aspect_ratio_uloc, line_shader_origin_uloc;
-float tex_min;
-float tex_max;
+float tex_min = 0;
+float tex_max = 0;
+float tex_median = 0;
 
 void init() {
   scalar_tex_shader = loadShader("./scale_translate2D.vert",
@@ -83,20 +84,17 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
 
   GL_CALL(glLineWidth(2));
 
+  vector<float> vt(tex_width * tex_height / 23);
+  for (size_t i = 0; i < vt.size(); i++) {
+    vt[i] = texture_buffer[i * 2];
+  }
+  nth_element(vt.begin(), vt.begin() + vt.size() * 0.01, vt.end());
+  tex_min = 0.99 * tex_min + 0.1 * vt[vt.size() * 0.01];
+  nth_element(vt.begin(), vt.begin() + vt.size() * 0.99, vt.end());
+  tex_max = 0.99 * tex_max + 0.1 * vt[vt.size() * 0.99];
+
   float ratio_x = 0;
   float ratio_y = 0;
-
-  float new_tex_min = texture_buffer[0];
-  float new_tex_max = texture_buffer[0];
-#pragma omp parallel for reduction(min : new_tex_min) \
-    reduction(max : new_tex_max)
-  for (int i = 0; i < tex_width * tex_height; i++) {
-    new_tex_min = min(new_tex_min, texture_buffer[i]);
-    new_tex_max = max(new_tex_max, texture_buffer[i]);
-  }
-  tex_min = 0.9 * tex_min + 0.1 * new_tex_min;
-  tex_max = 0.9 * tex_max + 0.1 * new_tex_max;
-
   pegToOne(ratio_x, ratio_y,
            (float)screen_height / screen_width * tex_width / tex_height, 1.0f);
 
@@ -136,6 +134,8 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   DrawText::draw(to_string(tex_min), 0.80, -0.9, 0.03, screen_width,
                  screen_height);
   DrawText::draw(to_string(tex_max), 0.80, 0.9, 0.03, screen_width,
+                 screen_height);
+  DrawText::draw(to_string(tex_median), 0.80, 0.0, 0.03, screen_width,
                  screen_height);
 
   // Draw Border

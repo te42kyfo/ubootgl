@@ -11,7 +11,7 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim(1.0, 1000.0, 1026, 1026) {
+  UbootGlApp() : sim(1.0, 100000.0, 1026, 1026) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
