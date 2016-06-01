@@ -20,6 +20,7 @@ GLint scalar_tex_shader_tex_uloc, scalar_tex_shader_aspect_ratio_uloc,
     line_shader_aspect_ratio_uloc, line_shader_origin_uloc;
 float tex_min = 0;
 float tex_max = 0;
+float spread = 0.0;
 float tex_median = 0;
 
 void init() {
@@ -84,14 +85,21 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
 
   GL_CALL(glLineWidth(2));
 
-  vector<float> vt(tex_width * tex_height / 23);
+  vector<float> vt(tex_width * tex_height);
   for (size_t i = 0; i < vt.size(); i++) {
-    vt[i] = texture_buffer[i * 2];
+    vt[i] = texture_buffer[i];
   }
-  nth_element(vt.begin(), vt.begin() + vt.size() * 0.01, vt.end());
-  tex_min = 0.99 * tex_min + 0.1 * vt[vt.size() * 0.01];
-  nth_element(vt.begin(), vt.begin() + vt.size() * 0.99, vt.end());
-  tex_max = 0.99 * tex_max + 0.1 * vt[vt.size() * 0.99];
+
+  auto lower_bound = vt.begin() + vt.size() * 0.01;
+  nth_element(vt.begin(), lower_bound, vt.end());
+
+  auto upper_bound = vt.begin() + vt.size() * 0.99;
+  nth_element(vt.begin(), upper_bound, vt.end());
+
+  spread = max(abs(*lower_bound), abs(*upper_bound));
+  tex_min = 0;//*lower_bound;  //-spread;
+  tex_max = *upper_bound;  // spread;
+
 
   float ratio_x = 0;
   float ratio_y = 0;
@@ -135,16 +143,14 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
                  screen_height);
   DrawText::draw(to_string(tex_max), 0.80, 0.9, 0.03, screen_width,
                  screen_height);
-  DrawText::draw(to_string(tex_median), 0.80, 0.0, 0.03, screen_width,
-                 screen_height);
 
   // Draw Border
-  GL_CALL(glUseProgram(line_shader));
+  /*  GL_CALL(glUseProgram(line_shader));
   GL_CALL(glUniform2f(line_shader_aspect_ratio_uloc, scale * ratio_x,
                       scale * ratio_y));
   GL_CALL(glUniform2f(line_shader_origin_uloc, 0.0, 0.0));
   GL_CALL(glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT,
-                         line_indices.data()));
+  line_indices.data()));*/
   GL_CALL(glDeleteTextures(1, &tex_id));
 }
 }

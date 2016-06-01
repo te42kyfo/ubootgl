@@ -1,8 +1,8 @@
 #pragma once
+#include <cmath>
 #include <functional>
 #include <iostream>
 #include <vector>
-
 class DoubleBuffered2DGrid {
  public:
   DoubleBuffered2DGrid(int width, int height)
@@ -40,13 +40,16 @@ class Simulation {
         vx(width, height),
         vy(width, height),
         p(width, height) {
-    for (int x = 10; x < width * 0.9; x++) {
-      vx.f(x, 500) = 0.2;
-      vx.f(500, x) = -0.2;
+    for (int y = 0; y < height; y++) {
+      vx.f(0, y) = 1.0f;
+      vx.b(0, y) = 1.0f;
     }
-
-    dt = pwidth / width / 0.01 * 0.5;
-    std::cout << "SIM: dt=" << dt << "\n";
+    for (int x = 0.2 * width; x < 0.202 * width; x++) {
+      vy.f(x, height - 1) = -400.0;
+      vy.b(x, height - 1) = -400.0;
+      vy.f(x, 0) = 400.0;
+      vy.b(x, 0) = 400.0;
+    }
   }
 
   float* getVX() { return vx.data(); }
@@ -54,7 +57,7 @@ class Simulation {
   float* getP() { return p.data(); }
 
   float diffusion_l2_residual(DoubleBuffered2DGrid& v) {
-    float a = dt * mu * (pwidth / width);
+    float a = dt * mu * pwidth / (width - 1.0f);
     float residual = 0.0;
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
@@ -72,8 +75,8 @@ class Simulation {
   void diffuse(DoubleBuffered2DGrid& v) {
     // use this timestep as initial guess
     v.copyFrontToBack();
-    float a = dt * mu * (pwidth / width);
-    float omega = 1.01;
+    float a = dt * mu * pwidth / (width - 1.0f);
+    float omega = 1.0f;
     for (int i = 1; true; i++) {
       for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
@@ -84,11 +87,12 @@ class Simulation {
                           (1.0f + 4.0f * a);
         }
       }
-      if (i % 1 == 0) {
+      if ((i - 1) % 2 == 0) {
         float res = diffusion_l2_residual(v);
-        if (res < 1.0e-6 || i >= 100) {
-          std::cout << std::setprecision(4) << std::scientific
-                    << "SIM DIFFUSION:" << i << " iters, res=" << res << "\n";
+        if (res < 1.0e-7 || i >= 100) {
+          std::cout << std::setprecision(3) << std::scientific
+                    << "SIM DIFFUSION: " << i << " iterations, res=" << res
+                    << "\n";
           break;
         }
       }
@@ -96,15 +100,131 @@ class Simulation {
     v.swap();
   }
 
-  void step() {
-    for (int i = 0; i < 10000; i++) {
-      int rx = 1 + rand() % (width - 2);
-      int ry = 1 + rand() % (height - 2);
-
-      vx.f(rx, ry) += (i % 100 == 0 ? -99 : 1);
+  float projection_residual() {
+    float residual = 0;
+    for (int y = 1; y < height - 1; y++) {
+      for (int x = 1; x < width - 1; x++) {
+        float local_residual = (p.b(x, y) + p.f(x - 1, y) + p.f(x + 1, y) +
+                                p.f(x, y + 1) + p.f(x, y - 1)) *
+                                   0.25f -
+                               p.f(x, y);
+        residual += local_residual * local_residual;
+      }
     }
+    return sqrt(residual) / width / height;
+  }
+  void project() {
+    float h = pwidth / (width - 1.0f);
+    float ih = 1.0f / h;
+    for (int y = 1; y < height - 1; y++) {
+      for (int x = 1; x < width - 1; x++) {
+        p.b(x, y) = -0.5f * h * (vx.f(x + 1, y) - vx.f(x - 1, y) +
+                                 vy.f(x, y + 1) - vy.f(x, y - 1));
+      }
+    }
+    float alpha = 1.6;
+    for (int i = 1; true; i++) {
+      for (int y = 1; y < height - 1; y++) {
+        for (int x = 1; x < width - 1; x++) {
+          p.f(x, y) = (1.0f - alpha) * p.f(x, y) +
+                      alpha * (p.b(x, y) + p.f(x - 1, y) + p.f(x + 1, y) +
+                               p.f(x, y + 1) + p.f(x, y - 1)) *
+                          0.25f;
+        }
+      }
+      for (int y = 1; y < height - 1; y++) {
+        p.f(0, y) = p.f(1, y);
+        p.f(width - 1, y) = p.f(width - 2, y);
+      }
+      for (int x = 1; x < width - 1; x++) {
+        p.f(x, 0) = p.f(x, 1);
+        p.f(x, height - 1) = p.f(x, height - 2);
+      }
+      if ((i - 1) % 2 == 0) {
+        float residual = projection_residual();
+        if (residual < 1.0e-7 || i >= 600) {
+          std::cout << "SIM PROJECTION: " << i
+                    << " iterations, res=" << residual << "\n";
+          break;
+        }
+      }
+    }
+
+    for (int y = 1; y < height - 1; y++) {
+      for (int x = 1; x < width - 1; x++) {
+        vx.f(x, y) -= 0.5f * ih * (p.f(x + 1, y) - p.f(x - 1, y));
+        vy.f(x, y) -= 0.5f * ih * (p.f(x, y + 1) - p.f(x, y - 1));
+      }
+    }
+  }
+
+  void setDT() {
+    float max_vel_sq = 1.0e-7;
+    for (int y = 1; y < height; y++) {
+      for (int x = 1; x < width; x++) {
+        max_vel_sq = std::max(
+            max_vel_sq, vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
+      }
+    }
+    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 7.3f;
+    std::cout << "SIM SET_DT: max_vel=" << sqrt(max_vel_sq) << ", dt=" << dt
+              << "\n";
+  }
+
+  void advect() {
+    float h = pwidth / (width - 1);
+    float ih = 1.0f / h;
+    float max_sqdistance = 0.0f;
+    for (int y = 1; y < height - 1; y++) {
+      for (int x = 1; x < width - 1; x++) {
+        float xf = x * h;
+        float yf = y * h;
+        float vtx = vx.f(x, y);
+        float vty = vy.f(x, y);
+        int steps = 3;
+        for (int i = 0; i < steps; i++) {
+          xf = std::max(std::min(xf - vtx * dt / steps, (width - 1.0f) * h),
+                        0.0f);
+          yf = std::max(std::min(yf - vty * dt / steps, (height - 1.0f) * h),
+                        0.0f);
+          int x0 = static_cast<int>(xf * ih);
+          int y0 = static_cast<int>(yf * ih);
+          float s = xf * ih - x0;
+          float t = yf * ih - y0;
+          float sqdistance =
+              ((vtx * dt * ih / steps) * (vtx * dt * ih / steps) +
+               (vty * dt * ih / steps) * (vty * dt * ih / steps));
+          max_sqdistance = std::max(sqdistance, max_sqdistance);
+          vtx =
+              (vx.f(x0, y0) * (1.0f - s) + vx.f(x0 + 1, y0) * s) * (1.0f - t) +
+              (vx.f(x0, y0 + 1) * (1.0f - s) + vx.f(x0 + 1, y0 + 1) * s) * t;
+          vty =
+              (vy.f(x0, y0) * (1.0f - s) + vy.f(x0 + 1, y0) * s) * (1.0f - t) +
+              (vy.f(x0, y0 + 1) * (1.0f - s) + vy.f(x0 + 1, y0 + 1) * s) * t;
+        }
+        vx.b(x, y) = vtx;
+        vy.b(x, y) = vty;
+      }
+    }
+
+    std::cout << "SIM ADVECT: max_displacement = " << sqrt(max_sqdistance)
+              << "\n";
+
+    vx.swap();
+    vy.swap();
+  }
+
+  void step() {
+    setDT();
     diffuse(vx);
     diffuse(vy);
+    advect();
+    project();
+    for (int y = 0; y < height; y++) {
+      vx.f(width - 1, y) = vx.f(width - 2, y);
+      vx.b(width - 1, y) = vx.f(width - 2, y);
+    }
+    std::cout << "\n";
   }
 
   float pwidth;
