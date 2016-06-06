@@ -80,26 +80,11 @@ void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
 }
 
 void draw(float* texture_buffer, int tex_width, int tex_height,
-          int screen_width, int screen_height, float scale) {
+          int screen_width, int screen_height, float scale, float vmin,
+          float vmax) {
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
   GL_CALL(glLineWidth(2));
-
-  vector<float> vt(tex_width * tex_height);
-  for (size_t i = 0; i < vt.size(); i++) {
-    vt[i] = texture_buffer[i];
-  }
-
-  auto lower_bound = vt.begin() + vt.size() * 0.01;
-  nth_element(vt.begin(), lower_bound, vt.end());
-
-  auto upper_bound = vt.begin() + vt.size() * 0.99;
-  nth_element(vt.begin(), upper_bound, vt.end());
-
-  spread = max(abs(*lower_bound), abs(*upper_bound));
-  tex_min = 0;//*lower_bound;  //-spread;
-  tex_max = *upper_bound;  // spread;
-
 
   float ratio_x = 0;
   float ratio_y = 0;
@@ -109,7 +94,7 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   // Upload Texture
   GL_CALL(glGenTextures(1, &tex_id));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, tex_id));
-  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, 8, GL_R32F, tex_width, tex_height));
+  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, 4, GL_R32F, tex_width, tex_height));
   GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, tex_height, GL_RED,
                           GL_FLOAT, texture_buffer));
   GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
@@ -127,7 +112,7 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glUniform2f(scalar_tex_shader_origin_uloc, 0.0, 0.0));
   GL_CALL(glUniform2f(scalar_tex_shader_aspect_ratio_uloc, scale * ratio_x,
                       scale * ratio_y));
-  GL_CALL(glUniform2f(scalar_tex_shader_bounds_uloc, tex_min, tex_max));
+  GL_CALL(glUniform2f(scalar_tex_shader_bounds_uloc, vmin, vmax));
 
   GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 
@@ -139,10 +124,8 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glUniform2f(scalar_tex_shader_bounds_uloc, 0.0, 1.0));
   GL_CALL(glUniform2f(scalar_tex_shader_origin_uloc, 0.76, 0.0));
   GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
-  DrawText::draw(to_string(tex_min), 0.80, -0.9, 0.03, screen_width,
-                 screen_height);
-  DrawText::draw(to_string(tex_max), 0.80, 0.9, 0.03, screen_width,
-                 screen_height);
+  DrawText::draw(to_string(vmin), 0.8, -0.9, 0.03, screen_width, screen_height);
+  DrawText::draw(to_string(vmax), 0.8, 0.9, 0.03, screen_width, screen_height);
 
   // Draw Border
   /*  GL_CALL(glUseProgram(line_shader));
@@ -152,5 +135,26 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT,
   line_indices.data()));*/
   GL_CALL(glDeleteTextures(1, &tex_id));
+}
+
+void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
+              int screen_height, float scale) {
+  std::vector<float> V(nx * ny);
+  std::vector<float> vt(nx * ny);
+
+  for (int y = 0; y < ny; y++) {
+    for (int x = 0; x < nx; x++) {
+      int ind = y * nx + x;
+      V[ind] = sqrt(std::max(
+          0.0f, buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind]));
+      vt[ind] = V[ind];
+    }
+  }
+
+  auto upper_bound = vt.begin() + vt.size() * 0.99;
+  nth_element(vt.begin(), upper_bound, vt.end());
+
+  Draw2DBuf::draw(V.data(), nx, ny, screen_width, screen_height, scale, 0,
+                  *upper_bound);
 }
 }

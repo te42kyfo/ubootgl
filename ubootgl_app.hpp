@@ -11,7 +11,7 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim(1.0, 1.0f, 512, 200) {
+  UbootGlApp() : sim(1.0, 100.0f, 600, 200) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
@@ -71,17 +71,8 @@ class UbootGlApp {
     SDL_GL_MakeCurrent(vis.windows[0], vis.gl_context);
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    std::vector<float> V(sim.width * sim.height);
-    for (int y = 0; y < sim.height; y++) {
-      for (int x = 0; x < sim.width; x++) {
-        int ind = y * sim.width + x;
-        V[ind] = sqrt(sim.getVX()[ind] * sim.getVX()[ind] +
-                      sim.getVY()[ind] * sim.getVY()[ind]);
-      }
-    }
-
-    Draw2DBuf::draw(V.data(), sim.width, sim.height, vis.pixel_width,
-                    vis.pixel_height, scale);
+    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
+                        vis.pixel_width, vis.pixel_height, scale);
 
     DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
                    vis.pixel_width, vis.pixel_height);
