@@ -40,15 +40,13 @@ class Simulation {
         vx(width, height),
         vy(width, height),
         p(width, height) {
-    for (int y = 0; y < height; y++) {
-      vx.f(0, y) = 1.0f;
-      vx.b(0, y) = 1.0f;
-    }
-    for (int x = 0.2 * width; x < 0.202 * width; x++) {
-      vy.f(x, height - 1) = -400.0;
-      vy.b(x, height - 1) = -400.0;
-      vy.f(x, 0) = 400.0;
-      vy.b(x, 0) = 400.0;
+    /*    for (int x = 0; x < width; x++) {
+      vx.f(x, height - 1) = 1;
+      vx.b(x, height - 1) = 1;
+      }*/
+    for (int y = 0.5 * height; y < height * 0.51; y++) {
+      vx.f(0, y) = 1.0;
+      vx.b(0, y) = 1.0;
     }
   }
 
@@ -89,7 +87,7 @@ class Simulation {
       }
       if ((i - 1) % 2 == 0) {
         float res = diffusion_l2_residual(v);
-        if (res < 1.0e-7 || i >= 100) {
+        if (res < 1.0e-9 || i >= 100) {
           std::cout << std::setprecision(3) << std::scientific
                     << "SIM DIFFUSION: " << i << " iterations, res=" << res
                     << "\n";
@@ -116,6 +114,7 @@ class Simulation {
   void project() {
     float h = pwidth / (width - 1.0f);
     float ih = 1.0f / h;
+    float previous_residual = -1;
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
         p.b(x, y) = -0.5f * h * (vx.f(x + 1, y) - vx.f(x - 1, y) +
@@ -142,11 +141,13 @@ class Simulation {
       }
       if ((i - 1) % 2 == 0) {
         float residual = projection_residual();
-        if (residual < 1.0e-7 || i >= 600) {
+        if ((i > 1 && previous_residual / residual < 1.05f) ||
+            residual < 1.0e-8 || i >= 600) {
           std::cout << "SIM PROJECTION: " << i
                     << " iterations, res=" << residual << "\n";
           break;
         }
+        previous_residual = residual;
       }
     }
 
@@ -166,7 +167,7 @@ class Simulation {
             max_vel_sq, vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
       }
     }
-    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 7.3f;
+    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 3.3f;
     std::cout << "SIM SET_DT: max_vel=" << sqrt(max_vel_sq) << ", dt=" << dt
               << "\n";
   }
