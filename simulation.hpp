@@ -41,13 +41,17 @@ class Simulation {
         vy(width, height),
         p(width, height) {
     /*    for (int x = 0; x < width; x++) {
-      vx.f(x, height - 1) = 1;
-      vx.b(x, height - 1) = 1;
+      vy.f(x, 0) = x % 2 * -100;
+      vy.b(x, 0) = x % 2 * -100;
       }*/
-    for (int y = 0.5 * height; y < height * 0.51; y++) {
-      vx.f(0, y) = 1.0;
-      vx.b(0, y) = 1.0;
-    }
+    //   for (int y = 0; y < height; y++) {
+    vx.f(0, 65) = 100;
+    vx.b(0, 65) = 100;
+    //}
+    /*    for (int y = 0.498 * height; y < height * 0.502; y++) {
+   vx.f(0, y) = 100.0;
+   vx.b(0, y) = 100.0;
+   }*/
   }
 
   float* getVX() { return vx.data(); }
@@ -142,7 +146,7 @@ class Simulation {
       if ((i - 1) % 2 == 0) {
         float residual = projection_residual();
         if ((i > 1 && previous_residual / residual < 1.05f) ||
-            residual < 1.0e-8 || i >= 600) {
+            residual < 1.0e-9 || i >= 600) {
           std::cout << "SIM PROJECTION: " << i
                     << " iterations, res=" << residual << "\n";
           break;
@@ -167,7 +171,7 @@ class Simulation {
             max_vel_sq, vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
       }
     }
-    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 3.3f;
+    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.3f;
     std::cout << "SIM SET_DT: max_vel=" << sqrt(max_vel_sq) << ", dt=" << dt
               << "\n";
   }
@@ -219,7 +223,9 @@ class Simulation {
     setDT();
     diffuse(vx);
     diffuse(vy);
+
     advect();
+
     project();
     for (int y = 0; y < height; y++) {
       vx.f(width - 1, y) = vx.f(width - 2, y);

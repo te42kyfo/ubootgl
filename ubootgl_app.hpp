@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "draw_2dbuf.hpp"
+#include "draw_streamlines.hpp"
 #include "draw_text.hpp"
 #include "dtime.hpp"
 #include "gl_error.hpp"
@@ -11,11 +12,12 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim(1.0, 100.0f, 600, 200) {
+  UbootGlApp() : sim(1.0, 6000.0f, 129, 129) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
     DrawText::init();
+    DrawStreamlines::init();
     last_frame_time = dtime();
     render_time = 0;
     simulation_time = 0;
@@ -73,9 +75,10 @@ class UbootGlApp {
 
     Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
                         vis.pixel_width, vis.pixel_height, scale);
-
-    DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
-                   vis.pixel_width, vis.pixel_height);
+    DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
+                          vis.pixel_width, vis.pixel_height, scale);
+    /*    DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
+          vis.pixel_width, vis.pixel_height);*/
     SDL_GL_SwapWindow(vis.windows[0]);
   }
   double frame_rate;

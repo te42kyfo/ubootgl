@@ -104,6 +104,7 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
 
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
   GL_CALL(glEnableVertexAttribArray(0));
   GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
   GL_CALL(glActiveTexture(GL_TEXTURE0));
