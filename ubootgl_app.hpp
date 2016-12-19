@@ -5,6 +5,7 @@
 #include "draw_2dbuf.hpp"
 #include "draw_streamlines.hpp"
 #include "draw_text.hpp"
+#include "draw_tracers.hpp"
 #include "dtime.hpp"
 #include "gl_error.hpp"
 #include "sdl_gl.hpp"
@@ -12,12 +13,13 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim(1.0, 6000.0f, 129, 129) {
+  UbootGlApp() : sim("level.png", 400.0, 10.0f) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
     DrawText::init();
     DrawStreamlines::init();
+    DrawTracers::init();
     last_frame_time = dtime();
     render_time = 0;
     simulation_time = 0;
@@ -40,13 +42,16 @@ class UbootGlApp {
 
   void loop() {
     double t1 = dtime();
+    float simTime = 0;
     while (dtime() - t1 < 0.02) {
       sim.step();
       simulation_steps++;
+      simTime += sim.dt;
     }
     double t2 = dtime();
+
     simulation_time += t2 - t1;
-    draw();
+    draw(simTime);
     double t3 = dtime();
     render_time += t3 - t2;
 
@@ -69,16 +74,20 @@ class UbootGlApp {
       simulation_steps = 0;
     }
   }
-  void draw() {
+  void draw(float simTime) {
     SDL_GL_MakeCurrent(vis.windows[0], vis.gl_context);
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
+    /*    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
                         vis.pixel_width, vis.pixel_height, scale);
     DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
                           vis.pixel_width, vis.pixel_height, scale);
-    /*    DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
-          vis.pixel_width, vis.pixel_height);*/
+    DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
+    vis.pixel_width, vis.pixel_height);*/
+
+    DrawTracers::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
+                      vis.pixel_width, vis.pixel_height, scale, simTime);
+
     SDL_GL_SwapWindow(vis.windows[0]);
   }
   double frame_rate;

@@ -5,9 +5,9 @@ HEADERS= $(shell find . -iname "*.hpp")
 OBJ_FILES := $(addprefix obj/,$(notdir $(CPP_FILES:.cpp=.o)))
 INCLUDE =
 LD_FLAGS = `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp -flto
-LD_FLAGS_DEBUG = $(LD_FLAGS) -fsanitize=address -fsanitize=undefined
+LD_FLAGS_DEBUG = $(LD_FLAGS) -g -pg
 CC_FLAGS = -std=c++11 -Wall -g -Ofast -march=native -fopenmp -flto
-CC_FLAGS_DEBUG = -std=c++11 -Wall -g -Og -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
+CC_FLAGS_DEBUG = -std=c++11 -Wall -g -pg -O2 -fopenmp -fno-omit-frame-pointer
 NAME = ubootgl
 BIN =
 
