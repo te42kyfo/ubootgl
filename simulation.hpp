@@ -2,7 +2,10 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <string>
 #include <vector>
+#include "lodepng.h"
+
 class DoubleBuffered2DGrid {
  public:
   DoubleBuffered2DGrid(int width, int height)
@@ -12,6 +15,8 @@ class DoubleBuffered2DGrid {
         back(1),
         v{std::vector<float>(width * height),
           std::vector<float>(width * height)} {}
+
+  DoubleBuffered2DGrid() : width(0), height(0){};
 
   int idx(int x, int y) { return y * width + x; }
   void swap() { std::swap(front, back); }
@@ -25,9 +30,16 @@ class DoubleBuffered2DGrid {
   }
 
  private:
-  const int width, height;
+  int width, height;
   int front, back;
   std::vector<float> v[2];
+};
+
+struct rgba {
+  unsigned char r, g, b, a;
+  bool operator==(const rgba& o) {
+    return r == o.r && g == o.g && b == o.b && a == o.a;
+  }
 };
 
 class Simulation {
@@ -39,19 +51,86 @@ class Simulation {
         height(height),
         vx(width, height),
         vy(width, height),
-        p(width, height) {
-    /*    for (int x = 0; x < width; x++) {
-      vy.f(x, 0) = x % 2 * -100;
-      vy.b(x, 0) = x % 2 * -100;
-      }*/
-    //   for (int y = 0; y < height; y++) {
-    vx.f(0, 65) = 100;
-    vx.b(0, 65) = 100;
-    //}
-    /*    for (int y = 0.498 * height; y < height * 0.502; y++) {
-   vx.f(0, y) = 100.0;
-   vx.b(0, y) = 100.0;
-   }*/
+        p(width, height),
+        flag(width, height) {}
+
+  Simulation(std::string filename, float pwidth, float mu)
+      : pwidth(pwidth), mu(mu) {
+    std::vector<unsigned char> image;
+    unsigned image_width, image_height;
+
+    unsigned error =
+        lodepng::decode(image, image_width, image_height, filename);
+    rgba* rgba_image = reinterpret_cast<rgba*>(image.data());
+
+    if (error)
+      std::cout << "decoder error " << error << ": "
+                << lodepng_error_text(error) << std::endl;
+
+    width = image_width;
+    height = image_height;
+
+    vx = {width, height};
+    vy = {width, height};
+    p = {width, height};
+    flag = {width, height};
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = y * width + x;
+        if (rgba_image[idx] == rgba{0, 0, 0, 255}) {
+          flag.f(x, y) = 0.0f;
+        } else {
+          flag.f(x, y) = 1.0f;
+        }
+      }
+    }
+    bcWest = BC::INFLOW;
+    bcEast = BC::OUTFLOW_ZERO_PRESSURE;
+    bcNorth = BC::NOSLIP;
+    bcSouth = BC::NOSLIP;
+    for( int y = 0; y < height; y++) {
+      vx.f(0, y) = 10;
+      vx.b(0, y) = 10;
+    }
+  }
+
+  enum class BC { INFLOW, OUTFLOW, OUTFLOW_ZERO_PRESSURE, NOSLIP };
+
+  void setPBC() {
+    for (int y = 0; y < height; y++) {
+      if (bcWest != BC::OUTFLOW_ZERO_PRESSURE)
+        p.f(0, y) = p.f(1, y);
+      else
+        p.f(0, y) = 0;
+      if (bcEast != BC::OUTFLOW_ZERO_PRESSURE)
+        p.f(width - 1, y) = p.f(width - 2, y);
+      else
+        p.f(width - 1, y) = 0;
+    }
+    for (int x = 0; x < width; x++) {
+      if (bcSouth != BC::OUTFLOW_ZERO_PRESSURE)
+        p.f(x, 0) = p.f(x, 1);
+      else
+        p.f(x, 0) = 0;
+      if (bcNorth != BC::OUTFLOW_ZERO_PRESSURE)
+        p.f(x, height - 1) = p.f(x, height - 2);
+      else
+        p.f(x, height - 1) = 0;
+    }
+  }
+
+  void setVBC() {
+    for (int y = 0; y < height; y++) {
+      if (bcWest == BC::OUTFLOW) vx.f(0, y) = vx.b(0, y) = vx.f(1, y);
+      if (bcEast == BC::OUTFLOW)
+        vx.f(width - 1, y) = vx.b(width - 1, y) = vx.f(width - 2, y);
+    }
+    for (int x = 0; x < width; x++) {
+      if (bcNorth == BC::OUTFLOW) vy.f(x, 0) = vy.b(x, 0) = vy.f(x, 1);
+      if (bcSouth == BC::OUTFLOW)
+        vy.f(x, height - 1) = vy.b(x, height - 1) = vy.f(x, height - 2);
+    }
   }
 
   float* getVX() { return vx.data(); }
@@ -68,13 +147,13 @@ class Simulation {
                            v.b(x, y - 1))) /
                          (1.0f + 4.0f * a) -
                      v.b(x, y);
-        residual += lres * lres;
+        residual += flag.f(x, y) * lres * lres;
       }
     }
     return sqrt(residual) / width / height;
   }
 
-  void diffuse(DoubleBuffered2DGrid& v) {
+  __attribute__((noinline)) void diffuse(DoubleBuffered2DGrid& v) {
     // use this timestep as initial guess
     v.copyFrontToBack();
     float a = dt * mu * pwidth / (width - 1.0f);
@@ -82,16 +161,17 @@ class Simulation {
     for (int i = 1; true; i++) {
       for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
-          v.b(x, y) = v.b(x, y) * (1.0f - omega) +
-                      omega * (v.f(x, y) +
-                               a * (v.b(x + 1, y) + v.b(x - 1, y) +
-                                    v.b(x, y + 1) + v.b(x, y - 1))) /
-                          (1.0f + 4.0f * a);
+          v.b(x, y) =
+              flag.f(x, y) * (v.b(x, y) * (1.0f - omega) +
+                              omega * (v.f(x, y) +
+                                       a * (v.b(x + 1, y) + v.b(x - 1, y) +
+                                            v.b(x, y + 1) + v.b(x, y - 1))) /
+                                  (1.0f + 4.0f * a));
         }
       }
-      if ((i - 1) % 2 == 0) {
+      if (i > 5) {
         float res = diffusion_l2_residual(v);
-        if (res < 1.0e-9 || i >= 100) {
+        if (true || res < 1.0e-9 || i >= 100) {
           std::cout << std::setprecision(3) << std::scientific
                     << "SIM DIFFUSION: " << i << " iterations, res=" << res
                     << "\n";
@@ -110,55 +190,54 @@ class Simulation {
                                 p.f(x, y + 1) + p.f(x, y - 1)) *
                                    0.25f -
                                p.f(x, y);
-        residual += local_residual * local_residual;
+        residual += flag.f(x, y) * local_residual * local_residual;
       }
     }
     return sqrt(residual) / width / height;
   }
-  void project() {
+  __attribute__((noinline)) void project() {
     float h = pwidth / (width - 1.0f);
     float ih = 1.0f / h;
-    float previous_residual = -1;
+
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
         p.b(x, y) = -0.5f * h * (vx.f(x + 1, y) - vx.f(x - 1, y) +
                                  vy.f(x, y + 1) - vy.f(x, y - 1));
       }
     }
-    float alpha = 1.6;
+    float alpha = 1.0;
     for (int i = 1; true; i++) {
       for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
           p.f(x, y) = (1.0f - alpha) * p.f(x, y) +
-                      alpha * (p.b(x, y) + p.f(x - 1, y) + p.f(x + 1, y) +
-                               p.f(x, y + 1) + p.f(x, y - 1)) *
+                      alpha * ((p.f(x - 1, y) * flag.f(x - 1, y) +
+                                p.f(x, y) * (1.0f - flag.f(x - 1, y))) +
+                               (p.f(x + 1, y) * flag.f(x + 1, y) +
+                                p.f(x, y) * (1.0f - flag.f(x + 1, y))) +
+                               (p.f(x, y - 1) * flag.f(x, y - 1) +
+                                p.f(x, y) * (1.0f - flag.f(x, y - 1))) +
+                               (p.f(x, y + 1) * flag.f(x, y + 1) +
+                                p.f(x, y) * (1.0f - flag.f(x, y + 1))) +
+                               p.b(x, y)) *
                           0.25f;
         }
       }
-      for (int y = 1; y < height - 1; y++) {
-        p.f(0, y) = p.f(1, y);
-        p.f(width - 1, y) = p.f(width - 2, y);
-      }
-      for (int x = 1; x < width - 1; x++) {
-        p.f(x, 0) = p.f(x, 1);
-        p.f(x, height - 1) = p.f(x, height - 2);
-      }
-      if ((i - 1) % 2 == 0) {
+      setPBC();
+      if (i > 40) {
         float residual = projection_residual();
-        if ((i > 1 && previous_residual / residual < 1.05f) ||
-            residual < 1.0e-9 || i >= 600) {
-          std::cout << "SIM PROJECTION: " << i
-                    << " iterations, res=" << residual << "\n";
-          break;
-        }
-        previous_residual = residual;
+
+        std::cout << "SIM PROJECTION: " << i << " iterations, res=" << residual
+                  << "\n";
+        break;
       }
     }
 
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
-        vx.f(x, y) -= 0.5f * ih * (p.f(x + 1, y) - p.f(x - 1, y));
-        vy.f(x, y) -= 0.5f * ih * (p.f(x, y + 1) - p.f(x, y - 1));
+        vx.f(x, y) -=
+            flag.f(x, y) * 0.5f * ih * (p.f(x + 1, y) - p.f(x - 1, y));
+        vy.f(x, y) -=
+            flag.f(x, y) * 0.5f * ih * (p.f(x, y + 1) - p.f(x, y - 1));
       }
     }
   }
@@ -171,15 +250,16 @@ class Simulation {
             max_vel_sq, vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
       }
     }
-    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.3f;
+    dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.2f;
     std::cout << "SIM SET_DT: max_vel=" << sqrt(max_vel_sq) << ", dt=" << dt
               << "\n";
   }
 
-  void advect() {
+  __attribute__((noinline)) void advect() {
     float h = pwidth / (width - 1);
     float ih = 1.0f / h;
     float max_sqdistance = 0.0f;
+#pragma omp parallel for
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
         float xf = x * h;
@@ -207,8 +287,8 @@ class Simulation {
               (vy.f(x0, y0) * (1.0f - s) + vy.f(x0 + 1, y0) * s) * (1.0f - t) +
               (vy.f(x0, y0 + 1) * (1.0f - s) + vy.f(x0 + 1, y0 + 1) * s) * t;
         }
-        vx.b(x, y) = vtx;
-        vy.b(x, y) = vty;
+        vx.b(x, y) = vtx * flag.f(x, y);
+        vy.b(x, y) = vty * flag.f(x, y);
       }
     }
 
@@ -221,24 +301,27 @@ class Simulation {
 
   void step() {
     setDT();
+
     diffuse(vx);
     diffuse(vy);
+    setVBC();
 
     advect();
+    setVBC();
 
     project();
-    for (int y = 0; y < height; y++) {
-      vx.f(width - 1, y) = vx.f(width - 2, y);
-      vx.b(width - 1, y) = vx.f(width - 2, y);
-    }
+    setVBC();
+
     std::cout << "\n";
   }
 
   float pwidth;
   float mu;
-  const int width, height;
+  int width, height;
   float dt;
 
+  BC bcWest, bcEast, bcNorth, bcSouth;
+
  private:
-  DoubleBuffered2DGrid vx, vy, p;
+  DoubleBuffered2DGrid vx, vy, p, flag;
 };
