@@ -85,6 +85,7 @@ void draw(std::string text, float x_pos, float y_pos, float size,
 
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
   GL_CALL(glEnableVertexAttribArray(0));
   GL_CALL(glActiveTexture(GL_TEXTURE0));
   GL_CALL(glUseProgram(color_tex_shader));
