@@ -146,14 +146,23 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
   for (int y = 0; y < ny; y++) {
     for (int x = 0; x < nx; x++) {
       int ind = y * nx + x;
-      V[ind] = sqrt(std::max(
-          0.0f, buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind]));
+
+      // + small constant avoids numerical problems with fast sqrts
+      V[ind] = sqrt(buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind] + 0.00001f);
       vt[ind] = V[ind];
+
     }
   }
 
   auto upper_bound = vt.begin() + vt.size() * 0.99;
   nth_element(vt.begin(), upper_bound, vt.end());
+
+  /*  for (int x = 0; x < nx; x++) {
+    int ind = 500 * nx + x;
+    //    float mag = buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind];
+    cout << V[ind] << " "
+         << sqrt(buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind]) << "\n";
+  }*/
 
   Draw2DBuf::draw(V.data(), nx, ny, screen_width, screen_height, scale, 0,
                   *upper_bound);
