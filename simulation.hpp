@@ -135,6 +135,7 @@ class Simulation {
 
   float* getVX() { return vx.data(); }
   float* getVY() { return vy.data(); }
+  float* getFlag() { return flag.data(); }
   float* getP() { return p.data(); }
 
   float diffusion_l2_residual(DoubleBuffered2DGrid& v) {
@@ -156,7 +157,7 @@ class Simulation {
   __attribute__((noinline)) void diffuse(DoubleBuffered2DGrid& v) {
     // use this timestep as initial guess
     v.copyFrontToBack();
-    float a = dt * mu * pwidth / (width - 1.0f);
+    float a = dt * mu * (width - 1.0f) / pwidth;
     float omega = 1.0f;
     for (int i = 1; true; i++) {
       for (int y = 1; y < height - 1; y++) {
@@ -223,7 +224,7 @@ class Simulation {
         }
       }
       setPBC();
-      if (i > 40) {
+      if (i > 10) {
         float residual = projection_residual();
 
         std::cout << "SIM PROJECTION: " << i << " iterations, res=" << residual

@@ -13,7 +13,7 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim("level.png", 400.0, 10.0f) {
+  UbootGlApp() : sim("level.png", 1.0, 0.05f) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
@@ -85,8 +85,9 @@ class UbootGlApp {
     DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
     vis.pixel_width, vis.pixel_height);*/
 
-    DrawTracers::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
-                      vis.pixel_width, vis.pixel_height, scale, simTime);
+    DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width, sim.height,
+                      vis.pixel_width, vis.pixel_height, scale, simTime,
+                      sim.pwidth / (sim.width - 1));
 
     SDL_GL_SwapWindow(vis.windows[0]);
   }

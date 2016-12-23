@@ -88,8 +88,8 @@ void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
   xOut = xIn / max(xIn, yIn);
   yOut = yIn / max(xIn, yIn);
 }
-void draw(float* vx, float* vy, int nx, int ny, int screen_width,
-          int screen_height, float scale, float dt) {
+void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
+          int screen_height, float scale, float dt, float h) {
   float screen_ratio_x = 0;
   float screen_ratio_y = 0;
   pegToOne(screen_ratio_x, screen_ratio_y,
@@ -98,7 +98,8 @@ void draw(float* vx, float* vy, int nx, int ny, int screen_width,
   float ratio_y = 2.0 * screen_ratio_y / ny;
 
   for (int i = 0; i < 200; i++) {
-    tracers.push_back({dis(gen) * nx * 0.01, dis(gen) * ny, 0.0, 1.0});
+    tracers.push_back({(int)(dis(gen) * nx * 0.1) * 10.0,
+                       (int)(dis(gen) * ny * 0.1) * 10.0, 1.0});
     auto& tracer = tracers.back();
     alphas.push_back(1.0);
   }
@@ -109,12 +110,14 @@ void draw(float* vx, float* vy, int nx, int ny, int screen_width,
     float dx = bilinearSample(tracer.x, tracer.y, vx, nx, ny);
     float dy = bilinearSample(tracer.x, tracer.y, vy, nx, ny);
 
-    tracer.x += dx * dt;
-    tracer.y += dy * dt;
-    alphas[i] -= 0.001;
+    tracer.x += dx * dt / h;
+    tracer.y += dy * dt / h;
+    alphas[i] *= 0.999;
     if (tracer.x > nx - 1 || tracer.x < 1 || tracer.y > ny - 1 ||
-        tracer.y < 1 || alphas[i] < -10.001) {
-      tracer = {dis(gen) * nx * 0.01, dis(gen) * ny, 0.0, 1.0};
+        tracer.y < 1 || alphas[i] < 0.001 ||
+        flag[(int)tracer.y * nx + (int)tracer.x] < 1.0) {
+      tracer = {(int)(dis(gen) * nx * 0.1) * 10.0,
+                (int)(dis(gen) * nx * 0.1) * 10.0, 0.0, 1.0};
       alphas[i] = 1.0;
     }
   }
