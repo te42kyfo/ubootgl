@@ -86,12 +86,14 @@ class Simulation {
       }
     }
     bcWest = BC::INFLOW;
-    bcEast = BC::OUTFLOW_ZERO_PRESSURE;
+    bcEast = BC::OUTFLOW;
     bcNorth = BC::NOSLIP;
     bcSouth = BC::NOSLIP;
-    for( int y = 0; y < height; y++) {
+    for (int y = 0; y < height; y++) {
       vx.f(0, y) = 10;
       vx.b(0, y) = 10;
+      vx.f(width-1, y) = 0;
+      vx.b(width-1, y) = 0;
     }
   }
 

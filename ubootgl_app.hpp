@@ -13,7 +13,7 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim("level.png", 1.0, 0.05f) {
+  UbootGlApp() : sim("level.png", 1.0, 1.0f) {
     vis.initDisplay(1);
     vis.setViewport(800, 600);
     Draw2DBuf::init();
