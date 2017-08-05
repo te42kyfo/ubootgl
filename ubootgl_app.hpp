@@ -8,96 +8,52 @@
 #include "draw_tracers.hpp"
 #include "dtime.hpp"
 #include "gl_error.hpp"
+#include "imgui/imgui.h"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
 
 class UbootGlApp {
  public:
   UbootGlApp() : sim("level.png", 1.0, 1.0f) {
-    vis.initDisplay(1);
-    vis.setViewport(800, 600);
     Draw2DBuf::init();
     DrawText::init();
     DrawStreamlines::init();
     DrawTracers::init();
-    last_frame_time = dtime();
-    render_time = 0;
-    simulation_time = 0;
-    simulation_steps = 0;
-    iteration_counter = 0;
+    simTime = 0.0;
+    iterationCounter = 0;
     scale = 1.0;
   }
 
-  void handle_keys(const SDL_Event& e) {
-    switch (e.key.keysym.sym) {
-      case SDLK_PLUS:
-        scale *= 1.03;
-        break;
-      case SDLK_MINUS:
-        scale /= 1.03;
-        break;
-    }
-  }
-  void handle_mouse(const SDL_Event& e) {}
-
   void loop() {
     double t1 = dtime();
-    float simTime = 0;
+    simTime = 0;
     while (dtime() - t1 < 0.02) {
       sim.step();
-      simulation_steps++;
       simTime += sim.dt;
     }
-    double t2 = dtime();
-
-    simulation_time += t2 - t1;
-    draw(simTime);
-    double t3 = dtime();
-    render_time += t3 - t2;
-
-    iteration_counter++;
-    double this_frame_time = dtime();
-    if (this_frame_time - last_frame_time > 0.5) {
-      frame_rate = iteration_counter / (this_frame_time - last_frame_time);
-      std::cout << std::setw(3) << std::fixed << std::setprecision(1)
-                << simulation_time / iteration_counter * 1000.0 << "("
-                << simulation_time / simulation_steps * 1000.0 << ") "
-                << std::setw(3) << render_time / iteration_counter * 1000.0
-                << " "
-                << (this_frame_time - last_frame_time) / iteration_counter *
-                       1000.0
-                << "\n";
-      iteration_counter = 0;
-      last_frame_time = this_frame_time;
-      render_time = 0;
-      simulation_time = 0;
-      simulation_steps = 0;
-    }
+    iterationCounter++;
   }
-  void draw(float simTime) {
-    SDL_GL_MakeCurrent(vis.windows[0], vis.gl_context);
+
+  void draw() {
+    SDL_GL_MakeCurrent(vis.window, vis.gl_context);
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    /*    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
-                        vis.pixel_width, vis.pixel_height, scale);
-    DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
-                          vis.pixel_width, vis.pixel_height, scale);
-    DrawText::draw(std::to_string((int)frame_rate), -1, 0.9, 0.05,
-    vis.pixel_width, vis.pixel_height);*/
-
-    DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width, sim.height,
-                      vis.pixel_width, vis.pixel_height, scale, simTime,
+    int pixelWidth = ImGui::GetIO().DisplaySize.x;
+    int pixelHeight = ImGui::GetIO().DisplaySize.y;
+    // Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
+    //                    pixelWidth, pixelHeight, scale);
+    /*DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
+                          pixelWidth, pixelHeight, scale);
+    */
+    DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
+                      sim.height, pixelWidth, pixelHeight, scale, simTime,
                       sim.pwidth / (sim.width - 1));
-
-    SDL_GL_SwapWindow(vis.windows[0]);
   }
+
   double frame_rate;
   float scale;
-  double last_frame_time;
-  double simulation_time;
-  double render_time;
-  int simulation_steps;
-  uint iteration_counter;
+  float simTime;
+  uint iterationCounter;
   SdlGl vis;
   Simulation sim;
 };

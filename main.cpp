@@ -1,46 +1,47 @@
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include "dtime.hpp"
 #include "ubootgl_app.hpp"
 
+#include <stdio.h>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl_gl3.h"
+
 using namespace std;
 
-int main(int argc, char *argv[]) {
+int main(int, char**) {
   UbootGlApp app;
 
-  SDL_Event e;
-  bool quit = false;
+  ImGui_ImplSdlGL3_Init(app.vis.window);
 
-  while (!quit) {
-    while (SDL_PollEvent(&e)) {
-      if (e.type == SDL_QUIT) {
-        quit = true;
-      }
-
-      if (e.type == SDL_KEYDOWN) {
-        if (e.key.keysym.sym == SDLK_q) {
-          quit = true;
-        }
-        app.handle_keys(e);
-      }
-
-      if (e.type == SDL_WINDOWEVENT) {
-        if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
-          app.vis.setViewport(e.window.data1, e.window.data2);
-        }
-      }
-      if (e.type == SDL_MOUSEBUTTONDOWN) {
-        app.handle_mouse(e);
-      }
+  // Main loop
+  bool done = false;
+  while (!done) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      ImGui_ImplSdlGL3_ProcessEvent(&event);
+      if (event.type == SDL_QUIT) done = true;
     }
 
     app.loop();
+    ImGui_ImplSdlGL3_NewFrame(app.vis.window);
+
+    ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
+    ImGui::Begin("Window");
+    ImGui::Text("Hello Amelie");
+    ImGui::End();
+
+    glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x,
+               (int)ImGui::GetIO().DisplaySize.y);
+    app.draw();
+
+    ImGui::Render();
+    SDL_GL_SwapWindow(app.vis.window);
   }
 
-  SDL_Quit();
+  // Cleanup
+  ImGui_ImplSdlGL3_Shutdown();
+
+  return 0;
 }

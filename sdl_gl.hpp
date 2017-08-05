@@ -11,16 +11,18 @@
 
 class SdlGl {
  public:
-  void setViewport(int new_width, int new_height);
-
   void SDL_die(std::string error);
-  void initDisplay(int windowCount);
+  SdlGl();
+  ~SdlGl();
+  void initDisplay();
+  void deinitDisplay();
 
-  std::vector<SDL_Window*> windows;
+  SDL_Window *window;
   SDL_GLContext gl_context;
-  unsigned int frame_number = 0;
-
-  int pixel_width, pixel_height;
 };
+
+void glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
+                   GLsizei length, const GLchar *message,
+                   const void *userParam);
 
 #endif
