@@ -2,6 +2,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include "lodepng.h"
@@ -92,8 +93,8 @@ class Simulation {
     for (int y = 0; y < height; y++) {
       vx.f(0, y) = 10;
       vx.b(0, y) = 10;
-      vx.f(width-1, y) = 0;
-      vx.b(width-1, y) = 0;
+      vx.f(width - 1, y) = 0;
+      vx.b(width - 1, y) = 0;
     }
   }
 
@@ -175,9 +176,8 @@ class Simulation {
       if (i > 5) {
         float res = diffusion_l2_residual(v);
         if (true || res < 1.0e-9 || i >= 100) {
-          std::cout << std::setprecision(3) << std::scientific
-                    << "SIM DIFFUSION: " << i << " iterations, res=" << res
-                    << "\n";
+          diag << std::setprecision(1) << std::scientific
+               << "DIFF:     " << i << " iters, res=" << res << "\n";
           break;
         }
       }
@@ -229,8 +229,8 @@ class Simulation {
       if (i > 10) {
         float residual = projection_residual();
 
-        std::cout << "SIM PROJECTION: " << i << " iterations, res=" << residual
-                  << "\n";
+        diag << "PROJECT: " << i << " iters, res=" << residual
+             << "\n";
         break;
       }
     }
@@ -254,8 +254,7 @@ class Simulation {
       }
     }
     dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.2f;
-    std::cout << "SIM SET_DT: max_vel=" << sqrt(max_vel_sq) << ", dt=" << dt
-              << "\n";
+    diag << "SET_DT: Vmax=" << sqrt(max_vel_sq) << ", dt=" << dt << "\n";
   }
 
   __attribute__((noinline)) void advect() {
@@ -295,14 +294,14 @@ class Simulation {
       }
     }
 
-    std::cout << "SIM ADVECT: max_displacement = " << sqrt(max_sqdistance)
-              << "\n";
+    diag << "ADVECT: Dmax=" << sqrt(max_sqdistance) << "\n";
 
     vx.swap();
     vy.swap();
   }
 
   void step() {
+    diag.str("SIM\n");
     setDT();
 
     diffuse(vx);
@@ -315,7 +314,7 @@ class Simulation {
     project();
     setVBC();
 
-    std::cout << "\n";
+    diag << "\n";
   }
 
   float pwidth;
@@ -324,6 +323,8 @@ class Simulation {
   float dt;
 
   BC bcWest, bcEast, bcNorth, bcSouth;
+
+  std::stringstream diag;
 
  private:
   DoubleBuffered2DGrid vx, vy, p, flag;

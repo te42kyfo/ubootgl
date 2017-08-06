@@ -27,11 +27,12 @@ class UbootGlApp {
   void loop() {
     double t1 = dtime();
     simTime = 0;
+    iterationCounter = 0;
     while (dtime() - t1 < 0.02) {
       sim.step();
       simTime += sim.dt;
+      iterationCounter++;
     }
-    iterationCounter++;
   }
 
   void draw() {
