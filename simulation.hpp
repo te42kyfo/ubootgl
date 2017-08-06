@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -176,8 +177,8 @@ class Simulation {
       if (i > 5) {
         float res = diffusion_l2_residual(v);
         if (true || res < 1.0e-9 || i >= 100) {
-          diag << std::setprecision(1) << std::scientific
-               << "DIFF:     " << i << " iters, res=" << res << "\n";
+          diag << std::setprecision(1) << std::scientific << "DIFF:     " << i
+               << " iters, res=" << res << "\n";
           break;
         }
       }
@@ -229,8 +230,7 @@ class Simulation {
       if (i > 10) {
         float residual = projection_residual();
 
-        diag << "PROJECT: " << i << " iters, res=" << residual
-             << "\n";
+        diag << "PROJECT: " << i << " iters, res=" << residual << "\n";
         break;
       }
     }

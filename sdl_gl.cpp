@@ -1,6 +1,5 @@
 #include "sdl_gl.hpp"
 #include <iostream>
-#include "gl_error.hpp"
 
 using namespace std;
 
