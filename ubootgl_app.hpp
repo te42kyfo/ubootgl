@@ -19,24 +19,36 @@ class UbootGlApp {
     DrawText::init();
     DrawStreamlines::init();
     DrawTracers::init();
-    simTime = 0.0;
-    iterationCounter = 0;
     scale = 1.0;
   }
 
   void loop() {
     double t1 = dtime();
     simTime = 0;
-    iterationCounter = 0;
+    simIterationCounter = 0;
     while (dtime() - t1 < 0.02) {
       sim.step();
       simTime += sim.dt;
-      iterationCounter++;
+      simIterationCounter++;
     }
   }
 
   void draw() {
-    SDL_GL_MakeCurrent(vis.window, vis.gl_context);
+    bool p_open;
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::SetNextWindowSize(ImVec2(250, ImGui::GetIO().DisplaySize.y - 10));
+    ImGui::Begin("Example: Fixed Overlay", &p_open,
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoSavedSettings |
+                     ImGuiWindowFlags_ShowBorders);
+
+    ImGui::TextWrapped(sim.diag.str().c_str());
+    ImGui::Separator();
+    ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
+                       simIterationCounter);
+
+    ImGui::End();
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     int pixelWidth = ImGui::GetIO().DisplaySize.x;
@@ -49,12 +61,18 @@ class UbootGlApp {
     DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                       sim.height, pixelWidth, pixelHeight, scale, simTime,
                       sim.pwidth / (sim.width - 1));
+
+    double thisFrameTime = dtime();
+    smoothedFrameRate =
+        0.95 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
+    lastFrameTime = thisFrameTime;
   }
 
-  double frame_rate;
+  double lastFrameTime = 0;
+  double smoothedFrameRate = 0;
   float scale;
-  float simTime;
-  uint iterationCounter;
+  float simTime = 0.0;
+  uint simIterationCounter = 0;
   SdlGl vis;
   Simulation sim;
 };
