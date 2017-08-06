@@ -15,30 +15,48 @@ void UbootGlApp::loop() {
 
 void UbootGlApp::draw() {
   bool p_open;
-  ImGui::SetNextWindowPos(ImVec2(10, 10));
-  ImGui::SetNextWindowSize(ImVec2(250, ImGui::GetIO().DisplaySize.y - 10));
+
+  int displayWidth = ImGui::GetIO().DisplaySize.x;
+  int displayHeight = ImGui::GetIO().DisplaySize.y;
+  int renderWidth = displayWidth;
+  int renderHeight = displayHeight;
+  int renderOriginX = 0;
+  int renderOriginY = 0;
+
+  int sideBarSize = 250;
+  if (1.0 * (displayWidth-250) / (displayHeight-150) > 1.0 * sim.width / sim.height) {
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::SetNextWindowSize(ImVec2(sideBarSize - 10, displayHeight - 10));
+    renderOriginX = sideBarSize;
+    renderWidth = displayWidth - sideBarSize;
+  } else {
+    sideBarSize = 150;
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::SetNextWindowSize(ImVec2(displayWidth - 10, sideBarSize - 10));
+    renderOriginY = 0;
+    renderHeight = displayHeight - sideBarSize;
+  }
+
   ImGui::Begin("Example: Fixed Overlay", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
                    ImGuiWindowFlags_ShowBorders);
-
   ImGui::TextWrapped(sim.diag.str().c_str());
   ImGui::Separator();
   ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
                      simIterationCounter);
-
   ImGui::End();
+
+  GL_CALL(glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-  int pixelWidth = ImGui::GetIO().DisplaySize.x;
-  int pixelHeight = ImGui::GetIO().DisplaySize.y;
   // Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
   //                    pixelWidth, pixelHeight, scale);
   /*DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
                         pixelWidth, pixelHeight, scale);
   */
   DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
-                    sim.height, pixelWidth, pixelHeight, scale, simTime,
+                    sim.height, renderWidth, renderHeight, scale, simTime,
                     sim.pwidth / (sim.width - 1));
 
   double thisFrameTime = dtime();

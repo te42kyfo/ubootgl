@@ -22,7 +22,6 @@ class UbootGlApp {
   }
 
   void loop();
-
   void draw();
 
   double lastFrameTime = 0;
