@@ -66,10 +66,10 @@ void drawTracers(const vector<vector<vec4>>& tracers,
       vertices.push_back(
           {tracers[n][t].x - dx, tracers[n][t].y - dy, 0.0f, 1.0f});
 
-      vAlphas.push_back(
-          (1.0f - (float)n / tailCounts[t]));  // - fabs(alphas[t]));
-      vAlphas.push_back(
-          (1.0f - (float)n / tailCounts[t]));  // - fabs(alphas[t]));
+      vAlphas.push_back((1.0f - (float)n / tailCounts[t]) *
+                        (1.0f - fabs(alphas[t])));
+      vAlphas.push_back((1.0f - (float)n / tailCounts[t]) *
+                        (1.0f - fabs(alphas[t])));
     }
     for (int n = 0; n < tailCount - 1; n++) {
       int vc = vertices.size() - n * 2;
@@ -166,8 +166,8 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
               -1.0f * screen_ratio_x * scale, -1.0f * screen_ratio_y * scale);
 
   for (size_t t = 0; t < tracerCount; t++) {
-    float x = tracers[tailCount-1][t].x;
-    float y = tracers[tailCount-1][t].y;
+    float x = tracers[tailCount - 1][t].x;
+    float y = tracers[tailCount - 1][t].y;
 
     if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1) {
       float tx = dis(gen) * nx;
@@ -179,7 +179,7 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
       tailCounts[t] = 0;
       alphas[t] = 1.0;
     }
-    tailCounts[t] = min(tailCounts[t] + 1, tailCount-1);
+    tailCounts[t] = min(tailCounts[t] + 1, tailCount - 1);
     alphas[t] -= 0.0001;
   }
 }
