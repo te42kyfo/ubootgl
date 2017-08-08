@@ -22,11 +22,11 @@ struct vec4 {
   float x, y, z, w;
 };
 
-const int tracerCount = 5000;
-const int tailCount = 40;
+const int tracerCount = 10000;
+const int tailCount = 100;
 vector<vector<vec4>> tracers(tailCount,
                              vector<vec4>(tracerCount, {0, 0, 0, 0}));
-vector<float> alphas(tracerCount);
+vector<float> alphas(tracerCount, -10.0f);
 vector<int> tailCounts(tracerCount);
 default_random_engine gen;
 uniform_real_distribution<float> dis(0.0, 1.0);
@@ -58,18 +58,22 @@ void drawTracers(const vector<vector<vec4>>& tracers,
         dx = tracers[n - 1][t].y - tracers[n][t].y;
       }
       float len = sqrt(dx * dx + dy * dy);
-      dx = dx / len * 0.3;
-      dy = dy / len * 0.3;
+      dx = dx / len * ratio_x * 2;
+      dy = dy / len * ratio_y * 2;
 
       vertices.push_back(
           {tracers[n][t].x + dx, tracers[n][t].y + dy, 0.0f, 1.0f});
       vertices.push_back(
           {tracers[n][t].x - dx, tracers[n][t].y - dy, 0.0f, 1.0f});
 
-      vAlphas.push_back((1.0f - (float)n / tailCounts[t]) *
-                        (1.0f - fabs(alphas[t])));
-      vAlphas.push_back((1.0f - (float)n / tailCounts[t]) *
-                        (1.0f - fabs(alphas[t])));
+      vAlphas.push_back(
+          (1.0f -
+           2.1 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
+          (1.f - fabs(alphas[t])));
+      vAlphas.push_back(
+          (1.0f -
+           2.1 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
+          (1.0f - fabs(alphas[t])));
     }
     for (int n = 0; n < tailCount - 1; n++) {
       int vc = vertices.size() - n * 2;
@@ -159,9 +163,10 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
   float ratio_x = 2.0 * screen_ratio_x / nx;
   float ratio_y = 2.0 * screen_ratio_y / ny;
 
-  rotate(rbegin(tracers), rbegin(tracers) + 1, rend(tracers));
-  advectTracers(tracers[1], tracers[0], vx, vy, dt, h, nx, ny);
-
+  for (int i = 0; i < 2; i++) {
+    rotate(rbegin(tracers), rbegin(tracers) + 1, rend(tracers));
+    advectTracers(tracers[1], tracers[0], vx, vy, dt * 0.5, h, nx, ny);
+  }
   drawTracers(tracers, alphas, ratio_x * scale, ratio_y * scale,
               -1.0f * screen_ratio_x * scale, -1.0f * screen_ratio_y * scale);
 
@@ -169,7 +174,7 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
     float x = tracers[tailCount - 1][t].x;
     float y = tracers[tailCount - 1][t].y;
 
-    if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1) {
+    if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0) {
       float tx = dis(gen) * nx;
       float ty = dis(gen) * ny;
       tracers[0][t] = {tx, ty};
@@ -177,10 +182,13 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
         tracers[n][t] = {tx, ty};
       }
       tailCounts[t] = 0;
-      alphas[t] = 1.0;
+      if (alphas[t] < -5)
+        alphas[t] = dis(gen) * 2.0 - 1.0;
+      else
+        alphas[t] = 1.0;
     }
     tailCounts[t] = min(tailCounts[t] + 1, tailCount - 1);
-    alphas[t] -= 0.0001;
+    alphas[t] -= 0.01;
   }
 }
 }
