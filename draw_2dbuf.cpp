@@ -100,7 +100,7 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                           GL_LINEAR_MIPMAP_LINEAR));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
@@ -117,24 +117,6 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
 
   GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 
-  // Draw Quad with color bar
-  GL_CALL(glBindTexture(GL_TEXTURE_2D, color_bar_tex_id));
-  GL_CALL(glActiveTexture(GL_TEXTURE0));
-  GL_CALL(glUniform1i(scalar_tex_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(scalar_tex_shader_aspect_ratio_uloc, 0.02, 1.0));
-  GL_CALL(glUniform2f(scalar_tex_shader_bounds_uloc, 0.0, 1.0));
-  GL_CALL(glUniform2f(scalar_tex_shader_origin_uloc, 0.76, 0.0));
-  GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
-  DrawText::draw(to_string(vmin), 0.8, -0.9, 0.03, screen_width, screen_height);
-  DrawText::draw(to_string(vmax), 0.8, 0.9, 0.03, screen_width, screen_height);
-
-  // Draw Border
-  /*  GL_CALL(glUseProgram(line_shader));
-  GL_CALL(glUniform2f(line_shader_aspect_ratio_uloc, scale * ratio_x,
-                      scale * ratio_y));
-  GL_CALL(glUniform2f(line_shader_origin_uloc, 0.0, 0.0));
-  GL_CALL(glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT,
-  line_indices.data()));*/
   GL_CALL(glDeleteTextures(1, &tex_id));
 }
 
