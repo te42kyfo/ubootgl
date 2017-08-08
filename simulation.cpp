@@ -68,7 +68,7 @@ void Simulation::diffuse(DoubleBuffered2DGrid& v) {
                                 (1.0f + 4.0f * a));
       }
     }
-    if (i > 5) {
+    if (i > 2) {
       float res = diffusion_l2_residual(v);
       if (true || res < 1.0e-9 || i >= 100) {
         diag << std::setprecision(1) << std::scientific << "DIFF:     " << i
@@ -93,6 +93,7 @@ float Simulation::projection_residual() {
   }
   return sqrt(residual) / width / height;
 }
+
 void Simulation::project() {
   float h = pwidth / (width - 1.0f);
   float ih = 1.0f / h;
@@ -121,7 +122,7 @@ void Simulation::project() {
       }
     }
     setPBC();
-    if (i > 10) {
+    if (i > 100) {
       float residual = projection_residual();
 
       diag << "PROJECT: " << i << " iters, res=" << residual << "\n";
@@ -145,7 +146,7 @@ void Simulation::setDT() {
                             vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
     }
   }
-  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.2f;
+  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 2.2f;
   diag << "SET_DT: Vmax=" << sqrt(max_vel_sq) << ", dt=" << dt << "\n";
 }
 

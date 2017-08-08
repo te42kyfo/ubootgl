@@ -1,6 +1,9 @@
 #include "ubootgl_app.hpp"
+#include <vector>
 #include "dtime.hpp"
 #include "gl_error.hpp"
+
+using namespace std;
 
 void UbootGlApp::loop() {
   double t1 = dtime();
@@ -24,7 +27,8 @@ void UbootGlApp::draw() {
   int renderOriginY = 0;
 
   int sideBarSize = 250;
-  if (1.0 * (displayWidth-250) / (displayHeight-150) > 1.0 * sim.width / sim.height) {
+  if (1.0 * (displayWidth - 250) / (displayHeight - 150) >
+      1.0 * sim.width / sim.height) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::SetNextWindowSize(ImVec2(sideBarSize - 10, displayHeight - 10));
     renderOriginX = sideBarSize;
@@ -50,11 +54,23 @@ void UbootGlApp::draw() {
   GL_CALL(glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-  // Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
-  //                    pixelWidth, pixelHeight, scale);
+  Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
+                      renderWidth, renderHeight, scale);
   /*DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
                         pixelWidth, pixelHeight, scale);
   */
+
+  /*  vector<float> VX(sim.width * sim.height);
+  vector<float> VY(sim.width * sim.height);
+  vector<float> flag(sim.width * sim.height);
+  for (int y = 0; y < sim.height; y++) {
+    for (int x = 0; x < sim.width; x++) {
+      VX[y * sim.width + x] = -0.1 * (sim.height / 2 - y);
+      VY[y * sim.width + x] = 0.1 * (sim.width / 2 - x);
+      flag[y * sim.width + x] = 1;
+    }
+    }*/
+
   DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                     sim.height, renderWidth, renderHeight, scale, simTime,
                     sim.pwidth / (sim.width - 1));

@@ -13,7 +13,7 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim("level.png", 1.0, 1.0f) {
+  UbootGlApp() : sim("level.png", 1.0, 0.5f) {
     Draw2DBuf::init();
     DrawText::init();
     DrawStreamlines::init();
