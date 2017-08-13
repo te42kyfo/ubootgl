@@ -1,4 +1,5 @@
 #include "simulation.hpp"
+#include "pressure_solver.hpp"
 
 void Simulation::setPBC() {
   for (int y = 0; y < height; y++) {
@@ -105,30 +106,14 @@ void Simulation::project() {
     }
   }
   float alpha = 1.0;
-  for (int i = 1; true; i++) {
-    for (int y = 1; y < height - 1; y++) {
-      for (int x = 1; x < width - 1; x++) {
-        p.f(x, y) = (1.0f - alpha) * p.f(x, y) +
-                    alpha * ((p.f(x - 1, y) * flag.f(x - 1, y) +
-                              p.f(x, y) * (1.0f - flag.f(x - 1, y))) +
-                             (p.f(x + 1, y) * flag.f(x + 1, y) +
-                              p.f(x, y) * (1.0f - flag.f(x + 1, y))) +
-                             (p.f(x, y - 1) * flag.f(x, y - 1) +
-                              p.f(x, y) * (1.0f - flag.f(x, y - 1))) +
-                             (p.f(x, y + 1) * flag.f(x, y + 1) +
-                              p.f(x, y) * (1.0f - flag.f(x, y + 1))) +
-                             p.b(x, y)) *
-                        0.25f;
-      }
-    }
+  for (int i = 1; i < 10; i++) {
+    gs(p, flag, width, height, alpha);
     setPBC();
-    if (i > 10) {
-      float residual = projection_residual();
-
-      diag << "PROJECT: " << i << " iters, res=" << residual << "\n";
-      break;
-    }
   }
+
+  float residual = projection_residual();
+
+  diag << "PROJECT: res=" << residual << "\n";
 
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
@@ -146,7 +131,7 @@ void Simulation::setDT() {
                             vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
     }
   }
-  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 0.4f;
+  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.0f;
   diag << "SET_DT: Vmax=" << sqrt(max_vel_sq) << ", dt=" << dt << "\n";
 }
 
