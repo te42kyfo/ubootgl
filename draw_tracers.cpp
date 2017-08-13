@@ -22,11 +22,11 @@ struct vec4 {
   float x, y, z, w;
 };
 
+int frameNumber = 0;
 const int tracerCount = 10000;
-const int tailCount = 100;
-
-vector<vec2> tracers(tracerCount, {0, 0});
-vector<vector<vec2>> vertices(tailCount, vector<vec2>(tracerCount * 2, {0, 0}));
+const int tailCount = 10;
+vector<vector<vec4>> tracers(tailCount,
+                             vector<vec4>(tracerCount, {0, 0, 0, 0}));
 vector<float> alphas(tracerCount, -10.0f);
 vector<int> tailCounts(tracerCount);
 default_random_engine gen;
@@ -39,19 +39,45 @@ void init() {
       glGetUniformLocation(tracer_shader, "aspect_ratio");
   tracer_shader_origin_uloc = glGetUniformLocation(tracer_shader, "origin");
   GL_CALL(glGenVertexArrays(1, &vao));
+
+  GL_CALL(glGenBuffers(1, &vbo_alphas));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_alphas));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER,
+                       tracerCount * tailCount * 2 * sizeof(float), NULL,
+                       GL_STREAM_DRAW));
+
+  GL_CALL(glGenBuffers(1, &vbo_vertices));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_vertices));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER,
+                       tracerCount * tailCount * 2 * sizeof(vec4), NULL,
+                       GL_STREAM_DRAW));
 };
 
-void drawTracers(float ratio_x, float ratio_y, float x_offset, float y_offset) {
-  vector<vec4> vBuf;
-  vector<int> iBuf;
+void drawTracers(const vector<vector<vec4>>& tracers,
+                 const vector<float>& alphas, float ratio_x, float ratio_y,
+                 float x_offset, float y_offset) {
+  vector<vec4> vertices;
+  vector<int> indices;
   vector<float> vAlphas;
-
-  for (int t = 0; t < tracers.size(); t++) {
+  for (int t = 0; t < tracers[0].size(); t++) {
     for (int n = 0; n < tailCount; n++) {
-      vBuf.push_back(
-          {vertices[n][2 * t + 0].x, vertices[n][2 * t + 0].y, 0, 0});
-      vBuf.push_back(
-          {vertices[n][2 * t + 1].x, vertices[n][2 * t + 1].y, 0, 0});
+      float dx, dy;
+      if (n < tailCount - 1) {
+        dy = -(tracers[n][t].x - tracers[n + 1][t].x);
+        dx = tracers[n][t].y - tracers[n + 1][t].y;
+      }
+      if (n == tailCount - 1) {
+        dy = -(tracers[n - 1][t].x - tracers[n][t].x);
+        dx = tracers[n - 1][t].y - tracers[n][t].y;
+      }
+      float len = sqrt(dx * dx + dy * dy);
+      dx = dx / len * ratio_x * 10;
+      dy = dy / len * ratio_y * 10;
+
+      vertices.push_back(
+          {tracers[n][t].x + dx, tracers[n][t].y + dy, 0.0f, 1.0f});
+      vertices.push_back(
+          {tracers[n][t].x - dx, tracers[n][t].y - dy, 0.0f, 1.0f});
 
       vAlphas.push_back(
           (1.0f -
@@ -62,45 +88,44 @@ void drawTracers(float ratio_x, float ratio_y, float x_offset, float y_offset) {
            2.1 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
           (1.0f - fabs(alphas[t])));
     }
-
     for (int n = 0; n < tailCount - 1; n++) {
-      int vc = vBuf.size() - n * 2;
-      iBuf.push_back(vc - 1);  // 1--2
-      iBuf.push_back(vc - 2);  // |  |
-      iBuf.push_back(vc - 3);  // 3--4
-      iBuf.push_back(vc - 2);
-      iBuf.push_back(vc - 4);
-      iBuf.push_back(vc - 3);
+      int vc = vertices.size() - n * 2;
+      indices.push_back(vc - 1);  // 1--2
+      indices.push_back(vc - 2);  // |  |
+      indices.push_back(vc - 3);  // 3--4
+      indices.push_back(vc - 2);
+      indices.push_back(vc - 4);
+      indices.push_back(vc - 3);
     }
   }
+
   GL_CALL(glEnable(GL_BLEND));
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
 
   GL_CALL(glBindVertexArray(vao));
 
-  GL_CALL(glGenBuffers(1, &vbo_alphas));
+  // Alpha VBO
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_alphas));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER, vAlphas.size() * sizeof(GLfloat),
-                       vAlphas.data(), GL_DYNAMIC_DRAW));
+  GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, vAlphas.size() * sizeof(GLfloat),
+                          vAlphas.data()));
   GL_CALL(glEnableVertexAttribArray(1));
   GL_CALL(glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, 0));
 
-  GL_CALL(glGenBuffers(1, &vbo_vertices));
+  // Vertex VBO
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_vertices));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER, vBuf.size() * sizeof(vec4), vBuf.data(),
-                       GL_DYNAMIC_DRAW));
+  GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(vec4),
+                          vertices.data()));
   GL_CALL(glEnableVertexAttribArray(0));
   GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
 
+  // unifrom parameters
   GL_CALL(glUseProgram(tracer_shader));
   GL_CALL(glUniform2f(tracer_shader_aspect_ratio_uloc, ratio_x, ratio_y));
   GL_CALL(glUniform2f(tracer_shader_origin_uloc, x_offset, y_offset));
 
-  GL_CALL(
-      glDrawElements(GL_TRIANGLES, iBuf.size(), GL_UNSIGNED_INT, iBuf.data()));
-
-  GL_CALL(glDeleteBuffers(1, &vbo_vertices));
-  GL_CALL(glDeleteBuffers(1, &vbo_alphas));
+  // draw
+  GL_CALL(glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT,
+                         indices.data()));
 }
 
 float bilinearSample(float x, float y, float const* v, int nx, int ny) {
@@ -120,34 +145,21 @@ float bilinearSample(float x, float y, float const* v, int nx, int ny) {
   return at * (as * v[idx1] + s * v[idx2]) + t * (as * v[idx3] + s * v[idx4]);
 }
 
-void advectTracers(vector<vec2>& tracers, float const* vx, float const* vy,
+void advectTracers(vector<vec4>& tracers, float const* vx, float const* vy,
                    float dt, float h, int nx, int ny) {
-  rotate(rbegin(vertices), rbegin(vertices) + 1, rend(vertices));
 #pragma omp parallel for
   for (size_t i = 0; i < tracers.size(); i++) {
+    auto& tracer = tracers[i];
     const int steps = 4;
     float dth = dt / h / steps;
-    auto& tracer = tracers[i];
-    float oldX = tracer.x;
-    float oldY = tracer.y;
     for (int step = 0; step < steps; step++) {
       float dx = bilinearSample(tracer.x, tracer.y, vx, nx, ny);
       float dy = bilinearSample(tracer.x, tracer.y, vy, nx, ny);
-      float tX = tracer.x + 0.5f * dx * dth;
-      float tY = tracer.y + 0.5f * dy * dth;
+      float tX = tracer.x + 0.5 * dx * dth;
+      float tY = tracer.y + 0.5 * dy * dth;
       tracer.x += bilinearSample(tX, tY, vx, nx, ny) * dth;
       tracer.y += bilinearSample(tX, tY, vy, nx, ny) * dth;
     }
-
-    float dy = oldX - tracer.x;
-    float dx = -(oldY - tracer.y);
-
-    float len = sqrt(dx * dx + dy * dy);
-    dx = dx / len * 1;
-    dy = dy / len * 1;
-
-    vertices[0][2 * i + 0] = {tracer.x + dx, tracer.y + dy};
-    vertices[0][2 * i + 1] = {tracer.x - dx, tracer.y - dy};
   }
 }
 
@@ -155,6 +167,7 @@ void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
   xOut = xIn / max(xIn, yIn);
   yOut = yIn / max(xIn, yIn);
 }
+
 void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
           int screen_height, float scale, float dt, float h) {
   float screen_ratio_x = 0;
@@ -164,32 +177,35 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
   float ratio_x = 2.0 * screen_ratio_x / nx;
   float ratio_y = 2.0 * screen_ratio_y / ny;
 
-  for (int i = 0; i < 2; i++) {
-    advectTracers(tracers, vx, vy, dt * 0.5, h, nx, ny);
+  frameNumber++;
+  if (frameNumber == 2) {
+    rotate(rbegin(tracers), rbegin(tracers) + 1, rend(tracers));
+    tracers[0] = tracers[1];
+    frameNumber = 0;
   }
 
-  drawTracers(ratio_x * scale, ratio_y * scale, -1.0f * screen_ratio_x * scale,
-              -1.0f * screen_ratio_y * scale);
+  advectTracers(tracers[0], vx, vy, dt * 0.5, h, nx, ny);
+
+  drawTracers(tracers, alphas, ratio_x * scale, ratio_y * scale,
+              -1.0f * screen_ratio_x * scale, -1.0f * screen_ratio_y * scale);
 
   for (size_t t = 0; t < tracerCount; t++) {
-    float x = tracers[t].x;
-    float y = tracers[t].y;
+    float x = tracers[tailCount - 1][t].x;
+    float y = tracers[tailCount - 1][t].y;
 
     if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0) {
       float tx = dis(gen) * nx;
       float ty = dis(gen) * ny;
-      tracers[t] = {tx, ty};
+      tracers[0][t] = {tx, ty};
+      for (int n = 1; n < tailCount; n++) {
+        tracers[n][t] = {tx, ty};
+      }
       tailCounts[t] = 0;
       if (alphas[t] < -5)
         alphas[t] = dis(gen) * 2.0 - 1.0;
       else
         alphas[t] = 1.0;
-      for (int n = 0; n < tailCount; n++) {
-        vertices[n][2 * t + 0] = {tx, ty};
-        vertices[n][2 * t + 1] = {tx, ty};
-      }
     }
-
     tailCounts[t] = min(tailCounts[t] + 1, tailCount - 1);
     alphas[t] -= 0.01;
   }
