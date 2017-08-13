@@ -9,7 +9,7 @@ void UbootGlApp::loop() {
   double t1 = dtime();
   simTime = 0;
   simIterationCounter = 0;
-  while (dtime() - t1 < 0.01) {
+  while (dtime() - t1 < 0.02) {
     sim.step();
     simTime += sim.dt;
     simIterationCounter++;
@@ -57,6 +57,10 @@ void UbootGlApp::draw() {
 
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
                       renderWidth, renderHeight, scale);
+
+  /*  Draw2DBuf::draw_scalar(sim.getFlag(), sim.width, sim.height, renderWidth,
+                         renderHeight, scale);
+  */
   Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
                        renderWidth, renderHeight, scale);
 

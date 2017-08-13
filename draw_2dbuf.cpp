@@ -101,6 +101,21 @@ vec2 calculateScaleFactors(int render_width, int render_height, int tex_width,
                   1.0f);
 }
 
+void draw_scalar(float* buf_scalar, int nx, int ny, int screen_width,
+                 int screen_height, float scale) {
+  GL_CALL(glUseProgram(mag_shader));
+  GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
+  GL_CALL(glUniform2f(mag_shader_origin_uloc, 0.0, 0.0));
+
+  vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
+  GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,
+                      scale * ratios.y));
+  GL_CALL(glUniform2f(mag_shader_bounds_uloc, 0, 1));
+
+  Draw2DBuf::draw(buf_scalar, nx, ny, screen_width, screen_height, scale);
+  GL_CALL(glUseProgram(0));
+}
+
 void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
               int screen_height, float scale) {
   std::vector<float> V(nx * ny);
@@ -146,8 +161,7 @@ void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
 
   //  GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, 20.0));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                          GL_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
