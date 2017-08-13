@@ -79,7 +79,7 @@ class Simulation {
 
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
-        int idx = y * width + x;
+        int idx = (height-y-1) * width + x;
         if (rgba_image[idx] == rgba{0, 0, 0, 255}) {
           flag.f(x, y) = 0.0f;
         } else {

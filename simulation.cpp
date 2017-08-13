@@ -122,7 +122,7 @@ void Simulation::project() {
       }
     }
     setPBC();
-    if (i > 100) {
+    if (i > 10) {
       float residual = projection_residual();
 
       diag << "PROJECT: " << i << " iters, res=" << residual << "\n";
@@ -146,7 +146,7 @@ void Simulation::setDT() {
                             vy.f(x, y) * vy.f(x, y) + vx.f(x, y) * vx.f(x, y));
     }
   }
-  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 2.2f;
+  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 0.4f;
   diag << "SET_DT: Vmax=" << sqrt(max_vel_sq) << ", dt=" << dt << "\n";
 }
 
