@@ -196,6 +196,11 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
     if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0) {
       float tx = dis(gen) * nx;
       float ty = dis(gen) * ny;
+      while (bilinearSample(tx, ty, flag, nx, ny) == 0) {
+        tx = dis(gen) * nx;
+        ty = dis(gen) * ny;
+      }
+
       tracers[0][t] = {tx, ty};
       for (int n = 1; n < tailCount; n++) {
         tracers[n][t] = {tx, ty};
