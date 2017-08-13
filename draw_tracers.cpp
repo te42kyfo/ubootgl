@@ -23,8 +23,8 @@ struct vec4 {
 };
 
 int frameNumber = 0;
-const int tracerCount = 10000;
-const int tailCount = 10;
+const int tracerCount = 2000;
+const int tailCount = 20;
 vector<vector<vec4>> tracers(tailCount,
                              vector<vec4>(tracerCount, {0, 0, 0, 0}));
 vector<float> alphas(tracerCount, -10.0f);
@@ -71,8 +71,8 @@ void drawTracers(const vector<vector<vec4>>& tracers,
         dx = tracers[n - 1][t].y - tracers[n][t].y;
       }
       float len = sqrt(dx * dx + dy * dy);
-      dx = dx / len * ratio_x * 10;
-      dy = dy / len * ratio_y * 10;
+      dx = dx / len * ratio_x * 20;
+      dy = dy / len * ratio_y * 20;
 
       vertices.push_back(
           {tracers[n][t].x + dx, tracers[n][t].y + dy, 0.0f, 1.0f});

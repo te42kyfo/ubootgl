@@ -5,22 +5,25 @@ varying vec2 FragCoord;
 uniform sampler2D mask_tex;
 uniform sampler2D fill_tex;
 
-
 void main(void) {
   vec2 texCoord = (FragCoord + 1.0f) * 0.5f;
-  float tv = texture(mask_tex, texCoord).r;
+  float tdx = dFdx(texCoord.x);
+  float tdy = dFdy(texCoord.y);
+  float tv = 0.125 * (texture(mask_tex, texCoord + 2 * vec2(tdx, 0)).r +
+                      texture(mask_tex, texCoord - 2 * vec2(tdx, 0)).r +
+                      texture(mask_tex, texCoord + 2 * vec2(0, tdy)).r +
+                      texture(mask_tex, texCoord - 2 * vec2(0, tdy)).r +
+                      texture(mask_tex, texCoord).r * 4.0);
+
   if (tv > 0.5) {
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    gl_FragColor = vec4(0, 0, 0, 1.0);
   } else {
-    float d = texture(mask_tex, texCoord - vec2(0, 0.01)).r;
-    float u = texture(mask_tex, texCoord + vec2(0, 0.01)).r;
-    float l = texture(mask_tex, texCoord - vec2(0.005, 0)).r;
-    float r = texture(mask_tex, texCoord + vec2(0.005, 0)).r;
+    float tv = 0.25 * (texture(mask_tex, texCoord + 20 * vec2(tdx, 0)).r +
+                       texture(mask_tex, texCoord - 20 * vec2(tdx, 0)).r +
+                       texture(mask_tex, texCoord + 20 * vec2(0, tdy)).r +
+                       texture(mask_tex, texCoord - 20  * vec2(0, tdy)).r +
+                       texture(mask_tex, texCoord).r * -4.0);
 
-    float dx = l - r;
-    float dy = u - d;
-
-    gl_FragColor =
-      texture(fill_tex, texCoord*-3.0 + vec2(dx, dy)*0.01) * (1- 0.3*(abs(dx) + abs(dy)));
+    gl_FragColor = (1 - 1.0 * tv) * texture(fill_tex, texCoord * -3);
   }
 }
