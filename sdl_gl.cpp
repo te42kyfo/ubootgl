@@ -3,14 +3,9 @@
 
 using namespace std;
 
-SdlGl::SdlGl() {
-  initDisplay();
-}
+SdlGl::SdlGl() { initDisplay(); }
 
-SdlGl::~SdlGl() {
-  deinitDisplay();
-}
-
+SdlGl::~SdlGl() { deinitDisplay(); }
 
 void SdlGl::initDisplay() {
   if (SDL_Init(SDL_INIT_VIDEO) == -1) SDL_die("SDL_Init");
@@ -49,6 +44,9 @@ void SdlGl::initDisplay() {
     glDebugMessageCallback(glDebugOutput, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE,
                           GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+
+    glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_PERFORMANCE,
+                          GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_FALSE);
   }
 
   cout << glGetString(GL_VENDOR) << "\n";
@@ -62,7 +60,6 @@ void SdlGl::deinitDisplay() {
   SDL_DestroyWindow(window);
   SDL_Quit();
 }
-
 
 void SdlGl::SDL_die(string error) {
   cout << "Fatal error in " << error << ": " << SDL_GetError() << "\n";
