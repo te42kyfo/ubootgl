@@ -9,7 +9,7 @@ void UbootGlApp::loop() {
   double t1 = dtime();
   simTime = 0;
   simIterationCounter = 0;
-  while (dtime() - t1 < 0.02) {
+  while (dtime() - t1 < 0.01) {
     sim.step();
     simTime += sim.dt;
     simIterationCounter++;
@@ -41,7 +41,7 @@ void UbootGlApp::draw() {
     renderHeight = displayHeight - sideBarSize;
   }
 
-  ImGui::Begin("Example: Fixed Overlay", &p_open,
+  ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
                    ImGuiWindowFlags_ShowBorders);
@@ -53,23 +53,12 @@ void UbootGlApp::draw() {
 
   GL_CALL(glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  GL_CALL(glEnable(GL_FRAMEBUFFER_SRGB));
 
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
                       renderWidth, renderHeight, scale);
-  /*DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
-                        pixelWidth, pixelHeight, scale);
-  */
-
-  /*  vector<float> VX(sim.width * sim.height);
-  vector<float> VY(sim.width * sim.height);
-  vector<float> flag(sim.width * sim.height);
-  for (int y = 0; y < sim.height; y++) {
-    for (int x = 0; x < sim.width; x++) {
-      VX[y * sim.width + x] = -0.1 * (sim.height / 2 - y);
-      VY[y * sim.width + x] = 0.1 * (sim.width / 2 - x);
-      flag[y * sim.width + x] = 1;
-    }
-    }*/
+  Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
+                       renderWidth, renderHeight, scale);
 
   DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                     sim.height, renderWidth, renderHeight, scale, simTime,

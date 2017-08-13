@@ -6,39 +6,46 @@
 #include "draw_text.hpp"
 #include "gl_error.hpp"
 #include "load_shader.hpp"
+#include "texture.hpp"
 using namespace std;
 
 namespace Draw2DBuf {
 
-GLuint scalar_tex_shader, line_shader;
-GLuint vao, vbo, tbo, tex_id, color_bar_tex_id;
-int color_bar_tex_width = 20;
-int color_bar_tex_height = 255;
+GLuint mag_shader;
+GLuint flag_shader;
+GLuint vao, vbo, tbo, tex_id;
+
 vector<unsigned int> line_indices(4 * 2);
-GLint scalar_tex_shader_tex_uloc, scalar_tex_shader_aspect_ratio_uloc,
-    scalar_tex_shader_origin_uloc, scalar_tex_shader_bounds_uloc,
-    line_shader_aspect_ratio_uloc, line_shader_origin_uloc;
+GLint mag_shader_tex_uloc, mag_shader_aspect_ratio_uloc, mag_shader_origin_uloc,
+    mag_shader_bounds_uloc;
+GLint flag_shader_mask_tex_uloc, flag_shader_fill_tex_uloc,
+    flag_shader_aspect_ratio_uloc, flag_shader_origin_uloc;
+
 float tex_min = 0;
 float tex_max = 0;
 float spread = 0.0;
 float tex_median = 0;
 
 void init() {
-  scalar_tex_shader = loadShader("./scale_translate2D.vert",
-                                 "./scalar_tex.frag", {{0, "in_Position"}});
-  scalar_tex_shader_tex_uloc = glGetUniformLocation(scalar_tex_shader, "tex");
-  scalar_tex_shader_bounds_uloc =
-      glGetUniformLocation(scalar_tex_shader, "bounds");
-  scalar_tex_shader_aspect_ratio_uloc =
-      glGetUniformLocation(scalar_tex_shader, "aspect_ratio");
-  scalar_tex_shader_origin_uloc =
-      glGetUniformLocation(scalar_tex_shader, "origin");
-  line_shader = loadShader("./scale_translate2D.vert", "./white.frag",
-                           {{0, "in_Position"}});
-  line_shader_aspect_ratio_uloc =
-      glGetUniformLocation(line_shader, "aspect_ratio");
-  line_shader_origin_uloc = glGetUniformLocation(line_shader, "origin");
+  // Magnitude Shader and uloc loading
+  mag_shader = loadShader("./scale_translate2D.vert", "./mag_tex.frag",
+                          {{0, "in_Position"}});
+  mag_shader_tex_uloc = glGetUniformLocation(mag_shader, "tex");
+  mag_shader_bounds_uloc = glGetUniformLocation(mag_shader, "bounds");
+  mag_shader_aspect_ratio_uloc =
+      glGetUniformLocation(mag_shader, "aspect_ratio");
+  mag_shader_origin_uloc = glGetUniformLocation(mag_shader, "origin");
 
+  // Flag Field Shader and uloc loading
+  flag_shader = loadShader("./scale_translate2D.vert", "./flag_tex.frag",
+                           {{0, "in_Position"}});
+  flag_shader_mask_tex_uloc = glGetUniformLocation(flag_shader, "mask_tex");
+  flag_shader_fill_tex_uloc = glGetUniformLocation(flag_shader, "fill_tex");
+  flag_shader_aspect_ratio_uloc =
+      glGetUniformLocation(flag_shader, "aspect_ratio");
+  flag_shader_origin_uloc = glGetUniformLocation(flag_shader, "origin");
+
+  // Quad Geometry
   GL_CALL(glGenVertexArrays(1, &vao));
   GL_CALL(glGenBuffers(1, &vbo));
 
@@ -52,46 +59,13 @@ void init() {
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
   GL_CALL(glBufferData(GL_ARRAY_BUFFER, 4 * 4 * sizeof(GLfloat), vertex_data,
                        GL_STATIC_DRAW));
-
-  // color bar texture
-  vector<float> color_bar_tex_data(color_bar_tex_width * color_bar_tex_height);
-  for (int y = 0; y < color_bar_tex_height; y++) {
-    for (int x = 0; x < color_bar_tex_width; x++) {
-      color_bar_tex_data[y * color_bar_tex_width + x] =
-          (float)y / (color_bar_tex_height - 1);
-    }
-  }
-  GL_CALL(glGenTextures(1, &color_bar_tex_id));
-  GL_CALL(glBindTexture(GL_TEXTURE_2D, color_bar_tex_id));
-  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32F, color_bar_tex_width,
-                         color_bar_tex_height));
-  GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, color_bar_tex_width,
-                          color_bar_tex_height, GL_RED, GL_FLOAT,
-                          color_bar_tex_data.data()));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-}
-
-void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
-  xOut = xIn / max(xIn, yIn);
-  yOut = yIn / max(xIn, yIn);
 }
 
 void draw(float* texture_buffer, int tex_width, int tex_height,
-          int screen_width, int screen_height, float scale, float vmin,
-          float vmax) {
-  GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-  GL_CALL(glLineWidth(2));
-
-  float ratio_x = 0;
-  float ratio_y = 0;
-  pegToOne(ratio_x, ratio_y,
-           (float)screen_height / screen_width * tex_width / tex_height, 1.0f);
-
+          int screen_width, int screen_height, float scale) {
   // Upload Texture
+
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
   GL_CALL(glGenTextures(1, &tex_id));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, tex_id));
   GL_CALL(glTexStorage2D(GL_TEXTURE_2D, 4, GL_R32F, tex_width, tex_height));
@@ -107,17 +81,24 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
   GL_CALL(glEnableVertexAttribArray(0));
   GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
-  GL_CALL(glActiveTexture(GL_TEXTURE0));
-  GL_CALL(glUseProgram(scalar_tex_shader));
-  GL_CALL(glUniform1i(scalar_tex_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(scalar_tex_shader_origin_uloc, 0.0, 0.0));
-  GL_CALL(glUniform2f(scalar_tex_shader_aspect_ratio_uloc, scale * ratio_x,
-                      scale * ratio_y));
-  GL_CALL(glUniform2f(scalar_tex_shader_bounds_uloc, vmin, vmax));
 
   GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 
   GL_CALL(glDeleteTextures(1, &tex_id));
+}
+
+struct vec2 {
+  float x, y;
+};
+
+vec2 pegToOne(float xIn, float yIn) {
+  return {xIn / max(xIn, yIn), yIn / max(xIn, yIn)};
+}
+
+vec2 calculateScaleFactors(int render_width, int render_height, int tex_width,
+                           int tex_height) {
+  return pegToOne((float)render_height / render_width * tex_width / tex_height,
+                  1.0f);
 }
 
 void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
@@ -130,23 +111,51 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
       int ind = y * nx + x;
 
       // + small constant avoids numerical problems with fast sqrts
-      V[ind] = sqrt(buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind] + 0.00001f);
+      V[ind] = sqrt(buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind] +
+                    0.00001f);
       vt[ind] = V[ind];
-
     }
   }
 
   auto upper_bound = vt.begin() + vt.size() * 0.99;
   nth_element(vt.begin(), upper_bound, vt.end());
 
-  /*  for (int x = 0; x < nx; x++) {
-    int ind = 500 * nx + x;
-    //    float mag = buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind];
-    cout << V[ind] << " "
-         << sqrt(buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind]) << "\n";
-  }*/
+  float vmin = 0;
+  float vmax = *upper_bound;
+  GL_CALL(glUseProgram(mag_shader));
+  GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
+  GL_CALL(glUniform2f(mag_shader_origin_uloc, 0.0, 0.0));
 
-  Draw2DBuf::draw(V.data(), nx, ny, screen_width, screen_height, scale, 0,
-                  *upper_bound);
+  vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
+  GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,
+                      scale * ratios.y));
+  GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
+
+  Draw2DBuf::draw(V.data(), nx, ny, screen_width, screen_height, scale);
+  GL_CALL(glUseProgram(0));
+}
+
+void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
+               int screen_width, int screen_height, float scale) {
+  GL_CALL(glUseProgram(flag_shader));
+  GL_CALL(glUniform1i(flag_shader_mask_tex_uloc, 0));
+  GL_CALL(glUniform1i(flag_shader_fill_tex_uloc, 1));
+  GL_CALL(glUniform2f(flag_shader_origin_uloc, 0.0, 0.0));
+
+  GL_CALL(glActiveTexture(GL_TEXTURE1));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
+
+  //  GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, 20.0));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR));
+
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+  vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
+  GL_CALL(glUniform2f(flag_shader_aspect_ratio_uloc, scale * ratios.x,
+                      scale * ratios.y));
+
+  Draw2DBuf::draw(buf_flag, nx, ny, screen_width, screen_height, scale);
+  GL_CALL(glUseProgram(0));
 }
 }

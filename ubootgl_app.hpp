@@ -10,10 +10,11 @@
 #include "imgui/imgui.h"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
+#include "texture.hpp"
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim("level.png", 1.0, 0.5f) {
+  UbootGlApp() : sim("level.png", 1.0, 0.1f), rock_texture("rock_texture2.png") {
     Draw2DBuf::init();
     DrawText::init();
     DrawStreamlines::init();
@@ -31,4 +32,5 @@ class UbootGlApp {
   uint simIterationCounter = 0;
   SdlGl vis;
   Simulation sim;
+  Texture rock_texture;
 };
