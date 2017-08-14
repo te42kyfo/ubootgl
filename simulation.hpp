@@ -26,7 +26,9 @@ class Simulation {
         vx(width, height),
         vy(width, height),
         p(width, height),
-        flag(width, height) {}
+        f(width, height),
+        flag(width, height),
+        r(width, height) {}
 
   Simulation(std::string filename, float pwidth, float mu)
       : pwidth(pwidth), mu(mu) {
@@ -47,15 +49,17 @@ class Simulation {
     vx = {width, height};
     vy = {width, height};
     p = {width, height};
+    f = {width, height};
     flag = {width, height};
+    r = {width, height};
 
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         int idx = (height - y - 1) * width + x;
         if (rgba_image[idx] == rgba{0, 0, 0, 255}) {
-          flag.f(x, y) = 0.0f;
+          flag(x, y) = 0.0f;
         } else {
-          flag.f(x, y) = 1.0f;
+          flag(x, y) = 1.0f;
         }
       }
     }
@@ -64,8 +68,8 @@ class Simulation {
     bcNorth = BC::NOSLIP;
     bcSouth = BC::NOSLIP;
     for (int y = 0; y < height; y++) {
-      vx.f(0, y) = 10;
-      vx.b(0, y) = 10;
+      vx.f(0, y) = 1;
+      vx.b(0, y) = 1;
       vx.f(width - 1, y) = 0;
       vx.b(width - 1, y) = 0;
     }
@@ -80,11 +84,12 @@ class Simulation {
   float* getVY() { return vy.data(); }
   float* getFlag() { return flag.data(); }
   float* getP() { return p.data(); }
+  float* getR() { return r.data(); }
 
   float diffusion_l2_residual(DoubleBuffered2DGrid& v);
   void diffuse(DoubleBuffered2DGrid& v);
-  float projection_residual();
   void project();
+  void centerP();
   void setDT();
   void advect();
 
@@ -100,5 +105,6 @@ class Simulation {
   std::stringstream diag;
 
  private:
-  DoubleBuffered2DGrid vx, vy, p, flag;
+  DoubleBuffered2DGrid vx, vy;
+  Single2DGrid p, f, flag, r;
 };
