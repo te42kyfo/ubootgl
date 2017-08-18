@@ -72,11 +72,18 @@ class Simulation {
       vx.b(0, y) = 1;
       vx.f(width - 1, y) = 0;
       vx.b(width - 1, y) = 0;
+      flag(0, y) = 0.0;
+      flag(width - 1, y) = 0.0;
+    }
+    for (int x = 0; x < width; x++) {
+      flag(x, 0) = 1.0;
+      flag(x, height-1) = 1.0;
     }
   }
 
   enum class BC { INFLOW, OUTFLOW, OUTFLOW_ZERO_PRESSURE, NOSLIP };
 
+  float setSinglePBC(BC bc, float a, float b);
   void setPBC();
   void setVBC();
 

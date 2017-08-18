@@ -1,26 +1,25 @@
 #include "simulation.hpp"
+#include <iostream>
+#include "dtime.hpp"
 #include "pressure_solver.hpp"
+
+// Fluid cells like this: a b | c
+float Simulation::setSinglePBC(BC bc, float a, float b) {
+  if (bc == BC::INFLOW) return b;
+  if (bc == BC::OUTFLOW) return b;
+  if (bc == BC::OUTFLOW_ZERO_PRESSURE) return 0.0f;
+  if (bc == BC::NOSLIP) return b;
+}
 
 void Simulation::setPBC() {
   for (int y = 0; y < height; y++) {
-    if (bcWest != BC::OUTFLOW_ZERO_PRESSURE)
-      p(0, y) = p(1, y);
-    else
-      p(0, y) = 0;
-    if (bcEast != BC::OUTFLOW_ZERO_PRESSURE)
-      p(width - 1, y) = p(width - 2, y);
-    else
-      p(width - 1, y) = 0;
+    p(0, y) = setSinglePBC(bcWest, p(2, y), p(1, y));
+    p(width - 1, y) = setSinglePBC(bcEast, p(width - 3, y), p(width - 2, y));
   }
   for (int x = 0; x < width; x++) {
-    if (bcSouth != BC::OUTFLOW_ZERO_PRESSURE)
-      p(x, 0) = p(x, 1);
-    else
-      p(x, 0) = 0;
-    if (bcNorth != BC::OUTFLOW_ZERO_PRESSURE)
-      p(x, height - 1) = p(x, height - 2);
-    else
-      p(x, height - 1) = 0;
+    p(x, 0) = setSinglePBC(bcSouth, p(x, 2), p(x, 1));
+    p(x, height - 1) =
+        setSinglePBC(bcNorth, p(x, height - 3), p(x, height - 2));
   }
 }
 
@@ -87,26 +86,35 @@ void Simulation::project() {
   float h = pwidth / (width - 1.0f);
   float ih = 1.0f / h;
 
+#pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
-      f(x, y) = 0.5f * ih * (vx.f(x + 1, y) - vx.f(x - 1, y) + vy.f(x, y + 1) -
-                             vy.f(x, y - 1));
+      f(x, y) = -0.5f * ih * (vx.f(x + 1, y) - vx.f(x - 1, y) + vy.f(x, y + 1) -
+                              vy.f(x, y - 1));
     }
   }
 
-
-  float residual = calculateResidualField(p, f, flag, r, width, height, h);
+  float residual = calculateResidualField(p, f, flag, r, h);
   diag << "PROJECT: res=" << residual << "\n";
 
   float alpha = 1.0;
-  for (int i = 0; i < 1000; i++) {
-    rbgs(p, f, flag, width, height, h, alpha);
-    setPBC();
-  }
+
+  // for (int i = 0; i < 100; i++) {
+  //   rbgs(p, f, flag, h, alpha);
+  //   setPBC();
+  // }
+
+  double t1 = dtime();
+  mg(p, f, flag, h);
+  mg(p, f, flag, h);
+  mg(p, f, flag, h);
+  mg(p, f, flag, h);
+  double t2 = dtime();
+  std::cout << "MG: " << (t2 - t1)/4*1000 << "ms\n";
 
   centerP();
   setPBC();
-  residual = calculateResidualField(p, f, flag, r, width, height, h);
+  residual = calculateResidualField(p, f, flag, r, h);
 
   diag << "PROJECT: res=" << residual << "\n";
   for (int y = 1; y < height - 1; y++) {
