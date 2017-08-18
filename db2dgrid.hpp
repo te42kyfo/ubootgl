@@ -1,6 +1,10 @@
 #pragma once
 
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
 #include <vector>
+#include <assert.h>
 
 class Single2DGrid {
  public:
@@ -12,10 +16,27 @@ class Single2DGrid {
   int idx(int x, int y) { return y * width + x; }
   float* data() { return v.data(); }
 
-  float& operator()(int x, int y) { return v[idx(x, y)]; }
+  float& operator()(int x, int y) {
+    assert(x < width && x >= 0 && y < height && y >= 0);
+    return v[idx(x, y)];
+  }
+  float operator=(float val) {
+    std::fill(std::begin(v), std::end(v), val);
+    return val;
+  }
+  int width, height;
+
+  void print() {
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        std::cout << std::setprecision(4) << std::setw(8) << (*this)(x, y)
+                  << " ";
+      }
+      std::cout << "\n";
+    }
+  }
 
  private:
-  int width, height;
   std::vector<float> v;
 };
 
@@ -33,17 +54,22 @@ class DoubleBuffered2DGrid {
 
   int idx(int x, int y) { return y * width + x; }
   void swap() { std::swap(front, back); }
-  float& f(int x, int y) { return v[front][idx(x, y)]; }
-  float& b(int x, int y) { return v[back][idx(x, y)]; }
+  float& f(int x, int y) {
+    assert(x < width && x >= 0 && y < height && y >= 0);
+    return v[front][idx(x, y)];
+  }
+  float& b(int x, int y) {
+    assert(x < width && x >= 0 && y < height && y >= 0);
+    return v[back][idx(x, y)];
+  }
   float* data() { return v[front].data(); }
   void copyFrontToBack() {
     for (int i = 0; i < width * height; i++) {
       v[back][i] = v[front][i];
     }
   }
-  float& operator()(int x, int y) { return v[front][idx(x, y)]; }
+  float& operator()(int x, int y) { return f(x, y); }
 
-  
  private:
   int width, height;
   int front, back;
