@@ -114,7 +114,6 @@ void draw_scalar(float* buf_scalar, int nx, int ny, int screen_width,
   nth_element(vt.begin(), lower_bound, vt.end());
   float vmin = *lower_bound;
 
-  cout << "Draw_scalar bounds: " << vmin << " " << vmax << "\n";
 
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
