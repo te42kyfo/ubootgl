@@ -52,7 +52,7 @@ float calculateResidualField(Single2DGrid& p, Single2DGrid& f,
   float l2r = 0;
 
   float ihsq = 1.0f / h / h;
-  #pragma omp parallel for
+#pragma omp parallel for
   for (int y = 1; y < p.height - 1; y++) {
     for (int x = 1; x < p.width - 1; x++) {
       float val = 0.0f;
@@ -93,6 +93,7 @@ void restrict(Single2DGrid& r, Single2DGrid& rc) {
 }
 
 void prolongate(Single2DGrid& r, Single2DGrid& rc) {
+  r = 0.0;
   for (int y = 1; y < rc.height - 1; y++) {
     for (int x = 1; x < rc.width - 1; x++) {
       r(2 * x - 1, 2 * y - 1) += rc(x, y) * (1 / 4.0f);
@@ -118,60 +119,55 @@ void correct(Single2DGrid& p, Single2DGrid& e) {
 }
 
 void setZeroGradientBC(Single2DGrid& p) {
-  for (int y = 1; y < p.width - 1; y++) {
+  for (int y = 1; y < p.height - 1; y++) {
     p(0, y) = p(1, y);
     p(p.width - 1, y) = p(p.width - 2, y);
   }
-  for (int x = 1; x < p.height - 1; x++) {
-    p(x, 0) = p(x, p.height - 1);
+  for (int x = 1; x < p.width - 1; x++) {
+    p(x, 0) = p(x, 1);
     p(x, p.height - 1) = p(x, p.height - 2);
   }
 }
 
-void mg(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
-        bool zeroGradientBC) {
-  if (p.width <= 5 || p.height <= 5) {
-    for (int i = 0; i < 20; i++) {
+void MG::solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,
+                    float h, int level, bool zeroGradientBC) {
+
+  if (level == levels - 1) {
+    for (int i = 0; i < 1; i++) {
       rbgs(p, f, flag, h, 1.0);
     }
     return;
   }
 
   for (int i = 0; i < 2; i++) {
-    rbgs(p, f, flag, h, 1.5);
-    if (zeroGradientBC) setZeroGradientBC(p);
+    rbgs(p, f, flag, h, 1.0);
+    if (level == 0 && zeroGradientBC) setZeroGradientBC(p);
   }
 
-  Single2DGrid r(p.width, p.height);
+  auto& r = rs[level];
   r = 0.0;
   calculateResidualField(p, f, flag, r, h);
 
-  int cx = (int)((p.width) / 2.0);
-  int cy = (int)((p.height) / 2);
-
-  Single2DGrid rc(cx, cy);
+  auto& rc = rcs[level + 1];
   rc = 0.0;
-  Single2DGrid ec(cx, cy);
-  ec = 0.0;
-  Single2DGrid flagc(cx, cy);
-  flagc = 1.0;
   restrict(r, rc);
-  //  r.print();
-  // rc.print();
 
-  mg(ec, rc, flagc, h * (r.width - 1.0f) / (rc.width - 1.0f));
-  // cout << "\n";
-  //  ec.print();
+  auto& ec = ecs[level + 1];
+  ec = 0.0;
+  auto& flagc = flagcs[level + 1];
+  flagc = 1.0;
 
-  Single2DGrid e(p.width, p.height);
+  MG::solveLevel(ec, rc, flagc, h * (r.width - 1.0f) / (rc.width - 1.0f),
+                 level + 1);
+
+  auto& e = es[level];
   prolongate(e, ec);
-  // e.print();
-  correct(p, e);
 
-  if (zeroGradientBC) setZeroGradientBC(p);
+  correct(p, e);
+  if (level == 0 && zeroGradientBC) setZeroGradientBC(p);
 
   for (int i = 0; i < 2; i++) {
-    rbgs(p, f, flag, h, 1.3);
-    if (zeroGradientBC) setZeroGradientBC(p);
+    rbgs(p, f, flag, h, 1.0);
+    if (level == 0 && zeroGradientBC) setZeroGradientBC(p);
   }
-}
+};

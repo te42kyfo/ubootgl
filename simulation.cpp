@@ -1,7 +1,6 @@
 #include "simulation.hpp"
 #include <iostream>
 #include "dtime.hpp"
-#include "pressure_solver.hpp"
 
 // Fluid cells like this: a b | c
 float Simulation::setSinglePBC(BC bc, float a, float b) {
@@ -104,13 +103,11 @@ void Simulation::project() {
   //   setPBC();
   // }
 
-  double t1 = dtime();
-  mg(p, f, flag, h);
-  mg(p, f, flag, h);
-  mg(p, f, flag, h);
-  mg(p, f, flag, h);
-  double t2 = dtime();
-  std::cout << "MG: " << (t2 - t1)/4*1000 << "ms\n";
+
+
+  mg.solve(p, f, flag, h, true);
+  mg.solve(p, f, flag, h, true);
+
 
   centerP();
   setPBC();
