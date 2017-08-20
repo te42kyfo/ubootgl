@@ -2,6 +2,7 @@
 #include <iostream>
 #include "../db2dgrid.hpp"
 #include "../pressure_solver.hpp"
+#include "../dtime.hpp"
 
 using namespace std;
 
@@ -30,11 +31,13 @@ int main(int argc, char** argv) {
     }
   }
 
-  cout << calculateResidualField(u, rhs, flag, r, h) << "\n";
+  cout << "Initial residual: " << calculateResidualField(u, rhs, flag, r, h) << "\n";
+
+  MG mg(N, N);
 
   for (int i = 0; i < 5; i++) {
     //rbgs(u, rhs, flag, h, 1.0);
-    mg(u, rhs, flag, h);
+    mg.solve(u, rhs, flag, h);
     cout << calculateResidualField(u, rhs, flag, r, h) << "\n";
   }
 
@@ -48,6 +51,15 @@ int main(int argc, char** argv) {
     }
   }
   cout << sqrt(avgError) / N /N << "\n";
+
+  int iterations = 10;
+  double t1 = dtime();
+  for (int i = 0; i < iterations; i++) {
+    mg.solve(u, rhs, flag, h);
+  }
+  double t2 = dtime();
+  cout << (t2-t1)/iterations*1000 << "ms\n";
+
 
   /*  u.print();
   cout << "\n";
