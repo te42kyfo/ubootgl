@@ -59,7 +59,7 @@ void drawTracers(const vector<vector<vec4>>& tracers,
   vector<vec4> vertices;
   vector<int> indices;
   vector<float> vAlphas;
-  for (int t = 0; t < tracers[0].size(); t++) {
+  for (size_t t = 0; t < tracers[0].size(); t++) {
     for (int n = 0; n < tailCount; n++) {
       float dx, dy;
       if (n < tailCount - 1) {
