@@ -81,7 +81,7 @@ class Simulation {
       flag(x, 0) = 1.0;
       flag(x, height - 1) = 1.0;
     }
-    mg = MG(width, height);
+    mg = MG(flag);
   }
 
   enum class BC { INFLOW, OUTFLOW, OUTFLOW_ZERO_PRESSURE, NOSLIP };
@@ -115,7 +115,7 @@ class Simulation {
   std::stringstream diag;
 
  private:
-  MG mg;
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid p, f, flag, r;
+  MG mg;
 };

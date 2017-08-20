@@ -93,21 +93,16 @@ void Simulation::project() {
     }
   }
 
+
   float residual = calculateResidualField(p, f, flag, r, h);
   diag << "PROJECT: res=" << residual << "\n";
 
-  float alpha = 1.0;
-
-  // for (int i = 0; i < 100; i++) {
-  //   rbgs(p, f, flag, h, alpha);
+  // for (int i = 0; i < 10; i++) {
+  //   rbgs(p, f, flag, h, 1.0);
   //   setPBC();
   // }
 
-
-
   mg.solve(p, f, flag, h, true);
-  mg.solve(p, f, flag, h, true);
-
 
   centerP();
   setPBC();
