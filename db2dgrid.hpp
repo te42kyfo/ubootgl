@@ -9,7 +9,7 @@
 class Single2DGrid {
  public:
   Single2DGrid(int width, int height)
-      : width(width), height(height), v(width * height) {}
+    : width(width), height(height), v(width * height, 0.0f) {}
 
   Single2DGrid() : width(0), height(0){};
 
@@ -29,7 +29,7 @@ class Single2DGrid {
   void print() {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
-        std::cout << std::setprecision(2) << std::setw(8) << (*this)(x, y)
+        std::cout << std::setprecision(2) << std::setw(2) << (*this)(x, y)
                   << " ";
       }
       std::cout << "\n";
