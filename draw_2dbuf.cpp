@@ -105,19 +105,19 @@ vec2 calculateScaleFactors(int render_width, int render_height, int tex_width,
 }
 
 void draw_scalar(float* buf_scalar, int nx, int ny, int screen_width,
-                 int screen_height, float scale) {
+                 int screen_height, float scale, float translatex, float translatey) {
   vector<float> vt(buf_scalar, buf_scalar + nx*ny);
   auto upper_bound = vt.begin() + vt.size() - 1;
   nth_element(vt.begin(), upper_bound, vt.end());
   float vmax = *upper_bound;
   auto lower_bound = vt.begin() + vt.size() *0;
   nth_element(vt.begin(), lower_bound, vt.end());
-  float vmin = *lower_bound;
+  float vmin = 0;//*lower_bound;
 
 
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(mag_shader_origin_uloc, 0.0, 0.0));
+  GL_CALL(glUniform2f(mag_shader_origin_uloc, translatex, translatey));
 
   vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
   GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,

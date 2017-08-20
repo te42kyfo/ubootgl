@@ -7,7 +7,7 @@ void draw(float* buf, int nx, int ny, int screen_width, int screen_height,
 void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
               int screen_height, float scale);
 void draw_scalar(float* buf_scalar, int nx, int ny, int screen_width,
-                 int screen_height, float scale);
+                 int screen_height, float scale, float translatex, float translatey);
 void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
                int screen_width, int screen_height, float scale);
 }
