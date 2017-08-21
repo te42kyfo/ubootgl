@@ -1,15 +1,15 @@
 #pragma once
 
+#include <assert.h>
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <vector>
-#include <assert.h>
 
 class Single2DGrid {
  public:
   Single2DGrid(int width, int height)
-    : width(width), height(height), v(width * height, 0.0f) {}
+      : width(width), height(height), v(width * height, 0.0f) {}
 
   Single2DGrid() : width(0), height(0){};
 
@@ -69,9 +69,9 @@ class DoubleBuffered2DGrid {
     }
   }
   float& operator()(int x, int y) { return f(x, y); }
+  int width, height;
 
  private:
-  int width, height;
   int front, back;
   std::vector<float> v[2];
 };
