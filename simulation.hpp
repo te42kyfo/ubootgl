@@ -1,14 +1,15 @@
 #pragma once
 #include <cmath>
 #include <functional>
+#include <glm/vec2.hpp>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include "pressure_solver.hpp"
 #include "db2dgrid.hpp"
 #include "lodepng.h"
+#include "pressure_solver.hpp"
 
 struct rgba {
   unsigned char r, g, b, a;
@@ -24,12 +25,14 @@ class Simulation {
         mu(mu),
         width(width),
         height(height),
-        vx(width, height),
-        vy(width, height),
+        vx(width - 1, height),  // staggered
+        vy(width, height - 1),  // grids
         p(width, height),
         f(width, height),
         flag(width, height),
         r(width, height),
+        ivx(width, height),
+        ivy(width, height),
         mg(width, height) {}
 
   Simulation(std::string filename, float pwidth, float mu)
@@ -48,12 +51,14 @@ class Simulation {
     width = image_width;
     height = image_height;
 
-    vx = {width, height};
-    vy = {width, height};
+    vx = {width - 1, height};  // staggered
+    vy = {width, height - 1};  // grids
     p = {width, height};
     f = {width, height};
     flag = {width, height};
     r = {width, height};
+    ivx = {width, height};
+    ivy = {width, height};
 
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
@@ -69,35 +74,34 @@ class Simulation {
     bcEast = BC::OUTFLOW;
     bcNorth = BC::NOSLIP;
     bcSouth = BC::NOSLIP;
-    for (int y = 0; y < height; y++) {
-      vx.f(0, y) = 1;
-      vx.b(0, y) = 1;
-      vx.f(width - 1, y) = 0;
-      vx.b(width - 1, y) = 0;
-      flag(0, y) = 0.0;
-      flag(width - 1, y) = 0.0;
+    for (int y = 0; y < vx.height; y++) {
+      vx.f(0, y) = vx.b(0, y) = 1.0;
+      vx.f(vx.width - 1, y) = vx.b(vx.width - 1, y) = 0;
     }
-    for (int x = 0; x < width; x++) {
-      flag(x, 0) = 1.0;
-      flag(x, height - 1) = 1.0;
-    }
+
+
     mg = MG(flag);
   }
 
   enum class BC { INFLOW, OUTFLOW, OUTFLOW_ZERO_PRESSURE, NOSLIP };
 
-  float setSinglePBC(BC bc, float a, float b);
+  float singlePBC(BC bc, float b);
   void setPBC();
-  void setVBC();
+  float VBCPar(BC bc, float a, float b);
+  float VBCPer(BC bc, float a, float b);
+  void setVBCs();
 
-  float* getVX() { return vx.data(); }
-  float* getVY() { return vy.data(); }
+  void interpolateFields();
+  float* getVX();
+  float* getVY();
   float* getFlag() { return flag.data(); }
   float* getP() { return p.data(); }
   float* getR() { return r.data(); }
 
-  float diffusion_l2_residual(DoubleBuffered2DGrid& v);
-  void diffuse(DoubleBuffered2DGrid& v);
+  glm::vec2 bilinearVel(glm::vec2 c);
+
+  float diffusion_l2_residual();
+  void diffuse();
   void project();
   void centerP();
   void setDT();
@@ -117,5 +121,7 @@ class Simulation {
  private:
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid p, f, flag, r;
+  Single2DGrid ivx, ivy;
+  bool staleInterpolatedFields = true;
   MG mg;
 };
