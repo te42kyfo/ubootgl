@@ -8,8 +8,8 @@ DEPS := $(addprefix obj/,$(CPP_FILES:.cpp=.d))
 INCLUDE = -I/usr/include/SDL2
 LD_FLAGS = `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp
 LD_FLAGS_DEBUG = $(LD_FLAGS) -g -pg
-CC_FLAGS = -std=c++14 -Wall -g -Ofast -march=native -fopenmp -DNDEBUG
-CC_FLAGS_DEBUG = -std=c++14 -Wall -g -pg -O2 -fopenmp -fno-omit-frame-pointer
+CC_FLAGS = -std=c++14 -Wall -Wextra -Wno-strict-overflow -g -Ofast -march=native -fopenmp -DNDEBUG
+CC_FLAGS_DEBUG = -std=c++14 -Wall -Wextra -Wno-strict-overflow -g -pg -O2 -fopenmp -fno-omit-frame-pointer
 NAME = ubootgl
 BIN =
 
