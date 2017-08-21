@@ -22,13 +22,13 @@ void SdlGl::initDisplay() {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
   window = SDL_CreateWindow(
-      "WAVE 1", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
+      "Uboot", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if (window == nullptr) SDL_die("SDL_CreateWindow");
 
   gl_context = SDL_GL_CreateContext(window);
   if (gl_context == nullptr) SDL_die("SDL_GL_CreateContext");
-  SDL_GL_SetSwapInterval(1);
+  SDL_GL_SetSwapInterval(0);
 
   glewExperimental = GL_TRUE;
   glewInit();
