@@ -6,6 +6,16 @@
 using namespace std;
 
 void UbootGlApp::loop() {
+  ImGuiIO& io = ImGui::GetIO();
+
+  // for (int i = 0; i < sizeof(io.KeysDown) / sizeof(*io.KeysDown); i++) {
+  //   if (ImGui::IsKeyPressed(i)) {
+  //     if ((char)i == 'a') {
+  //       sim.step();
+  //     }
+  //   }
+  // }
+
   double t1 = dtime();
   simTime = 0;
   simIterationCounter = 0;
@@ -45,7 +55,7 @@ void UbootGlApp::draw() {
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
                    ImGuiWindowFlags_ShowBorders);
-  ImGui::TextWrapped(sim.diag.str().c_str());
+  ImGui::TextWrapped("%s", sim.diag.str().c_str());
   ImGui::Separator();
   ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
                      simIterationCounter);
@@ -55,21 +65,27 @@ void UbootGlApp::draw() {
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   GL_CALL(glEnable(GL_FRAMEBUFFER_SRGB));
 
+  GL_CALL(glEnable(GL_BLEND));
+  GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
+
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
                       renderWidth, renderHeight, scale);
 
-  /*  Draw2DBuf::draw_scalar(sim.getFlag(), sim.width, sim.height, renderWidth,
-                         renderHeight, scale);
-  */
   Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
                        renderWidth, renderHeight, scale);
+
+  // DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
+  //                       renderWidth, renderHeight, scale);
 
   DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                     sim.height, renderWidth, renderHeight, scale, simTime,
                     sim.pwidth / (sim.width - 1));
 
+  // Draw2DBuf::draw_scalar(sim.getP(), sim.width, sim.height, renderWidth,
+  //                     renderHeight, scale, 0.0, 0.0);
+
   double thisFrameTime = dtime();
   smoothedFrameRate =
-      0.95 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
+      0.9 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
   lastFrameTime = thisFrameTime;
 }

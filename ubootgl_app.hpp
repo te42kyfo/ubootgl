@@ -14,7 +14,8 @@
 
 class UbootGlApp {
  public:
-  UbootGlApp() : sim("level.png", 1.0, 0.1f), rock_texture("rock_texture2.png") {
+  UbootGlApp()
+      : sim("level.png", 1.0, 0.2f), rock_texture("rock_texture2.png") {
     Draw2DBuf::init();
     DrawText::init();
     DrawStreamlines::init();
