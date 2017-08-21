@@ -17,7 +17,7 @@ float smoothingKernel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,
   val += f(x, y) * h * h;
   val /= sum;
   if (sum == 0.0) val = 0;
-  return flag(x, y) * val;  //(alpha * val + (1.0 - alpha) * p(x, y));
+  return flag(x, y) * (alpha * val + (1.0 - alpha) * p(x, y));
 }
 
 void gs(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
@@ -158,14 +158,14 @@ void maskFlag(Single2DGrid& p, Single2DGrid& flag) {
 }
 
 void drawGrid(Single2DGrid& grid) {
-  Draw2DBuf::draw_scalar(grid.data(), grid.width, grid.height, 1600, 900, 1.00, 0,
-                         0);
+  Draw2DBuf::draw_scalar(grid.data(), grid.width, grid.height, 1600, 900, 1.00,
+                         0, 0);
 }
 
 void MG::solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,
                     float h, int level, bool zeroGradientBC) {
-  if (level == 1) {
-    for (int i = 0; i < 10; i++) {
+  if (level == levels - 1) {
+    for (int i = 0; i < 5; i++) {
       rbgs(p, f, flag, h, 1.0);
     }
 
@@ -173,10 +173,9 @@ void MG::solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,
   }
 
   for (int i = 0; i < 2; i++) {
-    rbgs(p, f, flag, h, 1.0);
+    rbgs(p, f, flag, h, 1.3);
     if (level == 0 && zeroGradientBC) setZeroGradientBC(p);
   }
-
 
   auto& r = rs[level];
   r = 0.0;
@@ -185,7 +184,7 @@ void MG::solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,
   auto& rc = rcs[level + 1];
   rc = 0.0;
   restrict(r, rc);
-  if (level == 0) drawGrid(rc);
+
   auto& ec = ecs[level + 1];
   ec = 0.0;
   auto& flagc = flagcs[level + 1];
@@ -199,12 +198,12 @@ void MG::solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,
 
   maskFlag(e, flag);
 
-    correct(p, e);
+  correct(p, e);
 
   if (level == 0 && zeroGradientBC) setZeroGradientBC(p);
 
-  for (int i = 0; i < 0; i++) {
-    rbgs(p, f, flag, h, 1.0);
+  for (int i = 0; i < 2; i++) {
+    rbgs(p, f, flag, h, 1.3);
     if (level == 0 && zeroGradientBC) setZeroGradientBC(p);
   }
 };
