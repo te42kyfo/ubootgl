@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <glm/vec2.hpp>
 #include "draw_2dbuf.hpp"
 #include "draw_streamlines.hpp"
 #include "draw_text.hpp"
@@ -15,9 +16,8 @@
 class UbootGlApp {
  public:
   UbootGlApp()
-      : sim("level.png", 1.0, 0.2f), rock_texture("rock_texture2.png") {
+      : sim("level2.png", 1.0, 0.01f), rock_texture("rock_texture2.png") {
     Draw2DBuf::init();
-    DrawText::init();
     DrawStreamlines::init();
     DrawTracers::init();
     scale = 1.0;
@@ -25,6 +25,7 @@ class UbootGlApp {
 
   void loop();
   void draw();
+  void keyPressed(SDL_KeyboardEvent event);
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
@@ -34,4 +35,6 @@ class UbootGlApp {
   SdlGl vis;
   Simulation sim;
   Texture rock_texture;
+
+  glm::vec2 playerPosition = {0, 0};
 };
