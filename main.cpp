@@ -22,7 +22,14 @@ int main(int, char**) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSdlGL3_ProcessEvent(&event);
-      if (event.type == SDL_QUIT) done = true;
+      switch (event.type) {
+        case SDL_QUIT:
+          done = true;
+          break;
+      case SDL_KEYDOWN:
+        app.keyPressed(event.key);
+        break;
+      }
     }
 
     ImGui_ImplSdlGL3_NewFrame(app.vis.window);

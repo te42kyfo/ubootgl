@@ -7,6 +7,9 @@
 #include "gl_error.hpp"
 #include "load_shader.hpp"
 #include "texture.hpp"
+#include <glm/vec2.hpp>
+
+using namespace glm;
 using namespace std;
 
 namespace Draw2DBuf {
@@ -62,7 +65,7 @@ void init() {
 }
 
 void draw(float* texture_buffer, int tex_width, int tex_height,
-          int screen_width, int screen_height, float scale) {
+          int screen_width, int screen_height) {
   // Upload Texture
 
   GL_CALL(glActiveTexture(GL_TEXTURE0));
@@ -71,13 +74,14 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
 
   int mip_levels = min(4, (int)min(floor(log2(tex_width)), log2(tex_height)));
 
-  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, mip_levels, GL_R32F, tex_width, tex_height));
+  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, mip_levels, GL_R32F, tex_width,
+                         tex_height));
   GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_width, tex_height, GL_RED,
                           GL_FLOAT, texture_buffer));
   GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                           GL_LINEAR_MIPMAP_LINEAR));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
@@ -90,10 +94,6 @@ void draw(float* texture_buffer, int tex_width, int tex_height,
   GL_CALL(glDeleteTextures(1, &tex_id));
 }
 
-struct vec2 {
-  float x, y;
-};
-
 vec2 pegToOne(float xIn, float yIn) {
   return {xIn / max(xIn, yIn), yIn / max(xIn, yIn)};
 }
@@ -105,31 +105,30 @@ vec2 calculateScaleFactors(int render_width, int render_height, int tex_width,
 }
 
 void draw_scalar(float* buf_scalar, int nx, int ny, int screen_width,
-                 int screen_height, float scale, float translatex, float translatey) {
-  vector<float> vt(buf_scalar, buf_scalar + nx*ny);
+                 int screen_height, float scale, vec2 translate) {
+  vector<float> vt(buf_scalar, buf_scalar + nx * ny);
   auto upper_bound = vt.begin() + vt.size() - 1;
   nth_element(vt.begin(), upper_bound, vt.end());
   float vmax = *upper_bound;
-  auto lower_bound = vt.begin() + vt.size() *0;
+  auto lower_bound = vt.begin() + vt.size() * 0;
   nth_element(vt.begin(), lower_bound, vt.end());
-  float vmin = 0;//*lower_bound;
-
+  float vmin = 0;  //*lower_bound;
 
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(mag_shader_origin_uloc, translatex, translatey));
+  GL_CALL(glUniform2f(mag_shader_origin_uloc, translate.x, translate.y));
 
   vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
   GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,
                       scale * ratios.y));
   GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
 
-  Draw2DBuf::draw(buf_scalar, nx, ny, screen_width, screen_height, scale);
+  Draw2DBuf::draw(buf_scalar, nx, ny, screen_width, screen_height);
   GL_CALL(glUseProgram(0));
 }
 
 void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
-              int screen_height, float scale) {
+              int screen_height, float scale, vec2 translate) {
   std::vector<float> V(nx * ny);
   std::vector<float> vt(nx * ny);
 
@@ -151,23 +150,24 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
   float vmax = *upper_bound;
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(mag_shader_origin_uloc, 0.0, 0.0));
+  GL_CALL(glUniform2f(mag_shader_origin_uloc, translate.x, translate.y));
 
   vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
   GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,
                       scale * ratios.y));
   GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
 
-  Draw2DBuf::draw(V.data(), nx, ny, screen_width, screen_height, scale);
+  Draw2DBuf::draw(V.data(), nx, ny, screen_width, screen_height);
   GL_CALL(glUseProgram(0));
 }
 
 void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
-               int screen_width, int screen_height, float scale) {
+               int screen_width, int screen_height, float scale,
+               vec2 translate) {
   GL_CALL(glUseProgram(flag_shader));
   GL_CALL(glUniform1i(flag_shader_mask_tex_uloc, 0));
   GL_CALL(glUniform1i(flag_shader_fill_tex_uloc, 1));
-  GL_CALL(glUniform2f(flag_shader_origin_uloc, 0.0, 0.0));
+  GL_CALL(glUniform2f(flag_shader_origin_uloc, translate.x, translate.y));
 
   GL_CALL(glActiveTexture(GL_TEXTURE1));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
@@ -181,7 +181,7 @@ void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
   GL_CALL(glUniform2f(flag_shader_aspect_ratio_uloc, scale * ratios.x,
                       scale * ratios.y));
 
-  Draw2DBuf::draw(buf_flag, nx, ny, screen_width, screen_height, scale);
+  Draw2DBuf::draw(buf_flag, nx, ny, screen_width, screen_height);
   GL_CALL(glUseProgram(0));
 }
 }

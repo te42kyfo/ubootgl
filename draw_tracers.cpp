@@ -2,11 +2,14 @@
 #include <GL/glew.h>
 #include <algorithm>
 #include <cmath>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 #include <iostream>
 #include <random>
 #include "gl_error.hpp"
 #include "load_shader.hpp"
 
+using namespace glm;
 using namespace std;
 
 namespace DrawTracers {
@@ -14,13 +17,6 @@ namespace DrawTracers {
 GLuint tracer_shader;
 GLuint vao, vbo_vertices, vbo_alphas;
 GLint tracer_shader_aspect_ratio_uloc, tracer_shader_origin_uloc;
-
-struct vec2 {
-  float x, y;
-};
-struct vec4 {
-  float x, y, z, w;
-};
 
 int frameNumber = 0;
 const int tracerCount = 2000;
@@ -71,8 +67,8 @@ void drawTracers(const vector<vector<vec4>>& tracers,
         dx = tracers[n - 1][t].y - tracers[n][t].y;
       }
       float len = sqrt(dx * dx + dy * dy);
-      dx = dx / len * ratio_x * 20;
-      dy = dy / len * ratio_y * 20;
+      dx = dx / len * ratio_x * 10;
+      dy = dy / len * ratio_y * 10;
 
       vertices.push_back(
           {tracers[n][t].x + dx, tracers[n][t].y + dy, 0.0f, 1.0f});
@@ -169,7 +165,7 @@ void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
 }
 
 void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
-          int screen_height, float scale, float dt, float h) {
+          int screen_height, float scale, vec2 translate, float dt, float h) {
   float screen_ratio_x = 0;
   float screen_ratio_y = 0;
   pegToOne(screen_ratio_x, screen_ratio_y,
@@ -187,7 +183,7 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
   advectTracers(tracers[0], vx, vy, dt * 0.5, h, nx, ny);
 
   drawTracers(tracers, alphas, ratio_x * scale, ratio_y * scale,
-              -1.0f * screen_ratio_x * scale, -1.0f * screen_ratio_y * scale);
+              -nx * 0.5 * (1 - translate.x), -ny * 0.5 * (1 - translate.y));
 
   for (size_t t = 0; t < tracerCount; t++) {
     float x = tracers[tailCount - 1][t].x;
@@ -201,9 +197,9 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
         ty = dis(gen) * ny;
       }
 
-      tracers[0][t] = {tx, ty};
+      tracers[0][t] = {tx, ty, 0.0f, 0.0f};
       for (int n = 1; n < tailCount; n++) {
-        tracers[n][t] = {tx, ty};
+        tracers[n][t] = {tx, ty, 0.0f, 0.0f};
       }
       tailCounts[t] = 0;
       if (alphas[t] < -5)

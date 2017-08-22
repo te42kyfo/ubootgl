@@ -24,6 +24,6 @@ void main(void) {
                        texture(mask_tex, texCoord - 20  * vec2(0, tdy)).r +
                        texture(mask_tex, texCoord).r * -4.0);
 
-    gl_FragColor = (1 - 1.0 * tv) * texture(fill_tex, texCoord * -3);
+    gl_FragColor = (1 - 1.0 * tv) * texture(fill_tex, texCoord * -6);
   }
 }

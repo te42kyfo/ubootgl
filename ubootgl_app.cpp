@@ -1,21 +1,13 @@
 #include "ubootgl_app.hpp"
+#include <glm/vec2.hpp>
 #include <vector>
 #include "dtime.hpp"
 #include "gl_error.hpp"
 
+using namespace glm;
 using namespace std;
 
 void UbootGlApp::loop() {
-  ImGuiIO& io = ImGui::GetIO();
-
-  // for (int i = 0; i < sizeof(io.KeysDown) / sizeof(*io.KeysDown); i++) {
-  //   if (ImGui::IsKeyPressed(i)) {
-  //     if ((char)i == 'a') {
-  //       sim.step();
-  //     }
-  //   }
-  // }
-
   double t1 = dtime();
   simTime = 0;
   simIterationCounter = 0;
@@ -23,6 +15,25 @@ void UbootGlApp::loop() {
     sim.step();
     simTime += sim.dt;
     simIterationCounter++;
+  }
+}
+
+void UbootGlApp::keyPressed(SDL_KeyboardEvent event) {
+  if (event.repeat == 0) {
+    switch (event.keysym.sym) {
+      case SDLK_RIGHT:
+        playerPosition.x -= 0.03;
+        break;
+      case SDLK_LEFT:
+        playerPosition.x += 0.03;
+        break;
+      case SDLK_UP:
+        playerPosition.y -= 0.03;
+        break;
+      case SDLK_DOWN:
+        playerPosition.y += 0.03;
+        break;
+    }
   }
 }
 
@@ -68,24 +79,30 @@ void UbootGlApp::draw() {
   GL_CALL(glEnable(GL_BLEND));
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
 
+  float scale = 3.0;
+  glm::vec2 origin = playerPosition;
+
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height,
-                      renderWidth, renderHeight, scale);
+                      renderWidth, renderHeight, scale, origin);
 
   Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
-                       renderWidth, renderHeight, scale);
+                       renderWidth, renderHeight, scale, origin);
 
   // DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
   //                       renderWidth, renderHeight, scale);
 
-  DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
-                    sim.height, renderWidth, renderHeight, scale, simTime,
-                    sim.pwidth / (sim.width - 1));
+  // DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
+  //                   sim.height, renderWidth, renderHeight, scale, origin,
+  //                   simTime, sim.pwidth / (sim.width - 1));
+
+  DrawStreamlines::draw(sim.getVX(), sim.getVY(), sim.width, sim.height,
+                        renderWidth, renderHeight, scale, origin);
 
   // Draw2DBuf::draw_scalar(sim.getP(), sim.width, sim.height, renderWidth,
-  //                     renderHeight, scale, 0.0, 0.0);
+  //                     renderHeight, scale, origin);
 
   double thisFrameTime = dtime();
   smoothedFrameRate =
-      0.9 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
+      0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
   lastFrameTime = thisFrameTime;
 }
