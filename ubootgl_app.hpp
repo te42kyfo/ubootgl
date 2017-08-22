@@ -25,7 +25,7 @@ class UbootGlApp {
 
   void loop();
   void draw();
-  void keyPressed(SDL_KeyboardEvent event);
+  void handleKey(SDL_KeyboardEvent event);
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
@@ -37,4 +37,6 @@ class UbootGlApp {
   Texture rock_texture;
 
   glm::vec2 playerPosition = {0, 0};
+  double lastKeyUpdate;
+  std::vector<bool> keysPressed = std::vector<bool>(4, false);
 };

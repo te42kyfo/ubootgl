@@ -8,6 +8,15 @@ using namespace glm;
 using namespace std;
 
 void UbootGlApp::loop() {
+
+  double updateTime = dtime();
+  double timeDelta = updateTime-lastKeyUpdate;
+  if (keysPressed[0]) playerPosition.x -= 0.2*timeDelta;
+  if (keysPressed[1]) playerPosition.x += 0.2*timeDelta;
+  if (keysPressed[2]) playerPosition.y -= 0.2*timeDelta;
+  if (keysPressed[3]) playerPosition.y += 0.2*timeDelta;
+  lastKeyUpdate = updateTime;
+
   double t1 = dtime();
   simTime = 0;
   simIterationCounter = 0;
@@ -18,22 +27,20 @@ void UbootGlApp::loop() {
   }
 }
 
-void UbootGlApp::keyPressed(SDL_KeyboardEvent event) {
-  if (event.repeat == 0) {
-    switch (event.keysym.sym) {
-      case SDLK_RIGHT:
-        playerPosition.x -= 0.03;
-        break;
-      case SDLK_LEFT:
-        playerPosition.x += 0.03;
-        break;
-      case SDLK_UP:
-        playerPosition.y -= 0.03;
-        break;
-      case SDLK_DOWN:
-        playerPosition.y += 0.03;
-        break;
-    }
+void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
+  switch (event.keysym.sym) {
+    case SDLK_RIGHT:
+      keysPressed[0] = event.state;
+      break;
+    case SDLK_LEFT:
+      keysPressed[1] = event.state;
+      break;
+    case SDLK_UP:
+      keysPressed[2] = event.state;
+      break;
+    case SDLK_DOWN:
+      keysPressed[3] = event.state;
+      break;
   }
 }
 
