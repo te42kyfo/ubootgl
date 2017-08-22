@@ -97,56 +97,63 @@ void Simulation::setVBCs() {
 void Simulation::diffuse() {
   float a = dt * mu * (width - 1.0f) / pwidth;
 
-  // x-velocity diffusion
-  // use this timestep as initial guess
-  vx.copyFrontToBack();
-  for (int i = 1; i < 3; i++) {
-    for (int y = 1; y < vx.height - 1; y++) {
-      for (int x = 1; x < vx.width - 1; x++) {
-        float val = 0;
-        val += vx.b(x + 1, y) * flag(x + 1, y) * flag(x + 2, y);
-        val += vx.b(x - 1, y) * flag(x, y) * flag(x - 1, y);
+#pragma omp parallel sections
+  {
+#pragma omp section
+    {
+      // x-velocity diffusion
+      // use this timestep as initial guess
+      vx.copyFrontToBack();
+      for (int i = 1; i < 3; i++) {
+        for (int y = 1; y < vx.height - 1; y++) {
+          for (int x = 1; x < vx.width - 1; x++) {
+            float val = 0;
+            val += vx.b(x + 1, y) * flag(x + 1, y) * flag(x + 2, y);
+            val += vx.b(x - 1, y) * flag(x, y) * flag(x - 1, y);
 
-        float fvn = flag(x, y + 1) * flag(x - 1, y + 1);
-        val += vx.b(x, y + 1) * fvn + (1.0 - fvn) * -vx.b(x, y);
-        float fvs = flag(x, y - 1) * flag(x - 1, y - 1);
-        val += vx.b(x, y - 1) * fvs + (1.0 - fvs) * -vx.b(x, y);
+            float fvn = flag(x, y + 1) * flag(x - 1, y + 1);
+            val += vx.b(x, y + 1) * fvn + (1.0f - fvn) * -vx.b(x, y);
+            float fvs = flag(x, y - 1) * flag(x - 1, y - 1);
+            val += vx.b(x, y - 1) * fvs + (1.0f - fvs) * -vx.b(x, y);
 
-        vx.b(x, y) = flag(x, y) * flag(x + 1, y) * (vx.f(x, y) + a * val) /
-                     (1.0f + 4.0f * a);
+            vx.b(x, y) = flag(x, y) * flag(x + 1, y) * (vx.f(x, y) + a * val) /
+                         (1.0f + 4.0f * a);
+          }
+        }
+        setVBCs();
       }
+      vx.swap();
     }
-    setVBCs();
-  }
-  vx.swap();
+#pragma omp section
+    {
+      // y-velocity diffusion
+      vy.copyFrontToBack();
+      for (int i = 1; i < 3; i++) {
+        for (int y = 1; y < vy.height - 1; y++) {
+          for (int x = 1; x < vy.width - 1; x++) {
+            float val = 0;
+            val += vy.b(x, y - 1) * flag(x, y) * flag(x - 1, y);
+            val += vy.b(x, y + 1) * flag(x, y + 1) * flag(x, y + 2);
 
-  // y-velocity diffusion
-  vy.copyFrontToBack();
-  for (int i = 1; i < 3; i++) {
-    for (int y = 1; y < vy.height - 1; y++) {
-      for (int x = 1; x < vy.width - 1; x++) {
-        float val = 0;
-        val += vy.b(x, y - 1) * flag(x, y) * flag(x - 1, y);
-        val += vy.b(x, y + 1) * flag(x, y + 1) * flag(x, y + 2);
+            float fve = flag(x + 1, y) * flag(x + 1, y + 1);
+            val += vy.b(x + 1, y) * fve + (1.0 - fve) * -vy.b(x, y);
+            float fvw = flag(x - 1, y) * flag(x - 1, y + 1);
+            val += vy.b(x - 1, y) * fvw + (1.0 - fvw) * -vy.b(x, y);
 
-        float fve = flag(x + 1, y) * flag(x + 1, y + 1);
-        val += vy.b(x + 1, y) * fve + (1.0 - fve) * -vy.b(x, y);
-        float fvw = flag(x - 1, y) * flag(x - 1, y + 1);
-        val += vy.b(x - 1, y) * fvw + (1.0 - fvw) * -vy.b(x, y);
-
-        vy.b(x, y) = flag(x, y) * flag(x, y + 1) * (vy.f(x, y) + a * val) /
-                     (1.0f + 4.0f * a);
+            vy.b(x, y) = flag(x, y) * flag(x, y + 1) * (vy.f(x, y) + a * val) /
+                         (1.0f + 4.0f * a);
+          }
+        }
+        setVBCs();
       }
+      vy.swap();
     }
-    setVBCs();
   }
-  vy.swap();
 }
 
 void Simulation::project() {
   float h = pwidth / (width - 1.0f);
   float ih = 1.0f / h;
-
 #pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
@@ -160,18 +167,37 @@ void Simulation::project() {
   mg.solve(p, f, flag, h, true);
 
   centerP();
+
   setPBC();
   residual = calculateResidualField(p, f, flag, r, h);
 
   diag << "PROJECT: res=" << residual << "\n";
+#pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 2; x++) {
       vx(x, y) -= flag(x, y) * flag(x + 1, y) * ih * (p(x + 1, y) - p(x, y));
     }
   }
+#pragma omp parallel for
   for (int y = 1; y < height - 2; y++) {
     for (int x = 1; x < width - 1; x++) {
       vy(x, y) -= flag(x, y) * flag(x, y + 1) * ih * (p(x, y + 1) - p(x, y));
+    }
+  }
+}
+
+void Simulation::centerP() {
+  float avgP = 0;
+#pragma omp parallel for reduction(+ : avgP)
+  for (int y = 1; y < height - 1; y++) {
+    for (int x = 1; x < width - 1; x++) {
+      avgP += p(x, y);
+    }
+  }
+#pragma omp parallel for
+  for (int y = 1; y < height - 1; y++) {
+    for (int x = 1; x < width - 1; x++) {
+      p(x, y) -= avgP / width / height;
     }
   }
 }
@@ -184,33 +210,29 @@ void Simulation::setDT() {
           std::max(max_vel_sq, vy(x, y) * vy(x, y) + vx(x, y) * vx(x, y));
     }
   }
-  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 0.5f;
+  dt = pwidth / (width - 1.0f) / sqrt(max_vel_sq) * 1.5f;
   diag << "SET_DT: Vmax=" << sqrt(max_vel_sq) << ", dt=" << dt << "\n";
 }
 
-vec2 Simulation::bilinearVel(vec2 c) {
-  c.x = min(max(c.x, 0.51f), vx.width - 0.51f);
-  c.y = min(max(c.y, 0.51f), vy.height - 0.51f);
+vec2 inline Simulation::bilinearVel(vec2 c) {
+  // c.x = min(max(c.x, 0.51f), vx.width - 0.51f);
+  // c.y = min(max(c.y, 0.51f), vy.height - 0.51f);
 
   vec2 result;
 
   vec2 cx = c - vec2(0.5, 0.0);
   ivec2 ic = cx;
-  vec2 st = cx - (vec2)ic;
-  vec2 cst = vec2(1.0, 1.0) - st;
+  vec2 st = fract(cx);
 
-  result.x =
-      cst.y * (cst.x * vx(ic.x, ic.y) + st.x * vx(ic.x + 1, ic.y)) +
-      st.y * (cst.x * vx(ic.x, ic.y + 1) + st.x * vx(ic.x + 1, ic.y + 1));
+  result.x = mix(mix(vx(ic.x, ic.y), vx(ic.x + 1, ic.y), st.x),
+                 mix(vx(ic.x, ic.y + 1), vx(ic.x + 1, ic.y + 1), st.x), st.y);
 
   vec2 cy = c - vec2(0.0, 0.5);
   ic = cy;
-  st = cy - (vec2)ic;
-  cst = vec2(1.0, 1.0) - st;
+  st = fract(cy);
 
-  result.y =
-      cst.y * (cst.x * vy(ic.x, ic.y) + st.x * vy(ic.x + 1, ic.y)) +
-      st.y * (cst.x * vy(ic.x, ic.y + 1) + st.x * vy(ic.x + 1, ic.y + 1));
+  result.y = mix(mix(vy(ic.x, ic.y), vy(ic.x + 1, ic.y), st.x),
+                 mix(vy(ic.x, ic.y + 1), vy(ic.x + 1, ic.y + 1), st.x), st.y);
 
   return result;
 }
@@ -219,51 +241,43 @@ void Simulation::advect() {
   float h = pwidth / (width - 1);
   float ih = 1.0f / h;
   const int steps = 2;
-#pragma omp parallel for
-  for (int y = 1; y < vx.height - 1; y++) {
-    for (int x = 1; x < vx.width - 1; x++) {
-      vec2 pos = vec2(x + 0.5, y);
-      vec2 vel = bilinearVel(pos);
-      for (int step = 0; step < steps; step++) {
-        vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
-        vec2 tempVel = bilinearVel(tempPos);
-        pos -= dt * ih / steps * tempVel;
-        vel = bilinearVel(pos);
-      }
-      vx.b(x, y) = vel.x;
-    }
-  }
-#pragma omp parallel for
-  for (int y = 1; y < vy.height - 1; y++) {
-    for (int x = 1; x < vy.width - 1; x++) {
-      vec2 pos = vec2(x, y + 0.5);
-      vec2 vel = bilinearVel(pos);
-      for (int step = 0; step < steps; step++) {
-        vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
-        vec2 tempVel = bilinearVel(tempPos);
-        pos -= dt * ih / steps * tempVel;
-        vel = bilinearVel(pos);
-      }
 
-      vy.b(x, y) = vel.y;
+#pragma omp parallel
+#pragma omp single
+  {
+#pragma omp taskloop grainsize(1)
+    for (int y = 1; y < vx.height - 1; y++) {
+      for (int x = 1; x < vx.width - 1; x++) {
+        if (flag(x, y) < 1.0) continue;
+        vec2 pos = vec2(x + 0.5, y);
+        vec2 vel = bilinearVel(pos);
+        for (int step = 0; step < steps; step++) {
+          vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
+          vec2 tempVel = bilinearVel(tempPos);
+          pos -= dt * ih / steps * tempVel;
+          vel = bilinearVel(pos);
+        }
+        vx.b(x, y) = vel.x;
+      }
+    }
+#pragma omp taskloop grainsize(1)
+    for (int y = 1; y < vy.height - 1; y++) {
+      for (int x = 1; x < vy.width - 1; x++) {
+        vec2 pos = vec2(x, y + 0.5);
+        vec2 vel = bilinearVel(pos);
+        for (int step = 0; step < steps; step++) {
+          vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
+          vec2 tempVel = bilinearVel(tempPos);
+          pos -= dt * ih / steps * tempVel;
+          vel = bilinearVel(pos);
+        }
+
+        vy.b(x, y) = vel.y;
+      }
     }
   }
   vx.swap();
   vy.swap();
-}
-
-void Simulation::centerP() {
-  float avgP = 0;
-  for (int y = 1; y < height - 1; y++) {
-    for (int x = 1; x < width - 1; x++) {
-      avgP += p(x, y);
-    }
-  }
-  for (int y = 1; y < height - 1; y++) {
-    for (int x = 1; x < width - 1; x++) {
-      p(x, y) -= avgP / width / height;
-    }
-  }
 }
 
 void Simulation::step() {
