@@ -26,9 +26,10 @@ int main(int, char**) {
         case SDL_QUIT:
           done = true;
           break;
-      case SDL_KEYDOWN:
-        app.keyPressed(event.key);
-        break;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+          app.handleKey(event.key);
+          break;
       }
     }
 
