@@ -19,7 +19,7 @@ GLuint vao, vbo_vertices, vbo_alphas;
 GLint tracer_shader_aspect_ratio_uloc, tracer_shader_origin_uloc;
 
 int frameNumber = 0;
-const int tracerCount = 2000;
+const int tracerCount = 4000;
 const int tailCount = 20;
 vector<vector<vec4>> tracers(tailCount,
                              vector<vec4>(tracerCount, {0, 0, 0, 0}));
@@ -30,7 +30,9 @@ uniform_real_distribution<float> dis(0.0, 1.0);
 
 void init() {
   tracer_shader = loadShader("./scale_translate2D.vert", "./color.frag",
-                             {{0, "in_Position"}, {1, "in_Alpha"}});
+                             {
+                                 {0, "in_Position"}, {1, "in_Alpha"},
+                             });
   tracer_shader_aspect_ratio_uloc =
       glGetUniformLocation(tracer_shader, "aspect_ratio");
   tracer_shader_origin_uloc = glGetUniformLocation(tracer_shader, "origin");
@@ -55,7 +57,18 @@ void drawTracers(const vector<vector<vec4>>& tracers,
   vector<vec4> vertices;
   vector<int> indices;
   vector<float> vAlphas;
+  vector<float> sides;
   for (size_t t = 0; t < tracers[0].size(); t++) {
+    if (!((tracers[0][t].x + x_offset) * ratio_x > -1.0 &&
+          (tracers[0][t].x + x_offset) * ratio_x < 1.0 &&
+          (tracers[0][t].y + y_offset) * ratio_y > -1.0 &&
+          (tracers[0][t].y + y_offset) * ratio_y < 1.0) &&
+        !((tracers[tailCount - 1][t].x + x_offset) * ratio_x > -1.0 &&
+          (tracers[tailCount - 1][t].x + x_offset) * ratio_x < 1.0 &&
+          (tracers[tailCount - 1][t].y + y_offset) * ratio_y > -1.0 &&
+          (tracers[tailCount - 1][t].y + y_offset) * ratio_y < 1.0)) {
+      continue;
+    }
     for (int n = 0; n < tailCount; n++) {
       float dx, dy;
       if (n < tailCount - 1) {
@@ -67,31 +80,34 @@ void drawTracers(const vector<vector<vec4>>& tracers,
         dx = tracers[n - 1][t].y - tracers[n][t].y;
       }
       float len = sqrt(dx * dx + dy * dy);
-      dx = dx / len * ratio_x * 10;
-      dy = dy / len * ratio_y * 10;
+      dx = dx / len * 0.2;
+      dy = dy / len * 0.2;
 
       vertices.push_back(
           {tracers[n][t].x + dx, tracers[n][t].y + dy, 0.0f, 1.0f});
       vertices.push_back(
           {tracers[n][t].x - dx, tracers[n][t].y - dy, 0.0f, 1.0f});
 
-      vAlphas.push_back(
+      float alpha =
           (1.0f -
-           2.1 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
-          (1.f - fabs(alphas[t])));
-      vAlphas.push_back(
-          (1.0f -
-           2.1 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
-          (1.0f - fabs(alphas[t])));
+           2.2 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
+          (1.f - fabs(alphas[t]));
+      vAlphas.push_back(alpha);
+      vAlphas.push_back(alpha);
     }
     for (int n = 0; n < tailCount - 1; n++) {
       int vc = vertices.size() - n * 2;
-      indices.push_back(vc - 1);  // 1--2
-      indices.push_back(vc - 2);  // |  |
-      indices.push_back(vc - 3);  // 3--4
-      indices.push_back(vc - 2);
-      indices.push_back(vc - 4);
-      indices.push_back(vc - 3);
+      if ((vertices[vc - 1].x + x_offset) * ratio_x > -1.1 &&
+          (vertices[vc - 1].x + x_offset) * ratio_x < 1.1 &&
+          (vertices[vc - 1].y + y_offset) * ratio_y > -1.1 &&
+          (vertices[vc - 1].y + y_offset) * ratio_y < 1.1) {
+        indices.push_back(vc - 1);  // 1--2
+        indices.push_back(vc - 2);  // |  |
+        indices.push_back(vc - 3);  // 3--4
+        indices.push_back(vc - 2);
+        indices.push_back(vc - 4);
+        indices.push_back(vc - 3);
+      }
     }
   }
 
@@ -189,7 +205,8 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
     float x = tracers[tailCount - 1][t].x;
     float y = tracers[tailCount - 1][t].y;
 
-    if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0) {
+    if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0 ||
+        bilinearSample(x, y, flag, nx, ny) < 0.8) {
       float tx = dis(gen) * nx;
       float ty = dis(gen) * ny;
       while (bilinearSample(tx, ty, flag, nx, ny) == 0) {
@@ -208,7 +225,7 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
         alphas[t] = 1.0;
     }
     tailCounts[t] = min(tailCounts[t] + 1, tailCount - 1);
-    alphas[t] -= 0.01;
+    alphas[t] -= 0.001;
   }
 }
 }
