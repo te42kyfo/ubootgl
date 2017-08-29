@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <algorithm>
 #include <cmath>
+#include <glm/glm.hpp>
+#include <glm/gtx/fast_square_root.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
@@ -9,8 +11,9 @@
 #include "gl_error.hpp"
 #include "load_shader.hpp"
 
-using namespace glm;
 using namespace std;
+using glm::vec2;
+using glm::vec4;
 
 namespace DrawTracers {
 
@@ -19,10 +22,9 @@ GLuint vao, vbo_vertices, vbo_alphas;
 GLint tracer_shader_aspect_ratio_uloc, tracer_shader_origin_uloc;
 
 int frameNumber = 0;
-const int tracerCount = 4000;
+const int tracerCount = 400000;
 const int tailCount = 20;
-vector<vector<vec4>> tracers(tailCount,
-                             vector<vec4>(tracerCount, {0, 0, 0, 0}));
+vector<vector<vec2>> tracers(tailCount, vector<vec2>(tracerCount, {0, 0}));
 vector<float> alphas(tracerCount, -10.0f);
 vector<int> tailCounts(tracerCount);
 default_random_engine gen;
@@ -51,7 +53,7 @@ void init() {
                        GL_STREAM_DRAW));
 };
 
-void drawTracers(const vector<vector<vec4>>& tracers,
+void drawTracers(const vector<vector<vec2>>& tracers,
                  const vector<float>& alphas, float ratio_x, float ratio_y,
                  float x_offset, float y_offset) {
   vector<vec4> vertices;
@@ -70,23 +72,17 @@ void drawTracers(const vector<vector<vec4>>& tracers,
       continue;
     }
     for (int n = 0; n < tailCount; n++) {
-      float dx, dy;
-      if (n < tailCount - 1) {
-        dy = -(tracers[n][t].x - tracers[n + 1][t].x);
-        dx = tracers[n][t].y - tracers[n + 1][t].y;
-      }
-      if (n == tailCount - 1) {
-        dy = -(tracers[n - 1][t].x - tracers[n][t].x);
-        dx = tracers[n - 1][t].y - tracers[n][t].y;
-      }
-      float len = sqrt(dx * dx + dy * dy);
-      dx = dx / len * 0.2;
-      dy = dy / len * 0.2;
+      vec2 normal;
+      if (n < tailCount - 1) normal = tracers[n][t] - tracers[n + 1][t];
+      if (n == tailCount - 1) normal = tracers[n - 1][t] - tracers[n][t];
 
-      vertices.push_back(
-          {tracers[n][t].x + dx, tracers[n][t].y + dy, 0.0f, 1.0f});
-      vertices.push_back(
-          {tracers[n][t].x - dx, tracers[n][t].y - dy, 0.0f, 1.0f});
+      swap(normal.x, normal.y);
+      normal.x *= -1;
+
+      normal = glm::fastNormalize(normal);
+
+      vertices.push_back(vec4(tracers[n][t] + normal * 0.2f, 0.0f, 1.0f));
+      vertices.push_back(vec4(tracers[n][t] - normal * 0.2f, 0.0f, 1.0f));
 
       float alpha =
           (1.0f -
@@ -157,7 +153,7 @@ float bilinearSample(float x, float y, float const* v, int nx, int ny) {
   return at * (as * v[idx1] + s * v[idx2]) + t * (as * v[idx3] + s * v[idx4]);
 }
 
-void advectTracers(vector<vec4>& tracers, float const* vx, float const* vy,
+void advectTracers(vector<vec2>& tracers, float const* vx, float const* vy,
                    float dt, float h, int nx, int ny) {
 #pragma omp parallel for
   for (size_t i = 0; i < tracers.size(); i++) {
@@ -214,9 +210,9 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
         ty = dis(gen) * ny;
       }
 
-      tracers[0][t] = {tx, ty, 0.0f, 0.0f};
+      tracers[0][t] = {tx, ty};
       for (int n = 1; n < tailCount; n++) {
-        tracers[n][t] = {tx, ty, 0.0f, 0.0f};
+        tracers[n][t] = {tx, ty};
       }
       tailCounts[t] = 0;
       if (alphas[t] < -5)
