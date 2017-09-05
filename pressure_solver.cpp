@@ -150,8 +150,8 @@ void setZeroGradientBC(Single2DGrid& p) {
 }
 
 void drawGrid(Single2DGrid& grid) {
-  Draw2DBuf::draw_scalar(grid.data(), grid.width, grid.height, 1600, 900, 1.00,
-                         glm::vec2(0, 0));
+  glm::mat4 PVM(1.0f);
+  Draw2DBuf::draw_scalar(grid.data(), grid.width, grid.height, PVM);
 }
 
 void MG::solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag,

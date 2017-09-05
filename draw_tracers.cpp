@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/fast_square_root.hpp>
+#include <glm/gtx/transform.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
@@ -19,10 +21,10 @@ namespace DrawTracers {
 
 GLuint tracer_shader;
 GLuint vao, vbo_vertices, vbo_alphas;
-GLint tracer_shader_aspect_ratio_uloc, tracer_shader_origin_uloc;
+GLint tracer_shader_TM_uloc;
 
 int frameNumber = 0;
-const int tracerCount = 400000;
+const int tracerCount = 4000;
 const int tailCount = 20;
 vector<vector<vec2>> tracers(tailCount, vector<vec2>(tracerCount, {0, 0}));
 vector<float> alphas(tracerCount, -10.0f);
@@ -35,9 +37,8 @@ void init() {
                              {
                                  {0, "in_Position"}, {1, "in_Alpha"},
                              });
-  tracer_shader_aspect_ratio_uloc =
-      glGetUniformLocation(tracer_shader, "aspect_ratio");
-  tracer_shader_origin_uloc = glGetUniformLocation(tracer_shader, "origin");
+  tracer_shader_TM_uloc = glGetUniformLocation(tracer_shader, "TM");
+
   GL_CALL(glGenVertexArrays(1, &vao));
 
   GL_CALL(glGenBuffers(1, &vbo_alphas));
@@ -54,21 +55,19 @@ void init() {
 };
 
 void drawTracers(const vector<vector<vec2>>& tracers,
-                 const vector<float>& alphas, float ratio_x, float ratio_y,
-                 float x_offset, float y_offset) {
+                 const vector<float>& alphas, glm::mat4 TM) {
   vector<vec4> vertices;
   vector<int> indices;
   vector<float> vAlphas;
   vector<float> sides;
   for (size_t t = 0; t < tracers[0].size(); t++) {
-    if (!((tracers[0][t].x + x_offset) * ratio_x > -1.0 &&
-          (tracers[0][t].x + x_offset) * ratio_x < 1.0 &&
-          (tracers[0][t].y + y_offset) * ratio_y > -1.0 &&
-          (tracers[0][t].y + y_offset) * ratio_y < 1.0) &&
-        !((tracers[tailCount - 1][t].x + x_offset) * ratio_x > -1.0 &&
-          (tracers[tailCount - 1][t].x + x_offset) * ratio_x < 1.0 &&
-          (tracers[tailCount - 1][t].y + y_offset) * ratio_y > -1.0 &&
-          (tracers[tailCount - 1][t].y + y_offset) * ratio_y < 1.0)) {
+    glm::vec2 screenPos1 = TM * glm::vec4(tracers[0][t], 0.0f, 1.0f);
+    glm::vec2 screenPos2 = TM * glm::vec4(tracers[tailCount - 1][t], 0.0, 1.0);
+
+    if (!(screenPos1.x > -1.0 && screenPos1.x < 1.0 && screenPos1.y > -1.0 &&
+          screenPos1.y < 1.0) &&
+        !(screenPos2.x > -1.0 && screenPos2.x < 1.0 && screenPos2.y > -1.0 &&
+          screenPos2.y < 1.0)) {
       continue;
     }
     for (int n = 0; n < tailCount; n++) {
@@ -93,10 +92,9 @@ void drawTracers(const vector<vector<vec2>>& tracers,
     }
     for (int n = 0; n < tailCount - 1; n++) {
       int vc = vertices.size() - n * 2;
-      if ((vertices[vc - 1].x + x_offset) * ratio_x > -1.1 &&
-          (vertices[vc - 1].x + x_offset) * ratio_x < 1.1 &&
-          (vertices[vc - 1].y + y_offset) * ratio_y > -1.1 &&
-          (vertices[vc - 1].y + y_offset) * ratio_y < 1.1) {
+      glm::vec2 screenPos = TM * vertices[vc - 1];
+      if (screenPos.x > -1.1 && screenPos.x < 1.1 && screenPos.y > -1.1 &&
+          screenPos.y < 1.1) {
         indices.push_back(vc - 1);  // 1--2
         indices.push_back(vc - 2);  // |  |
         indices.push_back(vc - 3);  // 3--4
@@ -128,8 +126,8 @@ void drawTracers(const vector<vector<vec2>>& tracers,
 
   // unifrom parameters
   GL_CALL(glUseProgram(tracer_shader));
-  GL_CALL(glUniform2f(tracer_shader_aspect_ratio_uloc, ratio_x, ratio_y));
-  GL_CALL(glUniform2f(tracer_shader_origin_uloc, x_offset, y_offset));
+  GL_CALL(glUniformMatrix4fv(tracer_shader_TM_uloc, 1, GL_FALSE,
+                             glm::value_ptr(TM)));
 
   // draw
   GL_CALL(glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT,
@@ -176,14 +174,11 @@ void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
   yOut = yIn / max(xIn, yIn);
 }
 
-void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
-          int screen_height, float scale, vec2 translate, float dt, float h) {
-  float screen_ratio_x = 0;
-  float screen_ratio_y = 0;
-  pegToOne(screen_ratio_x, screen_ratio_y,
-           (float)screen_height / screen_width * nx / ny, 1.0f);
-  float ratio_x = 2.0 * screen_ratio_x / nx;
-  float ratio_y = 2.0 * screen_ratio_y / ny;
+void draw(float* vx, float* vy, float* flag, int nx, int ny, glm::mat4 PVM,
+          float dt, float h) {
+  // Model
+  glm::mat4 TM = glm::translate(PVM, glm::vec3(-0.5, -0.5 * ny / nx, 0.0f));
+  TM = glm::scale(TM, glm::vec3(1.0 / nx, 1.0 / nx, 1.0f));
 
   frameNumber++;
   if (frameNumber == 2) {
@@ -193,9 +188,7 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, int screen_width,
   }
 
   advectTracers(tracers[0], vx, vy, dt * 0.5, h, nx, ny);
-
-  drawTracers(tracers, alphas, ratio_x * scale, ratio_y * scale,
-              -nx * 0.5 * (1 - translate.x), -ny * 0.5 * (1 - translate.y));
+  drawTracers(tracers, alphas, TM);
 
   for (size_t t = 0; t < tracerCount; t++) {
     float x = tracers[tailCount - 1][t].x;

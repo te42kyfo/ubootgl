@@ -1,16 +1,15 @@
-#include "draw_2dbuf.hpp"
+//#include "draw_2dbuf.hpp"
 #include <GL/glew.h>
 #include <algorithm>
 #include <cmath>
-#include <glm/vec2.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
 #include <iostream>
-#include "calculate_scale_factors.hpp"
-#include "draw_text.hpp"
 #include "gl_error.hpp"
 #include "load_shader.hpp"
 #include "texture.hpp"
 
-using namespace glm;
 using namespace std;
 
 namespace Draw2DBuf {
@@ -19,10 +18,8 @@ GLuint mag_shader;
 GLuint flag_shader;
 GLuint vao, vbo, tbo, tex_id;
 
-GLint mag_shader_tex_uloc, mag_shader_aspect_ratio_uloc, mag_shader_origin_uloc,
-    mag_shader_bounds_uloc;
-GLint flag_shader_mask_tex_uloc, flag_shader_fill_tex_uloc,
-    flag_shader_aspect_ratio_uloc, flag_shader_origin_uloc;
+GLint mag_shader_tex_uloc, mag_shader_TM_uloc, mag_shader_bounds_uloc;
+GLint flag_shader_mask_tex_uloc, flag_shader_fill_tex_uloc, flag_shader_TM_uloc;
 
 float tex_min = 0;
 float tex_max = 0;
@@ -35,18 +32,14 @@ void init() {
                           {{0, "in_Position"}});
   mag_shader_tex_uloc = glGetUniformLocation(mag_shader, "tex");
   mag_shader_bounds_uloc = glGetUniformLocation(mag_shader, "bounds");
-  mag_shader_aspect_ratio_uloc =
-      glGetUniformLocation(mag_shader, "aspect_ratio");
-  mag_shader_origin_uloc = glGetUniformLocation(mag_shader, "origin");
+  mag_shader_TM_uloc = glGetUniformLocation(mag_shader, "TM");
 
   // Flag Field Shader and uloc loading
   flag_shader = loadShader("./scale_translate2D.vert", "./flag_tex.frag",
                            {{0, "in_Position"}});
   flag_shader_mask_tex_uloc = glGetUniformLocation(flag_shader, "mask_tex");
   flag_shader_fill_tex_uloc = glGetUniformLocation(flag_shader, "fill_tex");
-  flag_shader_aspect_ratio_uloc =
-      glGetUniformLocation(flag_shader, "aspect_ratio");
-  flag_shader_origin_uloc = glGetUniformLocation(flag_shader, "origin");
+  flag_shader_TM_uloc = glGetUniformLocation(flag_shader, "TM");
 
   // Quad Geometry
   GL_CALL(glGenVertexArrays(1, &vao));
@@ -92,31 +85,38 @@ void draw(float* texture_buffer, int tex_width, int tex_height) {
   GL_CALL(glDeleteTextures(1, &tex_id));
 }
 
-void draw_scalar(float* buf_scalar, int nx, int ny, int screen_width,
-                 int screen_height, float scale, vec2 translate) {
+glm::mat4 transformationMatrix(int tex_width, int tex_height, glm::mat4 PVM) {
+  // Model
+  glm::mat4 TM =
+      glm::scale(PVM, glm::vec3(1.0, (float)tex_height / tex_width, 1.0f));
+  TM = glm::scale(TM, glm::vec3(0.5f, 0.5f, 1.0f));
+  return TM;
+}
+
+void draw_scalar(float* buf_scalar, int nx, int ny, glm::mat4 PVM) {
   vector<float> vt(buf_scalar, buf_scalar + nx * ny);
   auto upper_bound = vt.begin() + vt.size() - 1;
   nth_element(vt.begin(), upper_bound, vt.end());
   float vmax = *upper_bound;
-  auto lower_bound = vt.begin() + vt.size() * 0;
-  nth_element(vt.begin(), lower_bound, vt.end());
+  //  auto lower_bound = vt.begin() + vt.size() * 0;
+  // nth_element(vt.begin(), lower_bound, vt.end());
   float vmin = 0;  //*lower_bound;
 
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(mag_shader_origin_uloc, translate.x, translate.y));
 
-  vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
-  GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,
-                      scale * ratios.y));
+  glm::mat4 TM = transformationMatrix(nx, ny, PVM);
+
+  GL_CALL(
+      glUniformMatrix4fv(mag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
+
   GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
 
   Draw2DBuf::draw(buf_scalar, nx, ny);
   GL_CALL(glUseProgram(0));
 }
 
-void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
-              int screen_height, float scale, vec2 translate) {
+void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, glm::mat4 PVM) {
   std::vector<float> V(nx * ny);
   std::vector<float> vt(nx * ny);
 
@@ -138,11 +138,11 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
   float vmax = *upper_bound;
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
-  GL_CALL(glUniform2f(mag_shader_origin_uloc, translate.x, translate.y));
 
-  vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
-  GL_CALL(glUniform2f(mag_shader_aspect_ratio_uloc, scale * ratios.x,
-                      scale * ratios.y));
+  glm::mat4 TM = transformationMatrix(nx, ny, PVM);
+  GL_CALL(
+      glUniformMatrix4fv(mag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
+
   GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
 
   Draw2DBuf::draw(V.data(), nx, ny);
@@ -150,12 +150,14 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, int screen_width,
 }
 
 void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
-               int screen_width, int screen_height, float scale,
-               vec2 translate) {
+               glm::mat4 PVM) {
   GL_CALL(glUseProgram(flag_shader));
   GL_CALL(glUniform1i(flag_shader_mask_tex_uloc, 0));
   GL_CALL(glUniform1i(flag_shader_fill_tex_uloc, 1));
-  GL_CALL(glUniform2f(flag_shader_origin_uloc, translate.x, translate.y));
+  glm::mat4 TM = transformationMatrix(nx, ny, PVM);
+
+  GL_CALL(
+      glUniformMatrix4fv(flag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
 
   GL_CALL(glActiveTexture(GL_TEXTURE1));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
@@ -164,10 +166,6 @@ void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-
-  vec2 ratios = calculateScaleFactors(screen_width, screen_height, nx, ny);
-  GL_CALL(glUniform2f(flag_shader_aspect_ratio_uloc, scale * ratios.x,
-                      scale * ratios.y));
 
   Draw2DBuf::draw(buf_flag, nx, ny);
   GL_CALL(glUseProgram(0));
