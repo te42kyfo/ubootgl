@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GL/glew.h>
+#include <iostream>
 
 #define GL_CALL(CALL) \
   CALL;               \
