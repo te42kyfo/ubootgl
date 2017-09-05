@@ -1,0 +1,24 @@
+{
+   ignore_unversioned_libs
+   Memcheck:Addr1
+   ...
+   obj:/usr/lib/xorg/modules/dri/i965_dri.so
+}
+{
+   ignore_unversioned_libs
+   Memcheck:Addr2
+   ...
+   obj:/usr/lib/xorg/modules/dri/i965_dri.so
+}
+{
+   ignore_unversioned_libs
+   Memcheck:Addr4
+   ...
+   obj:/usr/lib/xorg/modules/dri/i965_dri.so
+}
+{
+   ignore_unversioned_libs
+   Memcheck:Addr8
+   ...
+   obj:/usr/lib/xorg/modules/dri/i965_dri.so
+}

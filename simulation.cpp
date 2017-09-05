@@ -292,6 +292,15 @@ void Simulation::step() {
   project();
   setVBCs();
 
+  advectFloatingItems();
+
   diag << "\n";
   staleInterpolatedFields = true;
+}
+
+void Simulation::advectFloatingItems() {
+  for (auto& item : floatingItems) {
+    item.pos += dt* item.vel;
+    item.vel += item.force;
+  }
 }

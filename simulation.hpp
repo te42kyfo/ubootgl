@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "db2dgrid.hpp"
+#include "floating_item.hpp"
 #include "lodepng.h"
 #include "pressure_solver.hpp"
 
@@ -79,7 +80,6 @@ class Simulation {
       vx.f(vx.width - 1, y) = vx.b(vx.width - 1, y) = 0;
     }
 
-
     mg = MG(flag);
   }
 
@@ -109,6 +109,8 @@ class Simulation {
 
   void step();
 
+  void advectFloatingItems();
+
   float pwidth;
   float mu;
   int width, height;
@@ -117,11 +119,13 @@ class Simulation {
   BC bcWest, bcEast, bcNorth, bcSouth;
 
   std::stringstream diag;
-
+  std::vector<FloatingItem> floatingItems;
  private:
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid p, f, flag, r;
   Single2DGrid ivx, ivy;
   bool staleInterpolatedFields = true;
   MG mg;
+
+
 };

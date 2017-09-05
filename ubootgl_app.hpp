@@ -1,13 +1,13 @@
 #pragma once
 
+#include <glm/vec2.hpp>
 #include <iostream>
 #include <vector>
-#include <glm/vec2.hpp>
 #include "draw_2dbuf.hpp"
+#include "draw_floating_items.hpp"
 #include "draw_streamlines.hpp"
-#include "draw_text.hpp"
 #include "draw_tracers.hpp"
-
+#include "floating_item.hpp"
 #include "imgui/imgui.h"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
@@ -20,7 +20,16 @@ class UbootGlApp {
     Draw2DBuf::init();
     DrawStreamlines::init();
     DrawTracers::init();
-    scale = 1.0;
+    DrawFloatingItems::init();
+    scale = 6.0;
+
+    sim.floatingItems.push_back({glm::vec2(0, 0), glm::vec2(0, 0),
+                                 glm::vec2(0.0, 0.005), 1.0,
+                                 glm::vec2{0.005, 0.005}, 0.0 * 3.141});
+
+    sim.floatingItems.push_back({glm::vec2(0, 0), glm::vec2(0, 0),
+                                 glm::vec2(0.005, 0.0), 1.0,
+                                 glm::vec2{0.005, 0.005}, 0.5 * 3.141});
   }
 
   void loop();
