@@ -52,7 +52,10 @@ void draw(std::vector<FloatingItem>& items, glm::mat4 PVM) {
     TM = glm::rotate(TM, item.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
     TM = glm::scale(TM, glm::vec3(item.size.x, item.size.y, 1.0f));
 
-
+    glm::vec4 screenPos = TM * glm::vec4(0.5, 0.5, 0.0, 1.0);
+    if (screenPos.x < -1.1 || screenPos.x > 1.1 || screenPos.y < -1.1 ||
+        screenPos.y > 1.1)
+      continue;
 
     GL_CALL(glUniformMatrix4fv(item_shader_TM_uloc, 1, GL_FALSE,
                                glm::value_ptr(TM)));
