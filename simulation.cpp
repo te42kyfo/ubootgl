@@ -152,7 +152,6 @@ void Simulation::diffuse() {
 }
 
 void Simulation::project() {
-  float h = pwidth / (width - 1.0f);
   float ih = 1.0f / h;
 #pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
@@ -204,8 +203,8 @@ void Simulation::centerP() {
 
 void Simulation::setDT() {
   float max_vel_sq = 1.0e-7;
-  for (int y = 1; y < height - 1; y++) {
-    for (int x = 1; x < width - 1; x++) {
+  for (int y = 0; y < height - 1; y++) {
+    for (int x = 0; x < width - 1; x++) {
       max_vel_sq =
           std::max(max_vel_sq, vy(x, y) * vy(x, y) + vx(x, y) * vx(x, y));
     }
@@ -238,7 +237,6 @@ vec2 inline Simulation::bilinearVel(vec2 c) {
 }
 
 void Simulation::advect() {
-  float h = pwidth / (width - 1);
   float ih = 1.0f / h;
   const int steps = 2;
 
@@ -299,8 +297,32 @@ void Simulation::step() {
 }
 
 void Simulation::advectFloatingItems() {
+  float counter = 0;
   for (auto& item : floatingItems) {
-    item.pos += dt* item.vel;
-    item.vel += item.force;
+    glm::vec2 gridPos = item.pos / h;
+    if (any(greaterThan(gridPos, glm::vec2(width - 1, height - 1))) ||
+        any(lessThan(gridPos, glm::vec2(0, 0))))
+      continue;
+
+    auto posBefore = item.pos;
+    if (flag(gridPos.x, gridPos.y) == 0.0f) {
+      counter += 0.1;
+      item.pos = glm::vec2(0.1+ fract(counter*2)*2, 0.2 + fract(counter));
+      continue;
+    }
+
+    item.pos += dt * item.vel;
+
+    if (flag(item.pos.x / h, item.pos.y / h) == 0.0f) {
+      glm::vec2 surfaceNormal =
+          glm::clamp(glm::floor((posBefore / h)) - glm::floor(item.pos / h),
+                     glm::vec2(-1.0), glm::vec2(1.0));
+      item.vel *= (-abs(surfaceNormal)) * 2.0f + 1.0f;
+      item.pos = posBefore;
+    }
+
+    glm::vec2 force =
+        (bilinearVel(gridPos) - item.vel) * 200.0f + glm::vec2(0.0, -4);
+    item.vel += dt * force / item.mass;
   }
 }

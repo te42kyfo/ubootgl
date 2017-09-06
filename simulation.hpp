@@ -34,10 +34,11 @@ class Simulation {
         r(width, height),
         ivx(width, height),
         ivy(width, height),
-        mg(width, height) {}
+        mg(width, height),
+        h(pwidth / (width - 1.0f)) {}
 
   Simulation(std::string filename, float pwidth, float mu)
-      : pwidth(pwidth), mu(mu) {
+    : pwidth(pwidth), mu(mu) {
     std::vector<unsigned char> image;
     unsigned image_width, image_height;
 
@@ -81,6 +82,7 @@ class Simulation {
     }
 
     mg = MG(flag);
+    h = (pwidth / (width - 1.0f));
   }
 
   enum class BC { INFLOW, OUTFLOW, OUTFLOW_ZERO_PRESSURE, NOSLIP };
@@ -120,12 +122,12 @@ class Simulation {
 
   std::stringstream diag;
   std::vector<FloatingItem> floatingItems;
+
  private:
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid p, f, flag, r;
   Single2DGrid ivx, ivy;
   bool staleInterpolatedFields = true;
   MG mg;
-
-
+  float h;
 };
