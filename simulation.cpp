@@ -317,12 +317,13 @@ void Simulation::advectFloatingItems() {
       glm::vec2 surfaceNormal =
           glm::clamp(glm::floor((posBefore / h)) - glm::floor(item.pos / h),
                      glm::vec2(-1.0), glm::vec2(1.0));
-      item.vel *= (-abs(surfaceNormal)) * 2.0f + 1.0f;
-      item.pos = posBefore;
+      item.vel *= (-abs(surfaceNormal)) * 1.0f + 0.5f;
+      item.pos = posBefore * abs(surfaceNormal) + item.pos*(1.f-abs(surfaceNormal));
     }
 
     glm::vec2 force =
-        (bilinearVel(gridPos) - item.vel) * 200.0f + glm::vec2(0.0, -4);
+        (bilinearVel(gridPos) - item.vel) * 80.0f + glm::vec2(0.0, -1.0) + item.force;
+    item.force = {0, 0};
     item.vel += dt * force / item.mass;
   }
 }
