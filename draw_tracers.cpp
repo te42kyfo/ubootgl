@@ -83,10 +83,9 @@ void drawTracers(const vector<vector<vec2>>& tracers,
       vertices.push_back(vec4(tracers[n][t] + normal * 0.2f, 0.0f, 1.0f));
       vertices.push_back(vec4(tracers[n][t] - normal * 0.2f, 0.0f, 1.0f));
 
-      float alpha =
-          (1.0f -
-           2.2 * fabs((float)(n - tailCounts[t] * 0.5f) / tailCounts[t])) *
-          (1.f - fabs(alphas[t]));
+      float alpha = (tailCounts[t] - n) / (max(1.0f, tailCounts[t] - 1.0f)) *
+                    (1.f - fabs(alphas[t]));
+
       vAlphas.push_back(alpha);
       vAlphas.push_back(alpha);
     }
@@ -186,7 +185,7 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, glm::mat4 PVM,
     frameNumber = 0;
   }
 
-  advectTracers(tracers[0], vx, vy, dt * 0.5, h, nx, ny);
+  advectTracers(tracers[0], vx, vy, dt, h, nx, ny);
   drawTracers(tracers, alphas, TM);
 
   for (size_t t = 0; t < tracerCount; t++) {
