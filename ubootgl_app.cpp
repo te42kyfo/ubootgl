@@ -11,10 +11,12 @@ using namespace std;
 void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
-  if (keysPressed[0]) playerPosition.x += 0.2 * timeDelta;
-  if (keysPressed[1]) playerPosition.x -= 0.2 * timeDelta;
-  if (keysPressed[2]) playerPosition.y += 0.2 * timeDelta;
-  if (keysPressed[3]) playerPosition.y -= 0.2 * timeDelta;
+  if (keysPressed[0]) ship->rotation -= 1.0 * timeDelta;
+  if (keysPressed[1]) ship->rotation += 1.0 * timeDelta;
+  if (keysPressed[2])
+    ship->force += 18.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
+  if (keysPressed[3])
+    ship->force -= 18.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
   if (keysPressed[4]) scale *= pow(2, timeDelta);
   if (keysPressed[5]) scale *= pow(0.5, timeDelta);
 
@@ -95,7 +97,7 @@ void UbootGlApp::draw() {
   GL_CALL(glEnable(GL_BLEND));
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
 
-  glm::vec2 origin = playerPosition;
+  glm::vec2 origin = ship->pos;
 
   // Projection-View-Matrix
   glm::mat4 PVM(1.0f);
@@ -104,9 +106,11 @@ void UbootGlApp::draw() {
       PVM, glm::vec3(2 * scale, 2 * scale * (float)renderWidth / renderHeight,
                      1.0f));
   // View
+  PVM = glm::rotate(PVM, -ship->rotation, glm::vec3(0.0, 0.0, 1.0));
   PVM = glm::translate(PVM, glm::vec3(-origin, 0.0f));
   //  PVM = glm::translate(PVM,
-  //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth, 0.0));
+  //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth,
+  //                     0.0));
 
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM);
 
