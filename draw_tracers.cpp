@@ -177,8 +177,7 @@ void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
 void draw(float* vx, float* vy, float* flag, int nx, int ny, glm::mat4 PVM,
           float dt, float h) {
   // Model
-  glm::mat4 TM = glm::translate(PVM, glm::vec3(-0.5, -0.5 * ny / nx, 0.0f));
-  TM = glm::scale(TM, glm::vec3(1.0 / nx, 1.0 / nx, 1.0f));
+  glm::mat4 TM = glm::scale(PVM, glm::vec3(1.0 / nx, 1.0 / nx, 1.0f));
 
   frameNumber++;
   if (frameNumber == 2) {

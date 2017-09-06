@@ -21,15 +21,22 @@ class UbootGlApp {
     DrawStreamlines::init();
     DrawTracers::init();
     DrawFloatingItems::init();
-    scale = 6.0;
+
+    scale = 4.0;
+
+    playerPosition = {0.5, 0.1};
+
+    sim.floatingItems.push_back({glm::vec2(0, 0.0), glm::vec2(0, 0),
+                                 glm::vec2(0.5, 0.1), 1.0, glm::vec2{0.003, 0.003},
+                                 2});
 
     sim.floatingItems.push_back({glm::vec2(0, 0), glm::vec2(0, 0),
-                                 glm::vec2(0.0, 0.005), 1.0,
-                                 glm::vec2{0.005, 0.005}, 0.0 * 3.141});
+                                 glm::vec2(0.5, 0.08), 1.0,
+                                 glm::vec2{0.003, 0.003}, 0.2});
 
     sim.floatingItems.push_back({glm::vec2(0, 0), glm::vec2(0, 0),
-                                 glm::vec2(0.005, 0.0), 1.0,
-                                 glm::vec2{0.005, 0.005}, 0.5 * 3.141});
+                                 glm::vec2(0.55, 0.1), 1.0,
+                                 glm::vec2{0.003, 0.003}, 0.1});
   }
 
   void loop();
@@ -47,5 +54,5 @@ class UbootGlApp {
 
   glm::vec2 playerPosition = {0, 0};
   double lastKeyUpdate;
-  std::vector<bool> keysPressed = std::vector<bool>(4, false);
+  std::vector<bool> keysPressed = std::vector<bool>(6, false);
 };

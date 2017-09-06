@@ -11,10 +11,13 @@ using namespace std;
 void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
-  if (keysPressed[0]) playerPosition.x -= 0.2 * timeDelta;
-  if (keysPressed[1]) playerPosition.x += 0.2 * timeDelta;
-  if (keysPressed[2]) playerPosition.y -= 0.2 * timeDelta;
-  if (keysPressed[3]) playerPosition.y += 0.2 * timeDelta;
+  if (keysPressed[0]) playerPosition.x += 0.2 * timeDelta;
+  if (keysPressed[1]) playerPosition.x -= 0.2 * timeDelta;
+  if (keysPressed[2]) playerPosition.y += 0.2 * timeDelta;
+  if (keysPressed[3]) playerPosition.y -= 0.2 * timeDelta;
+  if (keysPressed[4]) scale *= pow(2, timeDelta);
+  if (keysPressed[5]) scale *= pow(0.5, timeDelta);
+
   lastKeyUpdate = updateTime;
 
   double t1 = dtime();
@@ -40,6 +43,12 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
       break;
     case SDLK_DOWN:
       keysPressed[3] = event.state;
+      break;
+    case SDLK_PLUS:
+      keysPressed[4] = event.state;
+      break;
+    case SDLK_MINUS:
+      keysPressed[5] = event.state;
       break;
   }
 }
@@ -91,11 +100,13 @@ void UbootGlApp::draw() {
   // Projection-View-Matrix
   glm::mat4 PVM(1.0f);
   // Projection
-  PVM = glm::scale(PVM,
-                   glm::vec3(2.0f * scale * renderHeight / (float)renderWidth,
-                             2.0f * scale, 1.0f));
+  PVM = glm::scale(
+      PVM, glm::vec3(2 * scale, 2 * scale * (float)renderWidth / renderHeight,
+                     1.0f));
   // View
-  PVM = glm::translate(PVM, glm::vec3(origin, 0.0f));
+  PVM = glm::translate(PVM, glm::vec3(-origin, 0.0f));
+  //  PVM = glm::translate(PVM,
+  //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth, 0.0));
 
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM);
 

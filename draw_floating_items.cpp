@@ -51,7 +51,8 @@ void draw(std::vector<FloatingItem>& items, glm::mat4 PVM) {
     glm::mat4 TM = glm::translate(PVM, glm::vec3(item.pos, 0.0f));
     TM = glm::rotate(TM, item.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
     TM = glm::scale(TM, glm::vec3(item.size.x, item.size.y, 1.0f));
-    TM = glm::scale(TM, glm::vec3(0.5f, 0.5f, 1.0f));
+
+
 
     GL_CALL(glUniformMatrix4fv(item_shader_TM_uloc, 1, GL_FALSE,
                                glm::value_ptr(TM)));

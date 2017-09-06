@@ -6,7 +6,7 @@ uniform sampler2D mask_tex;
 uniform sampler2D fill_tex;
 
 void main(void) {
-  vec2 texCoord = (FragCoord + 1.0f) * 0.5f;
+  vec2 texCoord = FragCoord + 1.0f;
   float tdx = dFdx(texCoord.x);
   float tdy = dFdy(texCoord.y);
   float tv = 0.125 * (texture(mask_tex, texCoord + 2 * vec2(tdx, 0)).r +

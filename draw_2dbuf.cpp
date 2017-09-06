@@ -45,9 +45,9 @@ void init() {
   GL_CALL(glGenVertexArrays(1, &vao));
   GL_CALL(glGenBuffers(1, &vbo));
 
-  float vertex_data[4][4] = {{-1.0f, -1.0f, 0.0f, 1.0f},
-                             {1.0f, -1.0f, 0.0f, 1.0f},
-                             {-1.0f, 1.0f, 0.0f, 1.0f},
+  float vertex_data[4][4] = {{0.0f, 0.0f, 0.0f, 1.0f},
+                             {1.0f, 0.0f, 0.0f, 1.0f},
+                             {0.0f, 1.0f, 0.0f, 1.0f},
                              {1.0f, 1.0f, 0.0f, 1.0f}};
 
   GL_CALL(glBindVertexArray(vao));
@@ -88,8 +88,8 @@ void draw(float* texture_buffer, int tex_width, int tex_height) {
 glm::mat4 transformationMatrix(int tex_width, int tex_height, glm::mat4 PVM) {
   // Model
   glm::mat4 TM =
-      glm::scale(PVM, glm::vec3(1.0, (float)tex_height / tex_width, 1.0f));
-  TM = glm::scale(TM, glm::vec3(0.5f, 0.5f, 1.0f));
+      glm::scale(PVM, glm::vec3(1.0,  (float)tex_height / tex_width, 1.0f));
+
   return TM;
 }
 
