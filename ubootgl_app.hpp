@@ -2,6 +2,7 @@
 
 #include <glm/vec2.hpp>
 #include <iostream>
+#include <random>
 #include <vector>
 #include "draw_2dbuf.hpp"
 #include "draw_floating_items.hpp"
@@ -16,7 +17,7 @@
 class UbootGlApp {
  public:
   UbootGlApp()
-      : sim("level2.png", 1.0, 0.001f), rock_texture("rock_texture2.png") {
+      : sim("level2.png", 1.0, 0.0001f), rock_texture("rock_texture2.png") {
     Draw2DBuf::init();
     DrawStreamlines::init();
     DrawTracers::init();
@@ -24,17 +25,25 @@ class UbootGlApp {
 
     scale = 8.0;
 
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> disx(0.0f, 1.0f);
+    std::uniform_real_distribution<float> disy(0.0f,
+                                               (float)sim.height / sim.width);
 
-    for (int i = 0; i < 1000; i++) {
-      sim.floatingItems.push_back(
-          {glm::vec2(0, 0.0), glm::vec2(0, 0),
-           glm::vec2((i / 10) / 100.0, (i % 10) / 25.0), 1.0,
-           glm::vec2{0.001, 0.001}, i / 10.0});
+    textures.push_back(Texture("ship.png"));
+    textures.push_back(Texture("debris1.png"));
+    textures.push_back(Texture("debris2.png"));
+
+    for (int i = 0; i < 10000; i++) {
+      sim.floatingItems.push_back({glm::vec2(0, 0.0), glm::vec2(0, 0),
+                                   glm::vec2(disx(gen), disy(gen)), 1.0,
+                                   glm::vec2{0.002, 0.002}, disx(gen) * 3.141f,
+                                   &(textures[i % 2 + 1])});
     }
 
     sim.floatingItems.push_back({glm::vec2(0, 0), glm::vec2(0, 0),
                                  glm::vec2(0.5, 0.21), 1.0,
-                                 glm::vec2{0.0004, 0.0011}, 0.0});
+                                 glm::vec2{0.0004, 0.0011}, 0.0, &textures[0]});
     ship = &sim.floatingItems.back();
   }
 
@@ -51,9 +60,10 @@ class UbootGlApp {
   Simulation sim;
   Texture rock_texture;
 
-
   FloatingItem* ship;
 
   double lastKeyUpdate;
   std::vector<bool> keysPressed = std::vector<bool>(6, false);
+
+  std::vector<Texture> textures;
 };
