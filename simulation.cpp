@@ -305,24 +305,28 @@ void Simulation::advectFloatingItems() {
       continue;
 
     auto posBefore = item.pos;
-    if (flag(gridPos.x, gridPos.y) == 0.0f) {
+    if (flag(gridPos.x + 0.5, gridPos.y + 0.5) == 0.0f) {
       counter += 0.1;
-      item.pos = glm::vec2(0.1+ fract(counter*2)*2, 0.2 + fract(counter));
+      item.pos = glm::vec2(0.1 + fract(counter * 2), 0.2 + fract(counter)*0.5);
       continue;
     }
 
     item.pos += dt * item.vel;
 
-    if (flag(item.pos.x / h, item.pos.y / h) == 0.0f) {
-      glm::vec2 surfaceNormal =
-          glm::clamp(glm::floor((posBefore / h)) - glm::floor(item.pos / h),
-                     glm::vec2(-1.0), glm::vec2(1.0));
+    if (flag(item.pos.x / h + 0.5, item.pos.y / h + 0.5) == 0.0f) {
+      glm::vec2 surfaceNormal = glm::clamp(
+          glm::floor((posBefore / h + 0.5f)) - glm::floor(item.pos / h + 0.5f),
+          glm::vec2(-1.0), glm::vec2(1.0));
       item.vel *= (-abs(surfaceNormal)) * 1.0f + 0.5f;
-      item.pos = posBefore * abs(surfaceNormal) + item.pos*(1.f-abs(surfaceNormal));
+      item.pos = posBefore * abs(surfaceNormal) +
+                 item.pos * (1.f - abs(surfaceNormal));
     }
 
+    auto velocityDifference = bilinearVel(gridPos) - item.vel;
+    float len = length(velocityDifference);
+
     glm::vec2 force =
-        (bilinearVel(gridPos) - item.vel) * 80.0f + glm::vec2(0.0, -1.0) + item.force;
+        velocityDifference * len * 100.0f + glm::vec2(0.0, -1.0) + item.force;
     item.force = {0, 0};
     item.vel += dt * force / item.mass;
   }
