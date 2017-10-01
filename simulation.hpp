@@ -4,6 +4,7 @@
 #include <glm/vec2.hpp>
 #include <iomanip>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -35,10 +36,12 @@ class Simulation {
         ivx(width, height),
         ivy(width, height),
         mg(width, height),
-        h(pwidth / (width - 1.0f)) {}
+        h(pwidth / (width - 1.0f)),
+        disx(0.0f, 1.0f),
+        disy(0.0f, (float)height / width) {}
 
   Simulation(std::string filename, float pwidth, float mu)
-    : pwidth(pwidth), mu(mu) {
+      : pwidth(pwidth), mu(mu) {
     std::vector<unsigned char> image;
     unsigned image_width, image_height;
 
@@ -72,17 +75,21 @@ class Simulation {
         }
       }
     }
-    bcWest = BC::INFLOW;
-    bcEast = BC::OUTFLOW;
-    bcNorth = BC::NOSLIP;
-    bcSouth = BC::NOSLIP;
-    for (int y = 0; y < vx.height; y++) {
-      vx.f(0, y) = vx.b(0, y) = 1.0;
-      vx.f(vx.width - 1, y) = vx.b(vx.width - 1, y) = 0;
+    bcSouth = BC::INFLOW;
+    bcNorth = BC::OUTFLOW;
+    bcWest = BC::NOSLIP;
+    bcEast = BC::NOSLIP;
+    for (int x = 0; x < vy.width; x++) {
+      vy.f(x, 1) = vy.b(x, 1) = 1.0;
+      vy.f(x, 0) = vy.b(x, 0) = 1.0;
+      vy.f(x, vy.height - 1) = vy.b(x, vy.height - 1) = 0;
     }
 
     mg = MG(flag);
     h = (pwidth / (width - 1.0f));
+
+    disx = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    disy = std::uniform_real_distribution<float>(0.0f, (float)height / width);
   }
 
   enum class BC { INFLOW, OUTFLOW, OUTFLOW_ZERO_PRESSURE, NOSLIP };
@@ -130,4 +137,8 @@ class Simulation {
   bool staleInterpolatedFields = true;
   MG mg;
   float h;
+
+  std::default_random_engine gen;
+  std::uniform_real_distribution<float> disx;
+  std::uniform_real_distribution<float> disy;
 };
