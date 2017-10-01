@@ -14,9 +14,9 @@ void UbootGlApp::loop() {
   if (keysPressed[0]) ship->rotation -= 1.0 * timeDelta;
   if (keysPressed[1]) ship->rotation += 1.0 * timeDelta;
   if (keysPressed[2])
-    ship->force += 18.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
+    ship->force += 10.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
   if (keysPressed[3])
-    ship->force -= 18.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
+    ship->force -= 5.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
   if (keysPressed[4]) scale *= pow(2, timeDelta);
   if (keysPressed[5]) scale *= pow(0.5, timeDelta);
 
@@ -106,7 +106,7 @@ void UbootGlApp::draw() {
       PVM, glm::vec3(2 * scale, 2 * scale * (float)renderWidth / renderHeight,
                      1.0f));
   // View
-  PVM = glm::rotate(PVM, -ship->rotation, glm::vec3(0.0, 0.0, 1.0));
+  //  PVM = glm::rotate(PVM, -ship->rotation, glm::vec3(0.0, 0.0, 1.0));
   PVM = glm::translate(PVM, glm::vec3(-origin, 0.0f));
   //  PVM = glm::translate(PVM,
   //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth,

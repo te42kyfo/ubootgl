@@ -17,7 +17,7 @@
 class UbootGlApp {
  public:
   UbootGlApp()
-      : sim("level2.png", 1.0, 0.0001f), rock_texture("rock_texture2.png") {
+      : sim("level4.png", 1.0, 0.0001f), rock_texture("rock_texture2.png") {
     Draw2DBuf::init();
     DrawStreamlines::init();
     DrawTracers::init();
@@ -25,25 +25,20 @@ class UbootGlApp {
 
     scale = 8.0;
 
-    std::default_random_engine gen;
-    std::uniform_real_distribution<float> disx(0.0f, 1.0f);
-    std::uniform_real_distribution<float> disy(0.0f,
-                                               (float)sim.height / sim.width);
-
     textures.push_back(Texture("ship.png"));
     textures.push_back(Texture("debris1.png"));
     textures.push_back(Texture("debris2.png"));
 
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 100; i++) {
       sim.floatingItems.push_back({glm::vec2(0, 0.0), glm::vec2(0, 0),
-                                   glm::vec2(disx(gen), disy(gen)), 1.0,
-                                   glm::vec2{0.002, 0.002}, disx(gen) * 3.141f,
+                                   glm::vec2(-1.0, -1.0), -0.8f + 2.0f*(i % 2 + 1),
+                                   glm::vec2{0.002, 0.002}, 0.1,
                                    &(textures[i % 2 + 1])});
     }
 
     sim.floatingItems.push_back({glm::vec2(0, 0), glm::vec2(0, 0),
                                  glm::vec2(0.5, 0.21), 1.0,
-                                 glm::vec2{0.0004, 0.0011}, 0.0, &textures[0]});
+                                 glm::vec2{0.0008, 0.0025}, 0.0, &textures[0]});
     ship = &sim.floatingItems.back();
   }
 
