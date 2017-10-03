@@ -5,10 +5,10 @@ HEADERS= $(shell find . -iname "*.hpp")
 OBJ_FILES := $(addprefix obj/,$(CPP_FILES:.cpp=.o))
 DEPS := $(addprefix obj/,$(CPP_FILES:.cpp=.d))
 
-INCLUDE = -I/usr/include/SDL2
+INCLUDE = -I/usr/include/SDL2 -I/usr/include/
 LD_FLAGS = `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp
 LD_FLAGS_DEBUG = $(LD_FLAGS) -g -pg
-CC_FLAGS = -std=c++14 -Wall -Wextra -Wno-strict-overflow -g -Ofast -march=native -fopenmp -DNDEBUG
+CC_FLAGS = -std=c++14 -Wall -Wextra -fopenmp -Wno-strict-overflow -Ofast -g -march=native  -DNDEBUG
 CC_FLAGS_DEBUG = -std=c++14 -Wall -Wextra -Wno-strict-overflow -g -pg -O2 -fopenmp -fno-omit-frame-pointer
 NAME = ubootgl
 BIN =
@@ -25,7 +25,7 @@ mgtest: obj/mgtest/mgtest.o obj/pressure_solver.o
 	g++ -o mgtest/$@   $^ $(LD_FLAGS)
 
 obj/%.o: %.cpp
-	g++ -MMD -MP $(CC_FLAGS_DEBUG) $(INCLUDE) -c $< -o $@
+	g++ -MMD -MP $(CC_FLAGS) $(INCLUDE) -c $< -o $@
 
 clean:
 	-rm obj/*.o $(BIN)$(NAME) obj/*.d
