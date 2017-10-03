@@ -1,12 +1,17 @@
 #include "simulation.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
-using namespace glm;
+#include <vector>
+
+using glm::vec2;
 
 void Simulation::interpolateFields() {
 #pragma omp parallel for
-  for (int y = 1; y < height-1; y++) {
-    for (int x = 1; x < width-1; x++) {
+  for (int y = 1; y < height - 1; y++) {
+    for (int x = 1; x < width - 1; x++) {
       vec2 iv = bilinearVel(vec2(x, y));
       ivx(x, y) = iv.x;
       ivy(x, y) = iv.y;
@@ -77,9 +82,9 @@ void Simulation::setVBCs() {
         VBCPar(bcEast, vx.f(vx.width - 2, y), vx.f(vx.width - 1, y));
   }
   for (int x = 0; x < vx.width; x++) {
-    vx.f(x, 0) = vx.b(x, 0) = VBCPer(bcNorth, vx.f(x, 1), vx.f(x, 0));
+    vx.f(x, 0) = vx.b(x, 0) = VBCPer(bcSouth, vx.f(x, 1), vx.f(x, 0));
     vx.f(x, vx.height - 1) = vx.b(x, vx.height - 1) =
-        VBCPer(bcSouth, vx.f(x, vx.height - 2), vx.f(x, vx.height - 1));
+        VBCPer(bcNorth, vx.f(x, vx.height - 2), vx.f(x, vx.height - 1));
   }
 
   for (int y = 0; y < vy.height; y++) {
@@ -88,9 +93,9 @@ void Simulation::setVBCs() {
         VBCPer(bcEast, vy.f(vy.width - 2, y), vy.f(vy.width - 1, y));
   }
   for (int x = 0; x < vy.width; x++) {
-    vy.f(x, 0) = vy.b(x, 0) = VBCPar(bcNorth, vy.f(x, 1), vy.f(x, 0));
+    vy.f(x, 0) = vy.b(x, 0) = VBCPar(bcSouth, vy.f(x, 1), vy.f(x, 0));
     vy.f(x, vy.height - 1) = vy.b(x, vy.height - 1) =
-        VBCPar(bcSouth, vy.f(x, vy.height - 2), vy.f(x, vy.height - 1));
+        VBCPar(bcNorth, vy.f(x, vy.height - 2), vy.f(x, vy.height - 1));
   }
 }
 
@@ -204,35 +209,37 @@ void Simulation::centerP() {
 void Simulation::setDT() {
   float max_vel = 1.0e-7;
 
-  for (int y = 1; y < height-1; y++) {
-    for (int x = 1; x < width-1; x++) {
-      max_vel = glm::max( max_vel, length(bilinearVel({x, y})));
+  for (int y = 1; y < height - 1; y++) {
+    for (int x = 1; x < width - 1; x++) {
+      max_vel = glm::max(max_vel, length(bilinearVel({x, y})));
     }
   }
 
-  dt = pwidth / (width - 1.0f) / max_vel * 1.5f;
+  dt = std::min(1.0f, pwidth / (width - 1.0f) / max_vel * 1.5f);
   diag << "SET_DT: Vmax=" << max_vel << ", dt=" << dt << "\n";
 }
 
 vec2 inline Simulation::bilinearVel(vec2 c) {
-  c.x = min(max(c.x, 0.5f), vx.width - 0.5f);
-  c.y = min(max(c.y, 0.5f), vy.height - 0.5f);
+  //  c.x = min(max(c.x, 0.5f), vx.width - 0.5f);
+  // c.y = min(max(c.y, 0.5f), vy.height - 0.5f);
 
   vec2 result;
 
   vec2 cx = c - vec2(0.5, 0.0);
-  ivec2 ic = cx;
+  glm::ivec2 ic = cx;
   vec2 st = fract(cx);
 
-  result.x = mix(mix(vx(ic.x, ic.y), vx(ic.x + 1, ic.y), st.x),
-                 mix(vx(ic.x, ic.y + 1), vx(ic.x + 1, ic.y + 1), st.x), st.y);
+  result.x = glm::mix(
+      glm::mix(vx(ic.x, ic.y), vx(ic.x + 1, ic.y), st.x),
+      glm::mix(vx(ic.x, ic.y + 1), vx(ic.x + 1, ic.y + 1), st.x), st.y);
 
   vec2 cy = c - vec2(0.0, 0.5);
   ic = cy;
   st = fract(cy);
 
-  result.y = mix(mix(vy(ic.x, ic.y), vy(ic.x + 1, ic.y), st.x),
-                 mix(vy(ic.x, ic.y + 1), vy(ic.x + 1, ic.y + 1), st.x), st.y);
+  result.y = glm::mix(
+      glm::mix(vy(ic.x, ic.y), vy(ic.x + 1, ic.y), st.x),
+      glm::mix(vy(ic.x, ic.y + 1), vy(ic.x + 1, ic.y + 1), st.x), st.y);
 
   return result;
 }
@@ -298,21 +305,25 @@ void Simulation::step() {
 }
 
 void Simulation::advectFloatingItems() {
-
   for (auto& item : floatingItems) {
-    glm::vec2 gridPos = item.pos / h + 0.5f;
-
-
     auto posBefore = item.pos;
 
-    while (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
-        gridPos.y <= 1.0 || (flag(gridPos.x + 0.5, gridPos.y + 0.5) == 0.0f)) {
+    // Position update
+    item.pos += dt * item.vel;
+    item.rotation += dt * item.angVel;
+
+    glm::vec2 gridPos = item.pos / h + 0.5f;
+
+    // Reseed if out of bounds
+    while (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
+           gridPos.y >= height - 2 || gridPos.y <= 1.0) {
       item.pos = glm::vec2(disx(gen), disy(gen));
-      gridPos = item.pos / h;
+      item.vel = {0.0f, 0.0f};
+      item.angVel = 0;
+      gridPos = item.pos / h + 0.5f;
     }
 
-    item.pos += dt * item.vel;
-
+    // Check terrain collision
     if (flag(item.pos.x / h + 0.5, item.pos.y / h + 0.5) == 0.0f) {
       glm::vec2 surfaceNormal = glm::clamp(
           glm::floor((posBefore / h + 0.5f)) - glm::floor(item.pos / h + 0.5f),
@@ -322,12 +333,41 @@ void Simulation::advectFloatingItems() {
                  item.pos * (1.f - abs(surfaceNormal));
     }
 
-    auto velocityDifference = bilinearVel(gridPos) - item.vel;
-    float len = length(velocityDifference);
-
-    glm::vec2 force = velocityDifference * len * 300.0f +
-                      glm::vec2(0.0, -0.1) * item.mass + item.force;
+    glm::vec2 centralForce = glm::vec2(0.0, -0.0) * item.mass + item.force;
     item.force = {0, 0};
-    item.vel += dt * force / item.mass;
+    float angForce = 0.0f;
+
+    int sampleCount = 3;
+    for (int u = 0; u < sampleCount; u++) {
+      for (int v = 0; v < sampleCount; v++) {
+        glm::vec2 samplePoint =
+            glm::vec2(((float)u / (sampleCount - 1) - 0.5f),
+                      ((float)v / (sampleCount - 1) - 0.5f)) *
+            item.size;
+
+        glm::vec2 tangent =
+            normalize(glm::rotate(samplePoint, glm::half_pi<float>()));
+
+        if (samplePoint == glm::vec2(0, 0)) tangent = glm::vec2(0, 0);
+
+        auto sampleVel = item.vel + tangent * length(samplePoint) * item.angVel;
+
+        // Calculate forces
+        auto velocityDifference =
+            bilinearVel(gridPos + samplePoint / h) - sampleVel;
+
+
+        centralForce += length(velocityDifference) * velocityDifference *
+                        100.0f * (1.0f / sampleCount / sampleCount);
+
+        angForce += glm::dot(tangent, velocityDifference) * 5.0f *
+                    glm::length(samplePoint) *
+                    (1.0f / sampleCount / sampleCount);
+      }
+    }
+
+    // Calculate new velocity
+    item.vel += dt * centralForce / item.mass;
+    item.angVel += dt * angForce / item.angMass;
   }
 }
