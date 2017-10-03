@@ -75,14 +75,16 @@ class Simulation {
         }
       }
     }
-    bcSouth = BC::INFLOW;
-    bcNorth = BC::OUTFLOW;
-    bcWest = BC::NOSLIP;
-    bcEast = BC::NOSLIP;
+    bcSouth = BC::NOSLIP;
+    bcNorth = BC::NOSLIP;
+    bcWest = BC::INFLOW;
+    bcEast = BC::OUTFLOW;
+
     for (int x = 0; x < vy.width; x++) {
-      vy.f(x, 1) = vy.b(x, 1) = 1.0;
-      vy.f(x, 0) = vy.b(x, 0) = 1.0;
-      vy.f(x, vy.height - 1) = vy.b(x, vy.height - 1) = 0;
+      vy.f(x, 0) = vy.b(x, 0) = 0.0;
+    }
+    for (int y = 0; y < vx.height; y++) {
+      vx.f(0, y) = vy.b(0, y) = 1.0;
     }
 
     mg = MG(flag);
