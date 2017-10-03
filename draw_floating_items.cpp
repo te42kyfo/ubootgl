@@ -5,7 +5,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
-#include "calculate_scale_factors.hpp"
 #include "gl_error.hpp"
 #include "load_shader.hpp"
 
