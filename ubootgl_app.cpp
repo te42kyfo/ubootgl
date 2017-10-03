@@ -11,12 +11,12 @@ using namespace std;
 void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
-  if (keysPressed[0]) ship->rotation -= 1.0 * timeDelta;
-  if (keysPressed[1]) ship->rotation += 1.0 * timeDelta;
+  if (keysPressed[0]) ship->rotation -= 2.0 * timeDelta;
+  if (keysPressed[1]) ship->rotation += 2.0 * timeDelta;
   if (keysPressed[2])
-    ship->force += 10.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
+    ship->force += 6.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
   if (keysPressed[3])
-    ship->force -= 5.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
+    ship->force -= 3.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
   if (keysPressed[4]) scale *= pow(2, timeDelta);
   if (keysPressed[5]) scale *= pow(0.5, timeDelta);
 
