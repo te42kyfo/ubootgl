@@ -5,5 +5,5 @@
 
 namespace DrawFloatingItems {
 void init();
-void draw(std::vector<FloatingItem>& items, glm::mat4 PVM);
+  void draw( FloatingItem* begin, FloatingItem* end, glm::mat4 PVM);
 }

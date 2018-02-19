@@ -1,12 +1,12 @@
 #include "draw_floating_items.hpp"
+#include "gl_error.hpp"
+#include "load_shader.hpp"
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
-#include "gl_error.hpp"
-#include "load_shader.hpp"
 
 namespace DrawFloatingItems {
 
@@ -38,7 +38,7 @@ void init() {
                        GL_STATIC_DRAW));
 }
 
-void draw(std::vector<FloatingItem>& items, glm::mat4 PVM) {
+void draw(FloatingItem *begin, FloatingItem *end, glm::mat4 PVM) {
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
@@ -52,13 +52,15 @@ void draw(std::vector<FloatingItem>& items, glm::mat4 PVM) {
 
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
-  for (const auto& item : items) {
+
+  for (auto it = begin; it != end; it++) {
+    auto& item = *it;
     GL_CALL(glActiveTexture(GL_TEXTURE0));
 
     GL_CALL(glBindTexture(GL_TEXTURE_2D, item.tex->tex_id));
 
     glm::mat4 TM = glm::translate(PVM, glm::vec3(item.pos, 0.0f));
-    TM = glm::rotate(TM, item.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+    TM = glm::rotate(TM, item.rotation - glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
     TM = glm::scale(TM, glm::vec3(item.size.x, item.size.y, 1.0f));
     TM = glm::translate(TM, glm::vec3(-0.5, -0.5, 0.0));
 
@@ -73,4 +75,4 @@ void draw(std::vector<FloatingItem>& items, glm::mat4 PVM) {
     GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
   }
 }
-}
+} // namespace DrawFloatingItems
