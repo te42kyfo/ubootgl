@@ -1,4 +1,8 @@
 #pragma once
+#include "db2dgrid.hpp"
+#include "floating_item.hpp"
+#include "lodepng.h"
+#include "pressure_solver.hpp"
 #include <cmath>
 #include <functional>
 #include <glm/vec2.hpp>
@@ -8,36 +12,23 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "db2dgrid.hpp"
-#include "floating_item.hpp"
-#include "lodepng.h"
-#include "pressure_solver.hpp"
 
 struct rgba {
   unsigned char r, g, b, a;
-  bool operator==(const rgba& o) {
+  bool operator==(const rgba &o) {
     return r == o.r && g == o.g && b == o.b && a == o.a;
   }
 };
 
 class Simulation {
- public:
+public:
   Simulation(float pwidth, float mu, int width, int height)
-      : pwidth(pwidth),
-        mu(mu),
-        width(width),
-        height(height),
-        vx(width - 1, height),  // staggered
-        vy(width, height - 1),  // grids
-        p(width, height),
-        f(width, height),
-        flag(width, height),
-        r(width, height),
-        ivx(width, height),
-        ivy(width, height),
-        mg(width, height),
-        h(pwidth / (width - 1.0f)),
-        disx(0.0f, 1.0f),
+      : pwidth(pwidth), mu(mu), width(width), height(height),
+        vx(width - 1, height), // staggered
+        vy(width, height - 1), // grids
+        p(width, height), f(width, height), flag(width, height),
+        r(width, height), ivx(width, height), ivy(width, height),
+        mg(width, height), h(pwidth / (width - 1.0f)), disx(0.0f, 1.0f),
         disy(0.0f, (float)height / width) {}
 
   Simulation(std::string filename, float pwidth, float mu)
@@ -47,7 +38,7 @@ class Simulation {
 
     unsigned error =
         lodepng::decode(image, image_width, image_height, filename);
-    rgba* rgba_image = reinterpret_cast<rgba*>(image.data());
+    rgba *rgba_image = reinterpret_cast<rgba *>(image.data());
 
     if (error)
       std::cout << "decoder error " << error << ": "
@@ -56,8 +47,8 @@ class Simulation {
     width = image_width;
     height = image_height;
 
-    vx = {width - 1, height};  // staggered
-    vy = {width, height - 1};  // grids
+    vx = {width - 1, height}; // staggered
+    vy = {width, height - 1}; // grids
     p = {width, height};
     f = {width, height};
     flag = {width, height};
@@ -84,7 +75,7 @@ class Simulation {
       vy.f(x, 0) = vy.b(x, 0) = 0.0;
     }
     for (int y = 0; y < vx.height; y++) {
-      vx.f(0, y) = vy.b(0, y) = 1.0;
+      vx.f(0, y) = vx.b(0, y) = 1.0;
     }
 
     mg = MG(flag);
@@ -103,11 +94,11 @@ class Simulation {
   void setVBCs();
 
   void interpolateFields();
-  float* getVX();
-  float* getVY();
-  float* getFlag() { return flag.data(); }
-  float* getP() { return p.data(); }
-  float* getR() { return r.data(); }
+  float *getVX();
+  float *getVY();
+  float *getFlag() { return flag.data(); }
+  float *getP() { return p.data(); }
+  float *getR() { return r.data(); }
 
   glm::vec2 bilinearVel(glm::vec2 c);
 
@@ -120,7 +111,7 @@ class Simulation {
 
   void step();
 
-  void advectFloatingItems();
+  void advectFloatingItems(FloatingItem *begin, FloatingItem *end);
 
   float pwidth;
   float mu;
@@ -130,9 +121,7 @@ class Simulation {
   BC bcWest, bcEast, bcNorth, bcSouth;
 
   std::stringstream diag;
-  std::vector<FloatingItem> floatingItems;
 
- private:
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid p, f, flag, r;
   Single2DGrid ivx, ivy;

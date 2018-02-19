@@ -20,21 +20,27 @@ void Simulation::interpolateFields() {
   staleInterpolatedFields = false;
 }
 
-float* Simulation::getVX() {
-  if (staleInterpolatedFields) interpolateFields();
+float *Simulation::getVX() {
+  if (staleInterpolatedFields)
+    interpolateFields();
   return ivx.data();
 }
-float* Simulation::getVY() {
-  if (staleInterpolatedFields) interpolateFields();
+float *Simulation::getVY() {
+  if (staleInterpolatedFields)
+    interpolateFields();
   return ivy.data();
 }
 
 // Fluid cells like this: a | b |
 float Simulation::singlePBC(BC bc, float a) {
-  if (bc == BC::INFLOW) return a;
-  if (bc == BC::OUTFLOW) return a;
-  if (bc == BC::OUTFLOW_ZERO_PRESSURE) return -a;
-  if (bc == BC::NOSLIP) return a;
+  if (bc == BC::INFLOW)
+    return a;
+  if (bc == BC::OUTFLOW)
+    return a;
+  if (bc == BC::OUTFLOW_ZERO_PRESSURE)
+    return -a;
+  if (bc == BC::NOSLIP)
+    return a;
   assert(false);
   return 0.0;
 }
@@ -54,10 +60,14 @@ void Simulation::setPBC() {
 //   a>   b>
 //         |
 float Simulation::VBCPar(BC bc, float a, float b) {
-  if (bc == BC::INFLOW) return b;
-  if (bc == BC::OUTFLOW) return a;
-  if (bc == BC::OUTFLOW_ZERO_PRESSURE) return a;
-  if (bc == BC::NOSLIP) return 0;
+  if (bc == BC::INFLOW)
+    return b;
+  if (bc == BC::OUTFLOW)
+    return a;
+  if (bc == BC::OUTFLOW_ZERO_PRESSURE)
+    return a;
+  if (bc == BC::NOSLIP)
+    return 0;
   assert(false);
   return 0.0;
 }
@@ -67,10 +77,14 @@ float Simulation::VBCPar(BC bc, float a, float b) {
 // -------
 //   a>
 float Simulation::VBCPer(BC bc, float a, float b) {
-  if (bc == BC::INFLOW) return b;
-  if (bc == BC::OUTFLOW) return a;
-  if (bc == BC::OUTFLOW_ZERO_PRESSURE) return a;
-  if (bc == BC::NOSLIP) return -a;
+  if (bc == BC::INFLOW)
+    return b;
+  if (bc == BC::OUTFLOW)
+    return a;
+  if (bc == BC::OUTFLOW_ZERO_PRESSURE)
+    return a;
+  if (bc == BC::NOSLIP)
+    return -a;
   assert(false);
   return 0.0;
 }
@@ -254,7 +268,8 @@ void Simulation::advect() {
 #pragma omp taskloop grainsize(1)
     for (int y = 1; y < vx.height - 1; y++) {
       for (int x = 1; x < vx.width - 1; x++) {
-        if (flag(x, y) < 1.0) continue;
+        if (flag(x, y) < 1.0)
+          continue;
         vec2 pos = vec2(x + 0.5, y);
         vec2 vel = bilinearVel(pos);
         for (int step = 0; step < steps; step++) {
@@ -298,14 +313,13 @@ void Simulation::step() {
   project();
   setVBCs();
 
-  advectFloatingItems();
-
   diag << "\n";
   staleInterpolatedFields = true;
 }
 
-void Simulation::advectFloatingItems() {
-  for (auto& item : floatingItems) {
+void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
+  for (auto it = begin; it != end; it++) {
+    auto& item = *it;
     auto posBefore = item.pos;
 
     // Position update
@@ -325,15 +339,16 @@ void Simulation::advectFloatingItems() {
 
     // Check terrain collision
     if (flag(item.pos.x / h + 0.5, item.pos.y / h + 0.5) == 0.0f) {
-      glm::vec2 surfaceNormal = glm::clamp(
-          glm::floor((posBefore / h + 0.5f)) - glm::floor(item.pos / h + 0.5f),
-          glm::vec2(-1.0), glm::vec2(1.0));
+      glm::vec2 surfaceNormal = glm::clamp(glm::floor((posBefore / h + 0.5f)) -
+                                               glm::floor(item.pos / h + 0.5f),
+                                           glm::vec2(-1.0), glm::vec2(1.0));
       item.vel *= (abs(surfaceNormal) * -0.5f) * 3.0f + 1.0f;
       item.pos = posBefore * abs(surfaceNormal) +
                  item.pos * (1.f - abs(surfaceNormal));
     }
 
-    glm::vec2 centralForce = glm::vec2(0.0, -0.0) * item.mass + item.force;
+    glm::vec2 externalForce = glm::vec2(0.0, -0.5) * item.mass + item.force;
+    glm::vec2 centralForce = glm::vec2(0.0, 0.0);
     item.force = {0, 0};
     float angForce = 0.0f;
 
@@ -348,17 +363,18 @@ void Simulation::advectFloatingItems() {
         glm::vec2 tangent =
             normalize(glm::rotate(samplePoint, glm::half_pi<float>()));
 
-        if (samplePoint == glm::vec2(0, 0)) tangent = glm::vec2(0, 0);
+        if (samplePoint == glm::vec2(0, 0))
+          tangent = glm::vec2(0, 0);
 
-        auto sampleVel = item.vel + tangent * length(samplePoint) * item.angVel;
+        auto sampleVel = (item.vel + dt * externalForce / item.mass) +
+                         tangent * length(samplePoint) * item.angVel;
 
         // Calculate forces
         auto velocityDifference =
             bilinearVel(gridPos + samplePoint / h) - sampleVel;
 
-
-        centralForce += length(velocityDifference) * velocityDifference *
-                        100.0f * (1.0f / sampleCount / sampleCount);
+        centralForce +=
+            velocityDifference * 10.0f * (1.0f / sampleCount / sampleCount);
 
         angForce += glm::dot(tangent, velocityDifference) * 5.0f *
                     glm::length(samplePoint) *
@@ -367,7 +383,7 @@ void Simulation::advectFloatingItems() {
     }
 
     // Calculate new velocity
-    item.vel += dt * centralForce / item.mass;
+    item.vel += dt * (externalForce + centralForce) / item.mass;
     item.angVel += dt * angForce / item.angMass;
   }
 }
