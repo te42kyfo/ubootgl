@@ -1,24 +1,28 @@
 #include "ubootgl_app.hpp"
+#include "dtime.hpp"
+#include "gl_error.hpp"
 #include <GL/glew.h>
 #include <glm/gtx/transform.hpp>
 #include <glm/vec2.hpp>
 #include <vector>
-#include "dtime.hpp"
-#include "gl_error.hpp"
 
 using namespace std;
 
 void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
-  if (keysPressed[0]) ship->rotation -= 2.0 * timeDelta;
-  if (keysPressed[1]) ship->rotation += 2.0 * timeDelta;
+  if (keysPressed[0])
+    ship.rotation -= 2.0 * timeDelta;
+  if (keysPressed[1])
+    ship.rotation += 2.0 * timeDelta;
   if (keysPressed[2])
-    ship->force += 6.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
+    ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
   if (keysPressed[3])
-    ship->force -= 3.0f * glm::vec2(-sin(ship->rotation), cos(ship->rotation));
-  if (keysPressed[4]) scale *= pow(2, timeDelta);
-  if (keysPressed[5]) scale *= pow(0.5, timeDelta);
+    ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
+  if (keysPressed[4])
+    scale *= pow(2, timeDelta);
+  if (keysPressed[5])
+    scale *= pow(0.5, timeDelta);
 
   lastKeyUpdate = updateTime;
 
@@ -26,32 +30,42 @@ void UbootGlApp::loop() {
   simTime = 0;
   simIterationCounter = 0;
   while (dtime() - t1 < 0.01) {
+
     sim.step();
+
+    sim.advectFloatingItems(&ship, &ship + 1);
+    sim.advectFloatingItems(&*begin(debris), &*end(debris));
+    sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
+
     simTime += sim.dt;
     simIterationCounter++;
   }
+
+  swarm.update(ship, sim.flag, sim.h);
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
   switch (event.keysym.sym) {
-    case SDLK_RIGHT:
-      keysPressed[0] = event.state;
-      break;
-    case SDLK_LEFT:
-      keysPressed[1] = event.state;
-      break;
-    case SDLK_UP:
-      keysPressed[2] = event.state;
-      break;
-    case SDLK_DOWN:
-      keysPressed[3] = event.state;
-      break;
-    case SDLK_PLUS:
-      keysPressed[4] = event.state;
-      break;
-    case SDLK_MINUS:
-      keysPressed[5] = event.state;
-      break;
+  case SDLK_RIGHT:
+    keysPressed[0] = event.state;
+    break;
+  case SDLK_LEFT:
+    keysPressed[1] = event.state;
+    break;
+  case SDLK_UP:
+    keysPressed[2] = event.state;
+    break;
+  case SDLK_DOWN:
+    keysPressed[3] = event.state;
+    break;
+  case SDLK_PLUS:
+    keysPressed[4] = event.state;
+    break;
+  case SDLK_MINUS:
+    keysPressed[5] = event.state;
+    break;
+  case SDLK_q:
+    exit(0);
   }
 }
 
@@ -97,16 +111,16 @@ void UbootGlApp::draw() {
   GL_CALL(glEnable(GL_BLEND));
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
 
-  glm::vec2 origin = ship->pos;
+  glm::vec2 origin = ship.pos;
 
   // Projection-View-Matrix
   glm::mat4 PVM(1.0f);
   // Projection
-  PVM = glm::scale(
-      PVM, glm::vec3(2 * scale, 2 * scale * (float)renderWidth / renderHeight,
-                     1.0f));
+  PVM = glm::scale(PVM, glm::vec3(2 * scale,
+                                  2 * scale * (float)renderWidth / renderHeight,
+                                  1.0f));
   // View
-  //  PVM = glm::rotate(PVM, -ship->rotation, glm::vec3(0.0, 0.0, 1.0));
+
   PVM = glm::translate(PVM, glm::vec3(-origin, 0.0f));
   //  PVM = glm::translate(PVM,
   //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth,
@@ -119,7 +133,9 @@ void UbootGlApp::draw() {
   DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                     sim.height, PVM, simTime, sim.pwidth / (sim.width - 1));
 
-  DrawFloatingItems::draw(sim.floatingItems, PVM);
+  DrawFloatingItems::draw(&ship, &ship + 1, PVM);
+  DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
+  DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);
 
   double thisFrameTime = dtime();
   smoothedFrameRate =
