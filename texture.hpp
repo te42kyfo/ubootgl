@@ -1,18 +1,26 @@
 #pragma once
 
+#include "gl_error.hpp"
+#include "lodepng.h"
 #include <GL/glew.h>
 #include <iostream>
 #include <string>
-#include "gl_error.hpp"
-#include "lodepng.h"
 
 class Texture {
- public:
+public:
   Texture(std::string filename) {
-    unsigned error = lodepng::decode(image, width, height, filename);
+    std::vector<unsigned char> flippedImage;
+    unsigned error = lodepng::decode(flippedImage, width, height, filename);
     if (error)
       std::cout << "decoder error " << error << " loading texture filename "
                 << filename << ": " << lodepng_error_text(error) << std::endl;
+    image = flippedImage;
+    for (unsigned int y = 0; y < height; y++) {
+      for (unsigned int x = 0; x < width * 4; x++) {
+        image[y * width * 4 + x] =
+            flippedImage[(height - 1 - y) * width * 4 + x];
+      }
+    }
 
     // Upload Texture
     GL_CALL(glGenTextures(1, &tex_id));
@@ -24,7 +32,6 @@ class Texture {
                             GL_UNSIGNED_BYTE, image.data()));
 
     GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
-
   }
 
   GLuint tex_id;
