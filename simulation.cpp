@@ -229,7 +229,7 @@ void Simulation::setDT() {
     }
   }
 
-  dt = std::min(1.0f, pwidth / (width - 1.0f) / max_vel * 1.5f);
+  dt = std::min(1.0f, pwidth / (width - 1.0f) / max_vel * 2.5f);
   diag << "SET_DT: Vmax=" << max_vel << ", dt=" << dt << "\n";
 }
 
@@ -278,7 +278,9 @@ void Simulation::advect() {
           pos -= dt * ih / steps * tempVel;
           vel = bilinearVel(pos);
         }
-        vx.b(x, y) = vel.x;
+
+        vx.b(x, y) =
+            (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
       }
     }
 #pragma omp taskloop grainsize(1)
@@ -292,8 +294,8 @@ void Simulation::advect() {
           pos -= dt * ih / steps * tempVel;
           vel = bilinearVel(pos);
         }
-
-        vy.b(x, y) = vel.y;
+        vy.b(x, y) =
+            (0.2f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.8f * vel.y);
       }
     }
   }
@@ -319,7 +321,7 @@ void Simulation::step() {
 
 void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
   for (auto it = begin; it != end; it++) {
-    auto& item = *it;
+    auto &item = *it;
     auto posBefore = item.pos;
 
     // Position update
