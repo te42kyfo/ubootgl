@@ -12,9 +12,9 @@ void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
   if (keysPressed[0])
-    ship.rotation -= 2.0 * timeDelta;
+    ship.rotation -= 3.0 * timeDelta;
   if (keysPressed[1])
-    ship.rotation += 2.0 * timeDelta;
+    ship.rotation += 3.0 * timeDelta;
   if (keysPressed[2])
     ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
   if (keysPressed[3])
