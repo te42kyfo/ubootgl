@@ -1,9 +1,12 @@
 #include "swarm.hpp"
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/vec2.hpp>
 #include <iostream>
+
 using namespace std;
 
 void Swarm::addAgent(FloatingItem agent) { agents.push_back(agent); }
@@ -32,7 +35,7 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
     }
 
     float dxwall = bilinearSample(flag, (ag1.pos + ag1.vel * 0.1f +
-                                         glm::vec2{2.0f *ag1.size.x, 0.0f}) /
+                                         glm::vec2{2.0f * ag1.size.x, 0.0f}) /
                                             h) -
                    bilinearSample(flag, (ag1.pos + ag1.vel * 0.1f -
                                          glm::vec2{2.0f * ag1.size.x, 0.0f}) /
@@ -53,7 +56,7 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
     float interceptionTime =
         (playerDistance / length(abs(ship.vel) + abs(ag1.vel))) * 0.2f;
     glm::vec2 interceptionVector = -(ship.pos + ship.vel * interceptionTime -
-                                    ag1.pos + ag1.vel * interceptionTime) /
+                                     ag1.pos + ag1.vel * interceptionTime) /
                                    (playerDistance + 0.2f) / playerDistance;
 
     targetDir = normalize(
