@@ -15,7 +15,7 @@ void main(void) {
                       texture(mask_tex, texCoord - 2 * vec2(0, tdy)).r +
                       texture(mask_tex, texCoord).r * 4.0);
 
-  if (tv > 0.5) {
+  if (tv > 0.7) {
     gl_FragColor = vec4(0, 0, 0, 1.0);
   } else {
     float tv = 0.25 * (texture(mask_tex, texCoord + 20 * vec2(tdx, 0)).r +
