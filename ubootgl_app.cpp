@@ -1,7 +1,9 @@
 #include "ubootgl_app.hpp"
+#include "torpedo.hpp"
 #include "dtime.hpp"
 #include "gl_error.hpp"
 #include <GL/glew.h>
+
 #include <glm/gtx/transform.hpp>
 #include <glm/vec2.hpp>
 #include <vector>
@@ -11,22 +13,31 @@ using namespace std;
 void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
-  if (keysPressed[0])
+  if (keysPressed[SDLK_RIGHT])
     ship.rotation -= 3.0 * timeDelta;
-  if (keysPressed[1])
+  if (keysPressed[SDLK_LEFT])
     ship.rotation += 3.0 * timeDelta;
-  if (keysPressed[2])
+  if (keysPressed[SDLK_UP])
     ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-  if (keysPressed[3])
+  if (keysPressed[SDLK_DOWN])
     ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-  if (keysPressed[4])
+  if (keysPressed[SDLK_PLUS])
     scale *= pow(2, timeDelta);
-  if (keysPressed[5])
+  if (keysPressed[SDLK_MINUS])
     scale *= pow(0.5, timeDelta);
 
+  if (keysPressed[SDLK_SPACE]) {
+    ordnance.push_back({glm::vec2{0.0003, 0.002}, 0.1,
+                        ship.vel + glm::vec2{cos(ship.rotation) , sin(ship.rotation)}* 2.0f,
+                        ship.pos, ship.rotation, ship.angVel,
+                        &(textures[4])});
+    keysPressed[SDLK_SPACE] = false;
+  }
+    
   lastKeyUpdate = updateTime;
 
   double t1 = dtime();
+
   simTime = 0;
   simIterationCounter = 0;
   while (dtime() - t1 < 0.01) {
@@ -36,36 +47,25 @@ void UbootGlApp::loop() {
     sim.advectFloatingItems(&ship, &ship + 1);
     sim.advectFloatingItems(&*begin(debris), &*end(debris));
     sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
+    sim.advectFloatingItems(&*begin(ordnance), &*end(ordnance));
 
     simTime += sim.dt;
     simIterationCounter++;
   }
 
-  swarm.update(ship, sim.flag, sim.h);
+  for( auto& ord : ordnance) {
+      processTorpedo(ord, &*begin(swarm.agents), &*end(swarm.agents));
+  }
+  swarm.nnUpdate(ship, sim.flag, sim.h);
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
+
   switch (event.keysym.sym) {
-  case SDLK_RIGHT:
-    keysPressed[0] = event.state;
-    break;
-  case SDLK_LEFT:
-    keysPressed[1] = event.state;
-    break;
-  case SDLK_UP:
-    keysPressed[2] = event.state;
-    break;
-  case SDLK_DOWN:
-    keysPressed[3] = event.state;
-    break;
-  case SDLK_PLUS:
-    keysPressed[4] = event.state;
-    break;
-  case SDLK_MINUS:
-    keysPressed[5] = event.state;
-    break;
   case SDLK_q:
     exit(0);
+  default:
+    keysPressed[event.keysym.sym] = event.state;
   }
 }
 
@@ -136,6 +136,7 @@ void UbootGlApp::draw() {
   DrawFloatingItems::draw(&ship, &ship + 1, PVM);
   DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
   DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);
+  DrawFloatingItems::draw(&*begin(ordnance), &*end(ordnance), PVM);
 
   double thisFrameTime = dtime();
   smoothedFrameRate =

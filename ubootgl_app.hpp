@@ -12,6 +12,7 @@
 #include "texture.hpp"
 #include <glm/vec2.hpp>
 #include <iostream>
+#include <map>
 #include <random>
 #include <vector>
 
@@ -30,6 +31,7 @@ public:
     textures.push_back(Texture("debris1.png"));
     textures.push_back(Texture("debris2.png"));
     textures.push_back(Texture("agent.png"));
+    textures.push_back(Texture("torpedo.png"));
 
     for (int i = 0; i < 100; i++) {
       debris.push_back({glm::vec2{0.002, 0.002}, -0.8f + 2.0f * (i % 2 + 1),
@@ -45,10 +47,11 @@ public:
             0.0,
             &textures[0]};
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       swarm.addAgent({glm::vec2{0.002, 0.002}, 0.5, glm::vec2(0, 0),
                       glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
+    swarm.nnInit();
   }
 
   void loop();
@@ -66,10 +69,15 @@ public:
 
   FloatingItem ship;
   std::vector<FloatingItem> debris;
+  std::vector<FloatingItem> ordnance;
   Swarm swarm;
 
   double lastKeyUpdate;
-  std::vector<bool> keysPressed = std::vector<bool>(6, false);
+  // std::vector<bool> keysPressed = std::vector<bool>(6, false);
 
+  std::map<SDL_Keycode, bool> keysPressed = {
+      {SDLK_RIGHT, false}, {SDLK_LEFT, false}, {SDLK_UP, false},
+      {SDLK_DOWN, false},  {SDLK_PLUS, false}, {SDLK_MINUS, false},
+      {SDLK_SPACE, false}};
   std::vector<Texture> textures;
 };
