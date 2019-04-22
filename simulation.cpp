@@ -181,6 +181,7 @@ void Simulation::project() {
   }
 
   float residual = calculateResidualField(p, f, flag, r, h);
+
   diag << "PROJECT: res=" << residual << "\n";
 
   mg.solve(p, f, flag, h, true);
@@ -328,8 +329,7 @@ glm::vec2 sampleNormal(Single2DGrid &flag, glm::vec2 mp) {
 
   return glm::vec2(p11 + p10 - p01 - p00, p01 + p11 - p00 - p10);
 }
-
-void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
+template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
   for (auto it = begin; it != end; it++) {
     auto &item = *it;
     auto posBefore = item.pos;
@@ -342,7 +342,8 @@ void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
 
     // Reseed if out of bounds
     while (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
-           gridPos.y >= height - 2 || gridPos.y <= 1.0 || flag(gridPos.x, gridPos.y) < 0.01) {
+           gridPos.y >= height - 2 || gridPos.y <= 1.0 ||
+           flag(gridPos.x, gridPos.y) < 0.01) {
       item.pos = glm::vec2(disx(gen), disy(gen));
       item.vel = {0.0f, 0.0f};
       item.angVel = 0;
@@ -367,10 +368,10 @@ void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
          glm::vec2(1.0));*/
       // std::cout << item.vel.x << " " << item.vel.y << "\n";
       if (dot(item.vel, surfaceNormal) < 0.0)
-        item.vel = reflect(item.vel, surfaceNormal)*0.9f;
+        item.vel = reflect(item.vel, surfaceNormal) * 0.9f;
       item.vel += (0.01f * length(item.vel)) * surfaceNormal * 0.05f;
-      if( dot(item.force, surfaceNormal) < 0.0f)
-          item.force *= 0.0f;//+= dot(item.force, surfaceNormal) * surfaceNormal;
+      if (dot(item.force, surfaceNormal) < 0.0f)
+        item.force *= 0.0f; //+= dot(item.force, surfaceNormal) * surfaceNormal;
       item.bumpCount++;
       // item.vel = surfaceNormal;
       // std::cout << item.vel.x << " " << item.vel.y << "\n\n";
@@ -380,8 +381,9 @@ void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
 
     glm::vec2 externalForce = glm::vec2(0.0, -0.5) * item.mass + item.force;
     glm::vec2 centralForce = glm::vec2(0.0, 0.0);
+    float angForce = item.angForce;
+    item.angForce = 0;
     item.force = {0, 0};
-    float angForce = 0.0f;
 
     int sampleCount = 3;
     for (int u = 0; u < sampleCount; u++) {
@@ -418,3 +420,9 @@ void Simulation::advectFloatingItems(FloatingItem *begin, FloatingItem *end) {
     item.angVel += dt * angForce / item.angMass;
   }
 }
+
+template void Simulation::advectFloatingItems<FloatingItem>(FloatingItem *begin,
+                                                            FloatingItem *end);
+
+template void Simulation::advectFloatingItems<Torpedo>(Torpedo *begin,
+                                                       Torpedo *end);

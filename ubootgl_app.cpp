@@ -1,7 +1,7 @@
 #include "ubootgl_app.hpp"
-#include "torpedo.hpp"
 #include "dtime.hpp"
 #include "gl_error.hpp"
+#include "torpedo.hpp"
 #include <GL/glew.h>
 
 #include <glm/gtx/transform.hpp>
@@ -27,13 +27,13 @@ void UbootGlApp::loop() {
     scale *= pow(0.5, timeDelta);
 
   if (keysPressed[SDLK_SPACE]) {
-    ordnance.push_back({glm::vec2{0.0003, 0.002}, 0.1,
-                        ship.vel + glm::vec2{cos(ship.rotation) , sin(ship.rotation)}* 2.0f,
-                        ship.pos, ship.rotation, ship.angVel,
-                        &(textures[4])});
+    torpedos.push_back(
+        {glm::vec2{0.0003, 0.002}, 0.07,
+         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 1.0f,
+         ship.pos, ship.rotation, ship.angVel, &(textures[4])});
     keysPressed[SDLK_SPACE] = false;
   }
-    
+
   lastKeyUpdate = updateTime;
 
   double t1 = dtime();
@@ -47,15 +47,34 @@ void UbootGlApp::loop() {
     sim.advectFloatingItems(&ship, &ship + 1);
     sim.advectFloatingItems(&*begin(debris), &*end(debris));
     sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
-    sim.advectFloatingItems(&*begin(ordnance), &*end(ordnance));
+    sim.advectFloatingItems(&*begin(torpedos), &*end(torpedos));
 
     simTime += sim.dt;
     simIterationCounter++;
   }
 
-  for( auto& ord : ordnance) {
-      processTorpedo(ord, &*begin(swarm.agents), &*end(swarm.agents));
-  }
+  torpedos.erase(
+      remove_if(
+          begin(torpedos), end(torpedos),
+          [=](auto &t) {
+            bool explode = processTorpedo(t, &*begin(swarm.agents),
+                                          &*end(swarm.agents), simTime);
+            if (explode) {
+              explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
+                                    0, 0, &(textures[5])});
+              for (int i = 0; i < 10; i++) {
+                float velangle = orientedAngle(t.vel, glm::vec2{0.0f, 1.0f});
+                debris.push_back(
+                                 {glm::vec2{0.0003, 0.0003}*(rand()%10/5.0f+0.2f), 0.8f,
+                     t.vel + glm::vec2{cos(velangle + (i - 5) * 0.2 +rand()%10/10.0), sin(velangle + (i - 5) * 0.2)} *
+                                 0.2f,
+                     t.pos, 0.0f, 0.0f, &(textures[i % 2 + 1])});
+              }
+            }
+            return explode;
+          }),
+      end(torpedos));
+
   swarm.nnUpdate(ship, sim.flag, sim.h);
 }
 
@@ -136,7 +155,8 @@ void UbootGlApp::draw() {
   DrawFloatingItems::draw(&ship, &ship + 1, PVM);
   DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
   DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);
-  DrawFloatingItems::draw(&*begin(ordnance), &*end(ordnance), PVM);
+  DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM);
+  DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
 
   double thisFrameTime = dtime();
   smoothedFrameRate =

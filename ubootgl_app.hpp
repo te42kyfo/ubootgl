@@ -32,6 +32,7 @@ public:
     textures.push_back(Texture("debris2.png"));
     textures.push_back(Texture("agent.png"));
     textures.push_back(Texture("torpedo.png"));
+    textures.push_back(Texture("explosion.png"));
 
     for (int i = 0; i < 100; i++) {
       debris.push_back({glm::vec2{0.002, 0.002}, -0.8f + 2.0f * (i % 2 + 1),
@@ -47,7 +48,7 @@ public:
             0.0,
             &textures[0]};
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100; i++) {
       swarm.addAgent({glm::vec2{0.002, 0.002}, 0.5, glm::vec2(0, 0),
                       glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
@@ -69,7 +70,8 @@ public:
 
   FloatingItem ship;
   std::vector<FloatingItem> debris;
-  std::vector<FloatingItem> ordnance;
+  std::vector<Torpedo> torpedos;
+  std::vector<FloatingItem> explosions;
   Swarm swarm;
 
   double lastKeyUpdate;

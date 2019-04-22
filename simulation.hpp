@@ -111,7 +111,7 @@ public:
 
   void step();
 
-  void advectFloatingItems(FloatingItem *begin, FloatingItem *end);
+  template <typename T> void advectFloatingItems(T *begin, T *end);
 
   float pwidth;
   float mu;
