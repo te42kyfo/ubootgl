@@ -8,7 +8,8 @@
 
 class Texture {
 public:
-  Texture(std::string filename) {
+  Texture(std::string filename) : Texture(filename, 1, 1) {}
+  Texture(std::string filename, int nx, int ny) : nx(nx), ny(ny) {
     std::vector<unsigned char> flippedImage;
     unsigned error = lodepng::decode(flippedImage, width, height, filename);
     if (error)
@@ -34,6 +35,7 @@ public:
     GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
   }
 
+  int nx, ny;
   GLuint tex_id;
   std::vector<unsigned char> image;
   unsigned width, height;

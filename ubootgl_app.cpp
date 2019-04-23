@@ -1,5 +1,6 @@
 #include "ubootgl_app.hpp"
 #include "dtime.hpp"
+#include "explosion.hpp"
 #include "gl_error.hpp"
 #include "torpedo.hpp"
 #include <GL/glew.h>
@@ -28,8 +29,8 @@ void UbootGlApp::loop() {
 
   if (keysPressed[SDLK_SPACE]) {
     torpedos.push_back(
-        {glm::vec2{0.0003, 0.002}, 0.07,
-         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 1.0f,
+        {glm::vec2{0.0003, 0.002}, 0.04,
+         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 1.2f,
          ship.pos, ship.rotation, ship.angVel, &(textures[4])});
     keysPressed[SDLK_SPACE] = false;
   }
@@ -62,11 +63,15 @@ void UbootGlApp::loop() {
             if (explode) {
               explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
                                     0, 0, &(textures[5])});
+              explosions.back().age = 0.01f;
               for (int i = 0; i < 10; i++) {
                 float velangle = orientedAngle(t.vel, glm::vec2{0.0f, 1.0f});
                 debris.push_back(
-                                 {glm::vec2{0.0003, 0.0003}*(rand()%10/5.0f+0.2f), 0.8f,
-                     t.vel + glm::vec2{cos(velangle + (i - 5) * 0.2 +rand()%10/10.0), sin(velangle + (i - 5) * 0.2)} *
+                    {glm::vec2{0.0003, 0.0003} * (rand() % 10 / 5.0f + 0.2f),
+                     0.8f,
+                     t.vel + glm::vec2{cos(velangle + (i - 5) * 0.2 +
+                                           rand() % 10 / 10.0),
+                                       sin(velangle + (i - 5) * 0.2)} *
                                  0.2f,
                      t.pos, 0.0f, 0.0f, &(textures[i % 2 + 1])});
               }
@@ -74,6 +79,11 @@ void UbootGlApp::loop() {
             return explode;
           }),
       end(torpedos));
+
+  explosions.erase(
+      remove_if(begin(explosions), end(explosions),
+                [=](auto &t) { return processExplosion(t, simTime); }),
+      end(explosions));
 
   swarm.nnUpdate(ship, sim.flag, sim.h);
 }

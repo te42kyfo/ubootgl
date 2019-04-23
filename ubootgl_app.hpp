@@ -32,7 +32,8 @@ public:
     textures.push_back(Texture("debris2.png"));
     textures.push_back(Texture("agent.png"));
     textures.push_back(Texture("torpedo.png"));
-    textures.push_back(Texture("explosion.png"));
+    textures.push_back(Texture("explosion.png", 4, 4));
+    //textures.push_back(Texture("tex_test3x3.png", 3, 3));
 
     for (int i = 0; i < 100; i++) {
       debris.push_back({glm::vec2{0.002, 0.002}, -0.8f + 2.0f * (i % 2 + 1),

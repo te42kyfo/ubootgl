@@ -1,9 +1,11 @@
 #pragma once
+#include "floating_item.hpp"
 #include <glm/glm.hpp>
 #include <vector>
-#include "floating_item.hpp"
 
 namespace DrawFloatingItems {
+
 void init();
-  void draw( FloatingItem* begin, FloatingItem* end, glm::mat4 PVM);
-}
+template <typename T>
+void draw(T *begin, T *end, glm::mat4 PVM);
+} // namespace DrawFloatingItems

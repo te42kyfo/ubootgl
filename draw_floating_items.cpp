@@ -14,12 +14,16 @@ using namespace std;
 
 GLuint item_shader;
 GLuint vao, quad_vbo;
-GLint item_shader_TM_uloc;
+GLint item_shader_TM_uloc, item_shader_frameGridSize_uloc, item_shader_frame_uloc;
 
 void init() {
   item_shader = loadShader("./scale_translate2D.vert", "./plain_tex.frag",
                            {{0, "in_Position"}, {1, "in_Alpha"}});
   item_shader_TM_uloc = glGetUniformLocation(item_shader, "TM");
+
+  item_shader_frameGridSize_uloc = glGetUniformLocation(item_shader, "frameGridSize");
+
+  item_shader_frame_uloc = glGetUniformLocation(item_shader, "frame");
 
   GL_CALL(glGenVertexArrays(1, &vao));
 
@@ -38,7 +42,7 @@ void init() {
                        GL_STATIC_DRAW));
 }
 
-void draw(FloatingItem *begin, FloatingItem *end, glm::mat4 PVM) {
+template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
   GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
@@ -52,15 +56,15 @@ void draw(FloatingItem *begin, FloatingItem *end, glm::mat4 PVM) {
 
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
-
   for (auto it = begin; it != end; it++) {
-    auto& item = *it;
+    auto &item = *it;
     GL_CALL(glActiveTexture(GL_TEXTURE0));
 
     GL_CALL(glBindTexture(GL_TEXTURE_2D, item.tex->tex_id));
 
     glm::mat4 TM = glm::translate(PVM, glm::vec3(item.pos, 0.0f));
-    TM = glm::rotate(TM, item.rotation - glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
+    TM = glm::rotate(TM, item.rotation - glm::half_pi<float>(),
+                     glm::vec3(0.0f, 0.0f, 1.0f));
     TM = glm::scale(TM, glm::vec3(item.size.x, item.size.y, 1.0f));
     TM = glm::translate(TM, glm::vec3(-0.5, -0.5, 0.0));
 
@@ -72,7 +76,16 @@ void draw(FloatingItem *begin, FloatingItem *end, glm::mat4 PVM) {
     GL_CALL(glUniformMatrix4fv(item_shader_TM_uloc, 1, GL_FALSE,
                                glm::value_ptr(TM)));
 
+
+    GL_CALL(glUniform1f(item_shader_frame_uloc, item.frame));
+    GL_CALL(
+        glUniform2i(item_shader_frameGridSize_uloc, item.tex->nx, item.tex->ny));
+
     GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
   }
 }
+
+template void draw<FloatingItem>(FloatingItem *begin, FloatingItem *end,
+                                 glm::mat4 PVM);
+template void draw<Torpedo>(Torpedo *begin, Torpedo *end, glm::mat4 PVM);
 } // namespace DrawFloatingItems
