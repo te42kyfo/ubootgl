@@ -18,8 +18,9 @@ void UbootGlApp::loop() {
     ship.rotation -= 3.0 * timeDelta;
   if (keysPressed[SDLK_LEFT])
     ship.rotation += 3.0 * timeDelta;
-  if (keysPressed[SDLK_UP])
+  if (keysPressed[SDLK_UP]) 
     ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
+  
   if (keysPressed[SDLK_DOWN])
     ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
   if (keysPressed[SDLK_PLUS])
@@ -53,7 +54,7 @@ void UbootGlApp::loop() {
     simTime += sim.dt;
     simIterationCounter++;
   }
-
+  // sim.sinks.clear();
   torpedos.erase(
       remove_if(
           begin(torpedos), end(torpedos),
@@ -62,7 +63,8 @@ void UbootGlApp::loop() {
                                           &*end(swarm.agents), simTime);
             if (explode) {
               explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
-                                    0, 0, &(textures[5])});
+                                    rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
+                                    &(textures[5])});
               explosions.back().age = 0.01f;
               for (int i = 0; i < 10; i++) {
                 float velangle = orientedAngle(t.vel, glm::vec2{0.0f, 1.0f});
@@ -75,6 +77,7 @@ void UbootGlApp::loop() {
                                  0.2f,
                      t.pos, 0.0f, 0.0f, &(textures[i % 2 + 1])});
               }
+              sim.sinks.push_back(glm::vec3(t.pos, 200.0f));
             }
             return explode;
           }),

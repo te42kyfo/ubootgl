@@ -6,14 +6,14 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
 
   t.age += simTime;
   FloatingItem *bestTarget = nullptr;
-  float bestScore = 10.0;
+  float bestScore = 5.0;
   float bestAngle = 0.0;
   for (auto &target = targetBegin; target != targetEnd; target++) {
     float distance = length(t.pos - target->pos);
     float angle = glm::dot({cos(t.rotation), sin(t.rotation)},
                            (target->pos - t.pos) / distance);
     float score = angle * angle / distance;
-    if (distance > 0.08)
+    if (distance > 0.06)
       continue;
 
     if (distance < 0.002)

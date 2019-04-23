@@ -180,11 +180,26 @@ void Simulation::project() {
     }
   }
 
+  for (auto &sink : sinks) {
+    auto gC = glm::vec2(sink) / h + 0.5f;
+    for (int y = -2; y <= 2; y++) {
+      for (int x = -2; x <= 2; x++) {
+        f(gC.x + x, gC.y + y) = sink.z - 20.0f;
+      }
+    }
+    sink.z *= 0.7f;
+  }
+
+  sinks.erase(
+      remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.2f; }),
+      end(sinks));
+
   float residual = calculateResidualField(p, f, flag, r, h);
 
   diag << "PROJECT: res=" << residual << "\n";
 
   mg.solve(p, f, flag, h, true);
+  // rbgs(p, f, flag, h, 1.0);
 
   centerP();
 

@@ -132,4 +132,6 @@ public:
   std::default_random_engine gen;
   std::uniform_real_distribution<float> disx;
   std::uniform_real_distribution<float> disy;
+
+  std::vector<glm::vec3> sinks;
 };
