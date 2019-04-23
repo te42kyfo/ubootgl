@@ -139,13 +139,13 @@ void Swarm::nnUpdate(FloatingItem ship, const Single2DGrid &flag, float h) {
   wgrad = wgrad * (1.0f / (float)agents.size() / lastInputs.size());
   bgrad = bgrad * (1.0f / (float)agents.size() / lastInputs.size());
 
-  cout << wgrad << "\n";
+  /*cout << wgrad << "\n";
   cout << weights << "\n";
   cout << bgrad << "\n";
   cout << bias << "\n";
 
   cout << totalReward / agents.size() << "\n";
-
+  */
   wgrad.clamp(-0.2f, 0.2f);
   bgrad.clamp(-0.2f, 0.2f);
 
