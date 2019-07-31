@@ -26,6 +26,9 @@ public:
     return v[idx(x, y)];
   }
 
+  float &operator()(glm::ivec2 c) { return (*this)(c.x, c.y); }
+  float operator()(glm::ivec2 c) const { return (*this)(c.x, c.y); }
+
   float operator=(float val) {
     std::fill(std::begin(v), std::end(v), val);
     return val;
@@ -76,6 +79,9 @@ public:
     assert(x < width && x >= 0 && y < height && y >= 0);
     return v[back][idx(x, y)];
   }
+  float &f(glm::ivec2 c) { return f(c.x, c.y); }
+  float &b(glm::ivec2 c) { return b(c.x, c.y); }
+
   float *data() { return v[front].data(); }
   void copyFrontToBack() {
     for (int i = 0; i < width * height; i++) {
@@ -83,6 +89,8 @@ public:
     }
   }
   float &operator()(int x, int y) { return f(x, y); }
+  float &operator()(glm::ivec2 c) { return f(c.x, c.y); }
+
   int width, height;
 
 private:
