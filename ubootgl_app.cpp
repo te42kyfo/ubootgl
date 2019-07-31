@@ -15,12 +15,12 @@ void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
   if (keysPressed[SDLK_RIGHT])
-    ship.rotation -= 3.0 * timeDelta;
+    ship.rotation -= 5.0 * timeDelta;
   if (keysPressed[SDLK_LEFT])
-    ship.rotation += 3.0 * timeDelta;
-  if (keysPressed[SDLK_UP]) 
+    ship.rotation += 5.0 * timeDelta;
+  if (keysPressed[SDLK_UP])
     ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-  
+
   if (keysPressed[SDLK_DOWN])
     ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
   if (keysPressed[SDLK_PLUS])
@@ -28,10 +28,10 @@ void UbootGlApp::loop() {
   if (keysPressed[SDLK_MINUS])
     scale *= pow(0.5, timeDelta);
 
-  if (keysPressed[SDLK_SPACE]) {
+  if (keysPressed[SDLK_SPACE] || keysPressed[SDLK_a]) {
     torpedos.push_back(
         {glm::vec2{0.0003, 0.002}, 0.04,
-         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 1.2f,
+         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 2.0f,
          ship.pos, ship.rotation, ship.angVel, &(textures[4])});
     keysPressed[SDLK_SPACE] = false;
   }
@@ -77,7 +77,17 @@ void UbootGlApp::loop() {
                                  0.2f,
                      t.pos, 0.0f, 0.0f, &(textures[i % 2 + 1])});
               }
-              sim.sinks.push_back(glm::vec3(t.pos, 200.0f));
+              sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
+              int diam = 0.015 / sim.h;
+              for (int y = -diam; y <= diam; y++) {
+                for (int x = -diam; x <= diam; x++) {
+                  auto gridC = (t.pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
+                  if (x * x + y * y > diam * diam)
+                    continue;
+                  sim.setGrids(gridC, 1.0);
+                }
+              }
+              sim.mg.updateFields(sim.flag);
             }
             return explode;
           }),

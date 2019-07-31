@@ -100,6 +100,18 @@ public:
   float *getP() { return p.data(); }
   float *getR() { return r.data(); }
 
+  void setGrids(glm::ivec2 c, float val) {
+
+    if (c.x >= 0 && c.y >= 0 && c.x < width && c.y < height) {
+      flag(c) = val;
+      if (val == 0) {
+        vx(c) = 0.0;
+        vy(c) = 0.0;
+        p(c) = 0.0;
+      }
+    }
+  }
+
   glm::vec2 bilinearVel(glm::vec2 c);
 
   float diffusion_l2_residual();

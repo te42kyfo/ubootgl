@@ -1,17 +1,17 @@
 #include "db2dgrid.hpp"
 
-void gs(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
+void gs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
         float alpha);
-void rbgs(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
+void rbgs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
           float alpha);
-void mg(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
+void mg(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
         bool zeroGradientBC = false);
 
-float calculateResidualField(Single2DGrid& p, Single2DGrid& f,
-                             Single2DGrid& flag, Single2DGrid& r, float h);
+float calculateResidualField(Single2DGrid &p, Single2DGrid &f,
+                             Single2DGrid &flag, Single2DGrid &r, float h);
 
 class MG {
- public:
+public:
   MG(){};
   MG(int width, int height) : width(width), height(height) {
     int currentWidth = width;
@@ -29,11 +29,13 @@ class MG {
     }
     levels = rs.size();
   }
-  MG(Single2DGrid& flag) : MG(flag.width, flag.height) {
+  MG(Single2DGrid &flag) : MG(flag.width, flag.height) { updateFields(flag); }
+
+  void updateFields(Single2DGrid &flag) {
     flagcs[0] = flag;
     for (int level = 1; level < levels; level++) {
-      auto& fc = flagcs[level];
-      auto& f = flagcs[level - 1];
+      auto &fc = flagcs[level];
+      auto &f = flagcs[level - 1];
       fc = 1.0;
       for (int y = 1; y < fc.height - 1; y++) {
         for (int x = 1; x < fc.width - 1; x++) {
@@ -54,13 +56,13 @@ class MG {
     }
   }
 
-  void solve(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
+  void solve(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
              bool zeroGradientBC = false) {
     solveLevel(p, f, flag, h, 0, zeroGradientBC);
   };
 
- private:
-  void solveLevel(Single2DGrid& p, Single2DGrid& f, Single2DGrid& flag, float h,
+private:
+  void solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
                   int level, bool zeroGradientBC = false);
 
   std::vector<Single2DGrid> rs;

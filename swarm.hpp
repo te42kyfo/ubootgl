@@ -2,9 +2,9 @@
 #include "db2dgrid.hpp"
 #include "floating_item.hpp"
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <random>
-#include <iomanip>
 
 template <typename T, int, int> class Matrix2D;
 
@@ -46,7 +46,7 @@ public:
   void clamp(T vmin, T vmax) {
     for (int n = 0; n < N; n++) {
       for (int m = 0; m < M; m++) {
-          data[n][m] = std::max(vmin, std::min(data[n][m], vmax));
+        data[n][m] = std::max(vmin, std::min(data[n][m], vmax));
       }
     }
   }
@@ -103,12 +103,24 @@ std::ostream &operator<<(std::ostream &stream,
                          const Matrix2D<T, N, M> &matrix) {
   for (int n = 0; n < N; n++) {
     for (int m = 0; m < M; m++) {
-        std::cout << std::setprecision(2) << std::setw(6) << matrix[n][m] << " ";
+      std::cout << std::setprecision(2) << std::setw(6) << matrix[n][m] << " ";
     }
     std::cout << "\n";
   }
   return stream;
 }
+
+template <int neuronCount, int inputCount> class NeuronLayer {
+
+  Matrix2D<float, neuronCount, inputCount> weights;
+  Matrix2D<float, neuronCount, 1> bias;
+
+  Matrix2D<float, neuronCount, inputCount> weightsGrad;
+  Matrix2D<float, neuronCount, 1> biasGrad;
+
+  std::vector<Matrix2D<float, 7, 1>> lastInputs;
+  std::vector<Matrix2D<float, 7, 1>> lastOutputs;
+};
 
 class Swarm {
 public:
@@ -116,27 +128,17 @@ public:
   void update(FloatingItem ship, const Single2DGrid &flag, float h);
   void nnInit() {
 
-    gen = std::default_random_engine(221);
+      /*    gen = std::default_random_engine(221);
     std::normal_distribution<float> dist(0.0, 0.5);
 
     auto distgen = std::bind(dist, gen);
     weights.randInitialize(distgen);
     bias.randInitialize(distgen);
-
-    lastInputs.resize(agents.size(),
-                      std::vector<Matrix2D<float, 7, 1>>(100, {0}));
-    lastActionPotentials.resize(agents.size(),
-                                std::vector<Matrix2D<float, 4, 1>>(100, {0}));
+      */
   }
   void nnUpdate(FloatingItem ship, const Single2DGrid &flag, float h);
 
   std::vector<FloatingItem> agents;
-
-  Matrix2D<float, 4, 7> weights;
-  Matrix2D<float, 4, 1> bias;
-
-  std::vector<std::vector<Matrix2D<float, 7, 1>>> lastInputs;
-  std::vector<std::vector<Matrix2D<float, 4, 1>>> lastActionPotentials;
-
+  std::vector<NeuronLayer<4, 7>> networks;
   std::default_random_engine gen;
 };
