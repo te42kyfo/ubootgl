@@ -28,13 +28,13 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
   }
 
   if (t.age < 0.05f) {
-      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 8.0f;
-  } else if (t.age < 0.3f) {
+      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 2.0f;
+  } else if (t.age < 0.4f) {
     t.angForce = glm::sign(bestAngle) * 0.00002;
     if (bestTarget != nullptr)
-      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 18.0f;
+      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 7.0f;
     else
-      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 8.0f; // *
+      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 2.0f; // *
   } else {
     return true;
   }
