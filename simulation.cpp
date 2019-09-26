@@ -414,7 +414,7 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
         if (samplePoint == glm::vec2(0, 0))
           tangent = glm::vec2(0, 0);
 
-        auto sampleVel = (item.vel + dt * externalForce / item.mass) +
+        auto sampleVel = (item.vel) +
                          tangent * length(samplePoint) * item.angVel;
 
         // Calculate forces
@@ -424,12 +424,13 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
         centralForce +=
             velocityDifference * 10.0f * (1.0f / sampleCount / sampleCount);
 
-        angForce += glm::dot(tangent, velocityDifference) * 5.0f *
+        angForce += glm::dot(tangent, velocityDifference) * 2.0f *
                     glm::length(samplePoint) *
                     (1.0f / sampleCount / sampleCount);
       }
     }
 
+ 
     // Calculate new velocity
     item.vel += dt * (externalForce + centralForce) / item.mass;
     item.angVel += dt * angForce / item.angMass;
