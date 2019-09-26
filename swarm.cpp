@@ -19,34 +19,29 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
 
       float d = length(ag1.pos - ag2.pos);
 
-      if (d < 9.0f * ag1.size.x) {
+      if (d < 20.0f * ag1.size.x) {
         swarmCenter += ag2.pos + ag2.vel * 0.1f;
-        commonDirection +=
-            ag2.vel; // glm::vec2{sin(ag2.rotation), cos(ag2.rotation)};
+        commonDirection += ag2.vel;
         swarmCount++;
       }
       if (d < 0.000001f)
         continue;
-      if (d < 2.0f * ag1.size.x) {
+      if (d < 4.0f * ag1.size.x) {
         rejectionDirection += (ag1.pos - ag2.pos) / (d + ag1.size.x);
       }
     }
 
-    float dxwall = bilinearSample(flag, (ag1.pos + ag1.vel * 0.1f +
-                                         glm::vec2{2.0f * ag1.size.x, 0.0f}) /
-                                            h) -
-                   bilinearSample(flag, (ag1.pos + ag1.vel * 0.1f -
-                                         glm::vec2{2.0f * ag1.size.x, 0.0f}) /
-                                            h);
-
-    float dywall = bilinearSample(flag, (ag1.pos + ag1.vel * 0.1f +
-                                         glm::vec2{0.0f, 2.0f * ag1.size.x}) /
-                                            h + 0.5f) -
-                   bilinearSample(flag, (ag1.pos + ag1.vel * 0.1f -
-                                         glm::vec2{0.0f, 2.0f * ag1.size.x}) /
-                                            h + 0.5f);
-
-    glm::vec2 wallAvoidance = glm::vec2({dxwall, dywall}) * 0.00001f;
+    glm::vec2 wallAvoidance = {0.0f, 0.0f};
+    glm::vec2 lookAheadPos =
+        ag1.pos + glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 4.0f * h;
+    if (flag(lookAheadPos / h + 0.5f) < 1.0f) {
+      wallAvoidance =
+          -glm::vec2(cos(ag1.rotation + 0.1), sin(ag1.rotation + 0.1));
+    }
+    glm::vec2 lookAheadPos2 = ag1.pos + ag1.vel * 0.2f;
+    if (flag(lookAheadPos2 / h + 0.5f) < 1.0f) {
+      wallAvoidance += -ag1.vel;
+    }
 
     glm::vec2 targetDir;
     float playerDistance = length(ship.pos - ag1.pos);
@@ -58,22 +53,24 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
                                    (playerDistance + 0.2f) / playerDistance;
 
     targetDir = normalize(
-        (swarmCenter / (float)swarmCount - (ag1.pos + ag1.vel * 0.1f)) * 40.0f +
-        40.0f * rejectionDirection * 1.0f +
-        10.2f * commonDirection / (float)swarmCount +
-        0.3f * interceptionVector + wallAvoidance * 10000.0f);
+        glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 0.1f +
+        wallAvoidance * 20.0f +
+        (swarmCenter / (float)swarmCount - (ag1.pos + ag1.vel * 0.1f)) * 1.0f +
+        4.0f * rejectionDirection +
+        glm::vec2(0.1f, 0.1f) * 2.0f * commonDirection / (float)swarmCount +
+        1.0f * interceptionVector);
 
     auto heading = glm::vec2{cos(ag1.rotation), sin(ag1.rotation)};
     float directedAngle = glm::orientedAngle(targetDir, heading);
     //    float angle = atan2(targetDir.y, targetDir.x);
 
     if (directedAngle < 0)
-      ag1.rotation += 0.2;
+      ag1.rotation += 0.1;
     else
-      ag1.rotation -= 0.15;
+      ag1.rotation -= 0.1;
 
-    ag1.force = 8.0f * glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) *
-                dot(targetDir, heading);
+    ag1.force = 2.0f * glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) *
+                (dot(targetDir, heading) + 0.5f) / 1.5f;
   }
 }
 
