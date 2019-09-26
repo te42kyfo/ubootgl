@@ -355,15 +355,10 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
 
     glm::vec2 gridPos = item.pos / h + 0.5f;
 
-    // Reseed if out of bounds
-    while (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
-           gridPos.y >= height - 2 || gridPos.y <= 1.0 ||
-           flag(gridPos.x, gridPos.y) < 0.01) {
-      item.pos = glm::vec2(disx(gen), disy(gen));
-      item.vel = {0.0f, 0.0f};
-      item.angVel = 0;
-      gridPos = item.pos / h + 0.5f;
-    }
+    // Skip out of Bounds objects
+    if (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
+        gridPos.y <= 1.0)
+      continue;
 
     // Check terrain collision
     glm::vec2 mp = (posBefore) / h + 0.5f;
@@ -373,25 +368,12 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
 
       surfaceNormal = normalize(surfaceNormal);
 
-      //     surfaceNormal = abs(ceil(surfaceNormal));
-
-      // std::cout << surfaceNormal.x << " " << surfaceNormal.y << "\n";
-      // std::cout << item.pos.x << " " << item.pos.y << "\n";
-
-      /*     glm::vec2 surfaceNormal = glm::clamp(glm::floor((posBefore / h +
-         0.5f)) - glm::floor(item.pos / h + 0.5f), glm::vec2(-1.0),
-         glm::vec2(1.0));*/
-      // std::cout << item.vel.x << " " << item.vel.y << "\n";
       if (dot(item.vel, surfaceNormal) < 0.0)
         item.vel = reflect(item.vel, surfaceNormal) * 0.9f;
       item.vel += (0.01f * length(item.vel)) * surfaceNormal * 0.05f;
       if (dot(item.force, surfaceNormal) < 0.0f)
         item.force *= 0.0f; //+= dot(item.force, surfaceNormal) * surfaceNormal;
       item.bumpCount++;
-      // item.vel = surfaceNormal;
-      // std::cout << item.vel.x << " " << item.vel.y << "\n\n";
-      // item.pos = posBefore * ceil(abs(surfaceNormal));// +
-      // item.pos * (1.f - ceil(abs(surfaceNormal)));
     }
 
     glm::vec2 externalForce = glm::vec2(0.0, -0.5) * item.mass + item.force;
@@ -414,8 +396,8 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
         if (samplePoint == glm::vec2(0, 0))
           tangent = glm::vec2(0, 0);
 
-        auto sampleVel = (item.vel) +
-                         tangent * length(samplePoint) * item.angVel;
+        auto sampleVel =
+            (item.vel) + tangent * length(samplePoint) * item.angVel;
 
         // Calculate forces
         auto velocityDifference =
@@ -430,7 +412,6 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       }
     }
 
- 
     // Calculate new velocity
     item.vel += dt * (externalForce + centralForce) / item.mass;
     item.angVel += dt * angForce / item.angMass;

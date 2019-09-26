@@ -11,6 +11,39 @@
 
 using namespace std;
 
+template <typename T>
+void respawnOutOfBounds(T begin, T end, int width, int height,
+                        Single2DGrid const &flag, float h) {
+
+  static auto disx = std::uniform_real_distribution<float>(0.0f, 1.0f);
+  static auto disy =
+      std::uniform_real_distribution<float>(0.0f, (float)height / width);
+  static std::default_random_engine gen(std::random_device{}());
+
+  for (auto it = begin; it != end; it++) {
+    glm::vec2 gridPos = it->pos / h + 0.5f;
+    while (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
+           gridPos.y >= height - 2 || gridPos.y <= 1.0 ||
+           flag(gridPos.x, gridPos.y) < 0.01) {
+      it->pos = glm::vec2(disx(gen), disy(gen));
+      it->vel = {0.0f, 0.0f};
+      it->angVel = 0;
+      gridPos = it->pos / h + 0.5f;
+    }
+  }
+}
+template <typename T>
+auto removeOutOfBounds(T begin, T end, int width, int height,
+                       Single2DGrid const &flag, float h) {
+
+  return remove_if(begin, end, [&](auto &it) {
+    glm::vec2 gridPos = it.pos / h + 0.5f;
+    return (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
+            gridPos.y >= height - 2 || gridPos.y <= 1.0 ||
+            flag(gridPos.x, gridPos.y) < 0.01);
+  });
+}
+
 void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
@@ -54,6 +87,11 @@ void UbootGlApp::loop() {
     simTime += sim.dt;
     simIterationCounter++;
   }
+
+  respawnOutOfBounds(&*begin(swarm.agents), &*end(swarm.agents), sim.width,
+                     sim.height, sim.flag, sim.h);
+  respawnOutOfBounds(&ship, &ship + 1, sim.width, sim.height, sim.flag, sim.h);
+
   // sim.sinks.clear();
   torpedos.erase(
       remove_if(
@@ -89,7 +127,7 @@ void UbootGlApp::loop() {
                            rand() % 100 - 50.0f, &(textures[rand() % 2 + 1])});
                     }
                   }
-                  sim.setGrids(gridC, 0.0);
+                  sim.setGrids(gridC, 1.0);
                 }
               }
               sim.mg.updateFields(sim.flag);
@@ -102,6 +140,13 @@ void UbootGlApp::loop() {
       remove_if(begin(explosions), end(explosions),
                 [=](auto &t) { return processExplosion(t, simTime); }),
       end(explosions));
+
+  debris.erase(removeOutOfBounds(begin(debris), end(debris), sim.width,
+                                 sim.height, sim.flag, sim.h),
+               end(debris));
+  torpedos.erase(removeOutOfBounds(begin(torpedos), end(torpedos), sim.width,
+                                 sim.height, sim.flag, sim.h),
+               end(torpedos));
 
   swarm.update(ship, sim.flag, sim.h);
 }
