@@ -251,8 +251,8 @@ void Simulation::setDT() {
 }
 
 vec2 inline Simulation::bilinearVel(vec2 c) {
-  //  c.x = min(max(c.x, 0.5f), vx.width - 0.5f);
-  // c.y = min(max(c.y, 0.5f), vy.height - 0.5f);
+    c.x = glm::min(glm::max(c.x, 0.5f), vx.width - 1.5f);
+    c.y = glm::min(glm::max(c.y, 0.5f), vy.height - 1.5f);
 
   vec2 result;
 
