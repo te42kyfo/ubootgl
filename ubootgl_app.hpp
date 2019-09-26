@@ -25,24 +25,27 @@ public:
     DrawTracers::init();
     DrawFloatingItems::init();
 
-    scale = 8.0;
+    scale = 6.0;
 
-    textures.push_back(Texture("ship.png"));
+    textures.push_back(Texture("ship2.png"));
     textures.push_back(Texture("debris1.png"));
     textures.push_back(Texture("debris2.png"));
-    textures.push_back(Texture("agent.png"));
+    textures.push_back(Texture("agent2.png"));
     textures.push_back(Texture("torpedo.png"));
     textures.push_back(Texture("explosion.png", 4, 4));
-    //textures.push_back(Texture("tex_test3x3.png", 3, 3));
+    // textures.push_back(Texture("tex_test3x3.png", 3, 3));
 
-    for (int i = 0; i < 100; i++) {
-      debris.push_back({glm::vec2{0.002, 0.002}, -0.8f + 2.0f * (i % 2 + 1),
-                        glm::vec2(0, 0), glm::vec2(-1.0, -1.0), 0.0, 0.0,
-                        &(textures[i % 2 + 1])});
+    for (int i = 0; i < 1000; i++) {
+      float size = (0.1f + rand() % 100 / 50.0f);
+      debris.push_back(
+          {glm::vec2{0.001, 0.001} * (0.1f + rand() % 100 / 100.0f), size,
+           glm::vec2(0, 0), glm::vec2(-1.0, -1.0),
+           rand() % 100 / 100.0f * 2.0f * (float)M_PI, 0.0,
+           &(textures[i % 2 + 1])});
     }
 
-    ship = {glm::vec2{0.001, 0.003},
-            1.0,
+    ship = {glm::vec2{0.001, 0.004},
+            2.2,
             glm::vec2(0, 0),
             glm::vec2(0.5, 0.21),
             0.0,
@@ -50,7 +53,7 @@ public:
             &textures[0]};
 
     for (int i = 0; i < 100; i++) {
-      swarm.addAgent({glm::vec2{0.002, 0.002}, 0.5, glm::vec2(0, 0),
+      swarm.addAgent({glm::vec2{0.001, 0.0025}, 0.5, glm::vec2(0, 0),
                       glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
     swarm.nnInit();

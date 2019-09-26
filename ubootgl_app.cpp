@@ -15,9 +15,9 @@ void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = updateTime - lastKeyUpdate;
   if (keysPressed[SDLK_RIGHT])
-    ship.rotation -= 5.0 * timeDelta;
+    ship.rotation -= 4.0 * timeDelta;
   if (keysPressed[SDLK_LEFT])
-    ship.rotation += 5.0 * timeDelta;
+    ship.rotation += 4.0 * timeDelta;
   if (keysPressed[SDLK_UP])
     ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
 
@@ -30,8 +30,8 @@ void UbootGlApp::loop() {
 
   if (keysPressed[SDLK_SPACE] || keysPressed[SDLK_a]) {
     torpedos.push_back(
-        {glm::vec2{0.0003, 0.002}, 0.04,
-         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 2.0f,
+        {glm::vec2{0.0003, 0.002}, 0.2,
+         ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 0.2f,
          ship.pos, ship.rotation, ship.angVel, &(textures[4])});
     keysPressed[SDLK_SPACE] = false;
   }
@@ -66,25 +66,30 @@ void UbootGlApp::loop() {
                                     rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
                                     &(textures[5])});
               explosions.back().age = 0.01f;
-              for (int i = 0; i < 10; i++) {
-                float velangle = orientedAngle(t.vel, glm::vec2{0.0f, 1.0f});
-                debris.push_back(
-                    {glm::vec2{0.0003, 0.0003} * (rand() % 10 / 5.0f + 0.2f),
-                     0.8f,
-                     t.vel + glm::vec2{cos(velangle + (i - 5) * 0.2 +
-                                           rand() % 10 / 10.0),
-                                       sin(velangle + (i - 5) * 0.2)} *
-                                 0.2f,
-                     t.pos, 0.0f, 0.0f, &(textures[i % 2 + 1])});
-              }
+
               sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
-              int diam = 0.015 / sim.h;
+              float diam = 0.005 / sim.h;
               for (int y = -diam; y <= diam; y++) {
                 for (int x = -diam; x <= diam; x++) {
                   auto gridC = (t.pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
                   if (x * x + y * y > diam * diam)
                     continue;
-                  sim.setGrids(gridC, 1.0);
+                  if (sim.flag(gridC) < 1.0) {
+                    for (int i = 0; i < 10; i++) {
+                      float velangle =
+                          orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
+                          (rand() % 100) / 100.0f * 2.f * M_PI;
+                      float size = rand() % 100 / 50.0f + 0.1f;
+                      debris.push_back(
+                          {glm::vec2{0.0003, 0.0003} * size, size * 0.4f,
+                           t.vel + glm::vec2{cos(velangle), sin(velangle)} *
+                                       (rand() % 100 / 800.0f),
+                           t.pos + glm::vec2(x, y) * sim.h,
+                           rand() % 100 / 100.0f * 2.0f * (float)M_PI,
+                           rand() % 100 - 50.0f, &(textures[rand() % 2 + 1])});
+                    }
+                  }
+                  sim.setGrids(gridC, 0.0);
                 }
               }
               sim.mg.updateFields(sim.flag);
@@ -98,7 +103,7 @@ void UbootGlApp::loop() {
                 [=](auto &t) { return processExplosion(t, simTime); }),
       end(explosions));
 
-  swarm.nnUpdate(ship, sim.flag, sim.h);
+  swarm.update(ship, sim.flag, sim.h);
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
