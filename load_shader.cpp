@@ -26,28 +26,28 @@ GLuint loadShader(string vshader, string fshader,
   char const* my_fragment_shader_source = fragment_shader.c_str();
   char const* my_vertex_shader_source = vertex_shader.c_str();
 
-  GLuint program = glCreateProgramObjectARB();
-  GLuint vertex = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-  GLuint fragment = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+  GLuint program = glCreateProgram();
+  GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
+  GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
 
-  glShaderSourceARB(vertex, 1, &my_vertex_shader_source, NULL);
-  glShaderSourceARB(fragment, 1, &my_fragment_shader_source, NULL);
+  glShaderSource(vertex, 1, &my_vertex_shader_source, NULL);
+  glShaderSource(fragment, 1, &my_fragment_shader_source, NULL);
   glCompileShader(vertex);
   glCompileShader(fragment);
-  glGetInfoLogARB(vertex, 5000, &length, log);
+  glGetShaderInfoLog(vertex, 5000, &length, log);
   if (length > 0) std::cout << "Vertex Shader: " << log << "\n";
-  glGetInfoLogARB(fragment, 5000, &length, log);
+  glGetShaderInfoLog(fragment, 5000, &length, log);
   if (length > 0) std::cout << "Fragment Shader: " << log << "\n";
 
-  glAttachObjectARB(program, vertex);
-  glAttachObjectARB(program, fragment);
+  glAttachShader(program, vertex);
+  glAttachShader(program, fragment);
 
   for (auto attrib : attribs) {
     glBindAttribLocation(program, attrib.first, attrib.second.c_str());
   }
-  glLinkProgramARB(program);
+  glLinkProgram(program);
 
-  glGetInfoLogARB(program, 5000, &length, log);
+  glGetProgramInfoLog(program, 5000, &length, log);
   if (length > 0) std::cout << "Program: " << log << "\n";
 
   return program;
