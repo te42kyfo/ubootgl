@@ -165,7 +165,7 @@ void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
     for (int i = 0; i < 3; i++) {
       rbgs(p, f, flag, h, 1.0);
     }
-    drawGrid(flag);
+    //drawGrid(flag);
     return;
   }
 
