@@ -140,6 +140,13 @@ void UbootGlApp::loop() {
           }),
       end(torpedos));
 
+  for (auto &exp : explosions) {
+    for (auto &ag : swarm.agents) {
+      if (exp.age > 0.02 && exp.age < 0.06 &&
+          length(exp.pos - ag.pos) < explosionDiam * 0.8f)
+        ag.pos = glm::vec2(-1, -1);
+    }
+  }
   explosions.erase(
       remove_if(begin(explosions), end(explosions),
                 [=](auto &t) { return processExplosion(t, simTime); }),
@@ -149,8 +156,8 @@ void UbootGlApp::loop() {
                                  sim.height, sim.flag, sim.h),
                end(debris));
   torpedos.erase(removeOutOfBounds(begin(torpedos), end(torpedos), sim.width,
-                                 sim.height, sim.flag, sim.h),
-               end(torpedos));
+                                   sim.height, sim.flag, sim.h),
+                 end(torpedos));
 
   swarm.update(ship, sim.flag, sim.h);
 }
