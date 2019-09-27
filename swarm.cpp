@@ -33,7 +33,7 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
 
     glm::vec2 wallAvoidance = {0.0f, 0.0f};
     glm::vec2 lookAheadPos =
-        ag1.pos + glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 4.0f * h;
+        ag1.pos + glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 7.0f * h;
     if (flag(lookAheadPos / h + 0.5f) < 1.0f) {
       wallAvoidance =
           -glm::vec2(cos(ag1.rotation + 0.1), sin(ag1.rotation + 0.1));
@@ -48,26 +48,25 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
 
     float interceptionTime = 0.0;
     //     (playerDistance / length(abs(ship.vel) + abs(ag1.vel))) * 0.2f;
-    glm::vec2 interceptionVector = -(ship.pos + ship.vel * interceptionTime -
-                                     ag1.pos + ag1.vel * interceptionTime) /
+    glm::vec2 interceptionVector = (ship.pos + ship.vel * interceptionTime -
+                                    ag1.pos + ag1.vel * interceptionTime) /
                                    (playerDistance + 0.2f) / playerDistance;
 
     targetDir = normalize(
         glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 0.1f +
-        wallAvoidance * 20.0f +
-        (swarmCenter / (float)swarmCount - (ag1.pos + ag1.vel * 0.1f)) * 1.0f +
-        4.0f * rejectionDirection +
-        glm::vec2(0.1f, 0.1f) * 2.0f * commonDirection / (float)swarmCount +
-        1.0f * interceptionVector);
+        wallAvoidance * 100.0f +
+        (swarmCenter / (float)swarmCount - (ag1.pos + ag1.vel * 0.1f)) * 10.0f +
+        10.0f * rejectionDirection + 10.0f * commonDirection / (float)swarmCount +
+        0.1f * interceptionVector);
 
     auto heading = glm::vec2{cos(ag1.rotation), sin(ag1.rotation)};
     float directedAngle = glm::orientedAngle(targetDir, heading);
     //    float angle = atan2(targetDir.y, targetDir.x);
 
     if (directedAngle < 0)
-      ag1.rotation += 0.1;
+      ag1.rotation += 0.21;
     else
-      ag1.rotation -= 0.1;
+      ag1.rotation -= 0.21;
 
     ag1.force = 2.0f * glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) *
                 (dot(targetDir, heading) + 0.5f) / 1.5f;
