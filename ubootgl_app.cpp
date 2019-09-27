@@ -236,12 +236,12 @@ void UbootGlApp::draw() {
   DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                     sim.height, PVM, simTime, sim.pwidth / (sim.width - 1));
 
-  DrawFloatingItems::draw(&ship, &ship + 1, PVM);
   DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
   DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);
   DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM);
-  DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
 
+  DrawFloatingItems::draw(&ship, &ship + 1, PVM);
+  DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
   double thisFrameTime = dtime();
   smoothedFrameRate =
       0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
