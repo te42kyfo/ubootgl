@@ -93,6 +93,8 @@ void UbootGlApp::loop() {
   respawnOutOfBounds(&ship, &ship + 1, sim.width, sim.height, sim.flag, sim.h);
 
   // sim.sinks.clear();
+
+  float explosionDiam = 0.005;
   torpedos.erase(
       remove_if(
           begin(torpedos), end(torpedos),
@@ -106,7 +108,7 @@ void UbootGlApp::loop() {
               explosions.back().age = 0.01f;
 
               sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
-              float diam = 0.005 / sim.h;
+              float diam = explosionDiam / sim.h;
               for (int y = -diam; y <= diam; y++) {
                 for (int x = -diam; x <= diam; x++) {
                   auto gridC = (t.pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
@@ -118,13 +120,15 @@ void UbootGlApp::loop() {
                           orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
                           (rand() % 100) / 100.0f * 2.f * M_PI;
                       float size = rand() % 100 / 50.0f + 0.1f;
+                      int type = rand() % 2;
                       debris.push_back(
-                          {glm::vec2{0.0003, 0.0003} * size, size * 0.4f,
+                          {glm::vec2{0.0003, 0.0003} * size,
+                           size * (0.4f * type + 0.2f),
                            t.vel + glm::vec2{cos(velangle), sin(velangle)} *
                                        (rand() % 100 / 800.0f),
                            t.pos + glm::vec2(x, y) * sim.h,
                            rand() % 100 / 100.0f * 2.0f * (float)M_PI,
-                           rand() % 100 - 50.0f, &(textures[rand() % 2 + 1])});
+                           rand() % 100 - 50.0f, &(textures[type + 1])});
                     }
                   }
                   sim.setGrids(gridC, 1.0);
