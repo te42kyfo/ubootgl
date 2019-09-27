@@ -14,14 +14,16 @@ using namespace std;
 
 GLuint item_shader;
 GLuint vao, quad_vbo;
-GLint item_shader_TM_uloc, item_shader_frameGridSize_uloc, item_shader_frame_uloc;
+GLint item_shader_TM_uloc, item_shader_frameGridSize_uloc,
+    item_shader_frame_uloc;
 
 void init() {
   item_shader = loadShader("./scale_translate2D.vert", "./plain_tex.frag",
-                           {{0, "in_Position"}, {1, "in_Alpha"}});
+                           {{0, "in_Position"}});
   item_shader_TM_uloc = glGetUniformLocation(item_shader, "TM");
 
-  item_shader_frameGridSize_uloc = glGetUniformLocation(item_shader, "frameGridSize");
+  item_shader_frameGridSize_uloc =
+      glGetUniformLocation(item_shader, "frameGridSize");
 
   item_shader_frame_uloc = glGetUniformLocation(item_shader, "frame");
 
@@ -47,20 +49,22 @@ template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, quad_vbo));
+
   GL_CALL(glEnableVertexAttribArray(0));
+
   GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+
   GL_CALL(glUseProgram(item_shader));
-
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                          GL_LINEAR_MIPMAP_LINEAR));
-
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
   for (auto it = begin; it != end; it++) {
     auto &item = *it;
     GL_CALL(glActiveTexture(GL_TEXTURE0));
 
     GL_CALL(glBindTexture(GL_TEXTURE_2D, item.tex->tex_id));
+    GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                            GL_LINEAR_MIPMAP_LINEAR));
+
+    GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
     glm::mat4 TM = glm::translate(PVM, glm::vec3(item.pos, 0.0f));
     TM = glm::rotate(TM, item.rotation - glm::half_pi<float>(),
@@ -76,10 +80,9 @@ template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
     GL_CALL(glUniformMatrix4fv(item_shader_TM_uloc, 1, GL_FALSE,
                                glm::value_ptr(TM)));
 
-
     GL_CALL(glUniform1f(item_shader_frame_uloc, item.frame));
-    GL_CALL(
-        glUniform2i(item_shader_frameGridSize_uloc, item.tex->nx, item.tex->ny));
+    GL_CALL(glUniform2i(item_shader_frameGridSize_uloc, item.tex->nx,
+                        item.tex->ny));
 
     GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
   }
