@@ -1,4 +1,6 @@
 #include "draw_tracers.hpp"
+#include "gl_error.hpp"
+#include "load_shader.hpp"
 #include <GL/glew.h>
 #include <algorithm>
 #include <cmath>
@@ -10,8 +12,6 @@
 #include <glm/vec4.hpp>
 #include <iostream>
 #include <random>
-#include "gl_error.hpp"
-#include "load_shader.hpp"
 
 using namespace std;
 using glm::vec2;
@@ -33,9 +33,10 @@ default_random_engine gen;
 uniform_real_distribution<float> dis(0.0, 1.0);
 
 void init() {
-  tracer_shader = loadShader("./scale_translate2D.vert", "./color.frag",
+  tracer_shader = loadShader("./scale_translate2D_alpha.vert", "./color.frag",
                              {
-                                 {0, "in_Position"}, {1, "in_Alpha"},
+                                 {0, "in_Position"},
+                                 {1, "in_Alpha"},
                              });
   tracer_shader_TM_uloc = glGetUniformLocation(tracer_shader, "TM");
 
@@ -54,8 +55,8 @@ void init() {
                        GL_STREAM_DRAW));
 };
 
-void drawTracers(const vector<vector<vec2>>& tracers,
-                 const vector<float>& alphas, glm::mat4 TM) {
+void drawTracers(const vector<vector<vec2>> &tracers,
+                 const vector<float> &alphas, glm::mat4 TM) {
   vector<vec4> vertices;
   vector<int> indices;
   vector<float> vAlphas;
@@ -72,8 +73,10 @@ void drawTracers(const vector<vector<vec2>>& tracers,
     }
     for (int n = 0; n < tailCount; n++) {
       vec2 normal;
-      if (n < tailCount - 1) normal = tracers[n][t] - tracers[n + 1][t];
-      if (n == tailCount - 1) normal = tracers[n - 1][t] - tracers[n][t];
+      if (n < tailCount - 1)
+        normal = tracers[n][t] - tracers[n + 1][t];
+      if (n == tailCount - 1)
+        normal = tracers[n - 1][t] - tracers[n][t];
 
       swap(normal.x, normal.y);
       normal.x *= -1;
@@ -94,9 +97,9 @@ void drawTracers(const vector<vector<vec2>>& tracers,
       glm::vec2 screenPos = TM * vertices[vc - 1];
       if (screenPos.x > -1.1 && screenPos.x < 1.1 && screenPos.y > -1.1 &&
           screenPos.y < 1.1) {
-        indices.push_back(vc - 1);  // 1--2
-        indices.push_back(vc - 2);  // |  |
-        indices.push_back(vc - 3);  // 3--4
+        indices.push_back(vc - 1); // 1--2
+        indices.push_back(vc - 2); // |  |
+        indices.push_back(vc - 3); // 3--4
         indices.push_back(vc - 2);
         indices.push_back(vc - 4);
         indices.push_back(vc - 3);
@@ -131,12 +134,16 @@ void drawTracers(const vector<vector<vec2>>& tracers,
   // draw
   GL_CALL(glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT,
                          indices.data()));
+  GL_CALL(glDisableVertexAttribArray(0));
+  GL_CALL(glDisableVertexAttribArray(1));
+  
 }
 
-float bilinearSample(float x, float y, float const* v, int nx, int ny) {
+float bilinearSample(float x, float y, float const *v, int nx, int ny) {
   int ix = floor(x - 0.5f);
   int iy = floor(y - 0.5f);
-  if (ix < 0 || ix >= nx - 1 || iy < 0 || iy >= ny - 1) return 0.0f;
+  if (ix < 0 || ix >= nx - 1 || iy < 0 || iy >= ny - 1)
+    return 0.0f;
 
   float s = x - 0.5f - ix;
   float t = y - 0.5f - iy;
@@ -150,11 +157,11 @@ float bilinearSample(float x, float y, float const* v, int nx, int ny) {
   return at * (as * v[idx1] + s * v[idx2]) + t * (as * v[idx3] + s * v[idx4]);
 }
 
-void advectTracers(vector<vec2>& tracers, float const* vx, float const* vy,
+void advectTracers(vector<vec2> &tracers, float const *vx, float const *vy,
                    float dt, float h, int nx, int ny) {
 #pragma omp parallel for
   for (size_t i = 0; i < tracers.size(); i++) {
-    auto& tracer = tracers[i];
+    auto &tracer = tracers[i];
     const int steps = 4;
     float dth = dt / h / steps;
     for (int step = 0; step < steps; step++) {
@@ -168,12 +175,12 @@ void advectTracers(vector<vec2>& tracers, float const* vx, float const* vy,
   }
 }
 
-void pegToOne(float& xOut, float& yOut, float xIn, float yIn) {
+void pegToOne(float &xOut, float &yOut, float xIn, float yIn) {
   xOut = xIn / max(xIn, yIn);
   yOut = yIn / max(xIn, yIn);
 }
 
-void draw(float* vx, float* vy, float* flag, int nx, int ny, glm::mat4 PVM,
+void draw(float *vx, float *vy, float *flag, int nx, int ny, glm::mat4 PVM,
           float dt, float h) {
   // Model
   glm::mat4 TM = glm::scale(PVM, glm::vec3(1.0 / nx, 1.0 / nx, 1.0f));
@@ -215,4 +222,4 @@ void draw(float* vx, float* vy, float* flag, int nx, int ny, glm::mat4 PVM,
     alphas[t] -= 0.001;
   }
 }
-}
+} // namespace DrawTracers
