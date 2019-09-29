@@ -13,79 +13,105 @@ namespace DrawFloatingItems {
 using namespace std;
 
 GLuint item_shader;
-GLuint vao, quad_vbo;
-GLint item_shader_TM_uloc, item_shader_frameGridSize_uloc,
-    item_shader_frame_uloc;
+GLuint vao, position_vbo, frame_vbo, uv_vbo;
+GLint item_shader_frameGridSize_uloc;
 
 void init() {
-  item_shader = loadShader("./scale_translate2D.vert", "./plain_tex.frag",
-                           {{0, "in_Position"}});
-  item_shader_TM_uloc = glGetUniformLocation(item_shader, "TM");
-
+  item_shader = loadShader("./sprite.vert", "./sprite.frag",
+                           {{0, "in_Position"}, {1, "in_Frame"}, {2, "in_UV"}});
   item_shader_frameGridSize_uloc =
       glGetUniformLocation(item_shader, "frameGridSize");
 
-  item_shader_frame_uloc = glGetUniformLocation(item_shader, "frame");
-
-  GL_CALL(glGenVertexArrays(1, &vao));
-
   // Quad Geometry
   GL_CALL(glGenVertexArrays(1, &vao));
-  GL_CALL(glGenBuffers(1, &quad_vbo));
-
-  float vertex_data[4][4] = {{0.0f, 0.0f, 0.0f, 1.0f},
-                             {1.0f, 0.0f, 0.0f, 1.0f},
-                             {0.0f, 1.0f, 0.0f, 1.0f},
-                             {1.0f, 1.0f, 0.0f, 1.0f}};
+  GL_CALL(glGenBuffers(1, &position_vbo));
+  GL_CALL(glGenBuffers(1, &frame_vbo));
+  GL_CALL(glGenBuffers(1, &uv_vbo));
 
   GL_CALL(glBindVertexArray(vao));
-  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, quad_vbo));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER, 4 * 4 * sizeof(GLfloat), vertex_data,
-                       GL_STATIC_DRAW));
 }
 
 template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
-  GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-  // Draw Quad with texture
-  GL_CALL(glBindVertexArray(vao));
-  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, quad_vbo));
 
-  GL_CALL(glEnableVertexAttribArray(0));
+  if (distance(begin, end) == 0)
+    return;
 
-  GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+  vector<glm::vec2> screenPos_buf;
+  vector<float> frame_buf;
+  vector<glm::vec2> uv_buf;
 
-  GL_CALL(glUseProgram(item_shader));
+  glm::vec4 p1 = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
+  glm::vec4 p2 = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
+  glm::vec4 p3 = glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
+  glm::vec4 p4 = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
 
   for (auto it = begin; it != end; it++) {
-    auto &item = *it;
-    GL_CALL(glActiveTexture(GL_TEXTURE0));
 
-    GL_CALL(glBindTexture(GL_TEXTURE_2D, item.tex->tex_id));
-    GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                            GL_LINEAR_MIPMAP_LINEAR));
-
-    GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-
-    glm::mat4 TM = glm::translate(PVM, glm::vec3(item.pos, 0.0f));
-    TM = glm::rotate(TM, item.rotation - glm::half_pi<float>(),
+    glm::mat4 TM = glm::translate(PVM, glm::vec3(it->pos, 0.0f));
+    TM = glm::rotate(TM, it->rotation - glm::half_pi<float>(),
                      glm::vec3(0.0f, 0.0f, 1.0f));
-    TM = glm::scale(TM, glm::vec3(item.size.x, item.size.y, 1.0f));
+    TM = glm::scale(TM, glm::vec3(it->size.x, it->size.y, 1.0f));
     TM = glm::translate(TM, glm::vec3(-0.5, -0.5, 0.0));
 
     glm::vec4 screenPos = TM * glm::vec4(0.5, 0.5, 0.0, 1.0);
     if (screenPos.x < -1.1 || screenPos.x > 1.1 || screenPos.y < -1.1 ||
         screenPos.y > 1.1)
       continue;
+    screenPos_buf.push_back(glm::vec2(TM * p1));
+    screenPos_buf.push_back(glm::vec2(TM * p2));
+    screenPos_buf.push_back(glm::vec2(TM * p3));
+    screenPos_buf.push_back(glm::vec2(TM * p2));
+    screenPos_buf.push_back(glm::vec2(TM * p4));
+    screenPos_buf.push_back(glm::vec2(TM * p3));
 
-    GL_CALL(glUniformMatrix4fv(item_shader_TM_uloc, 1, GL_FALSE,
-                               glm::value_ptr(TM)));
+    frame_buf.push_back(it->frame);
+    frame_buf.push_back(it->frame);
+    frame_buf.push_back(it->frame);
+    frame_buf.push_back(it->frame);
+    frame_buf.push_back(it->frame);
+    frame_buf.push_back(it->frame);
 
-    GL_CALL(glUniform1f(item_shader_frame_uloc, item.frame));
-    GL_CALL(glUniform2i(item_shader_frameGridSize_uloc, item.tex->nx,
-                        item.tex->ny));
-
-    GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    uv_buf.push_back(glm::vec2(p1));
+    uv_buf.push_back(glm::vec2(p2));
+    uv_buf.push_back(glm::vec2(p3));
+    uv_buf.push_back(glm::vec2(p2));
+    uv_buf.push_back(glm::vec2(p4));
+    uv_buf.push_back(glm::vec2(p3));
   }
+
+  GL_CALL(glUseProgram(item_shader));
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, begin->tex->tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+  GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+  GL_CALL(glBindVertexArray(vao));
+
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, position_vbo));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER,
+                       screenPos_buf.size() * sizeof(glm::vec2),
+                       screenPos_buf.data(), GL_STREAM_DRAW));
+  GL_CALL(glEnableVertexAttribArray(0));
+  GL_CALL(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0));
+
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, frame_vbo));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, frame_buf.size() * sizeof(GL_FLOAT),
+                       frame_buf.data(), GL_STREAM_DRAW));
+  GL_CALL(glEnableVertexAttribArray(1));
+  GL_CALL(glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, 0));
+
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, uv_vbo));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, uv_buf.size() * sizeof(glm::vec2),
+                       uv_buf.data(), GL_STREAM_DRAW));
+  GL_CALL(glEnableVertexAttribArray(2));
+  GL_CALL(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0));
+
+  GL_CALL(glUniform2i(item_shader_frameGridSize_uloc, begin->tex->nx,
+                      begin->tex->ny));
+
+  GL_CALL(glDrawArrays(GL_TRIANGLES, 0, screenPos_buf.size()));
 }
 
 template void draw<FloatingItem>(FloatingItem *begin, FloatingItem *end,
