@@ -115,11 +115,12 @@ void UbootGlApp::loop() {
                   if (x * x + y * y > diam * diam)
                     continue;
                   if (sim.flag(gridC) < 1.0) {
-                    for (int i = 0; i < 10; i++) {
+                    for (int i = 0; i < 60; i++) {
                       float velangle =
                           orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
                           (rand() % 100) / 100.0f * 2.f * M_PI;
-                      float size = rand() % 100 / 50.0f + 0.1f;
+                      float size = rand() % 100 / 40.0f - 1.25f;
+                      size *= size;
                       int type = rand() % 2;
                       debris.push_back(
                           {glm::vec2{0.0003, 0.0003} * size,
@@ -142,8 +143,8 @@ void UbootGlApp::loop() {
 
   for (auto &exp : explosions) {
     for (auto &ag : swarm.agents) {
-      if (exp.age > 0.02 && exp.age < 0.06 &&
-          length(exp.pos - ag.pos) < explosionDiam * 0.8f)
+        if (length(exp.pos - ag.pos) < (exp.age+0.01) * explosionDiam * 30.0f &&
+            exp.age < 0.08f && exp.age > 0.02f)
         ag.pos = glm::vec2(-1, -1);
     }
   }
