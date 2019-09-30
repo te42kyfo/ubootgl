@@ -205,7 +205,6 @@ void UbootGlApp::draw() {
   ImGui::Separator();
   ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
                      simIterationCounter);
-  ImGui::End();
 
   GL_CALL(glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -229,6 +228,8 @@ void UbootGlApp::draw() {
   //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth,
   //                     0.0));
 
+  double graphicsT1 = dtime();
+
   Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM);
 
   Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height, PVM);
@@ -242,8 +243,14 @@ void UbootGlApp::draw() {
 
   DrawFloatingItems::draw(&ship, &ship + 1, PVM);
   DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
+  double graphicsT2 = dtime();
   double thisFrameTime = dtime();
   smoothedFrameRate =
       0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
   lastFrameTime = thisFrameTime;
+
+  ImGui::TextWrapped("graphics time: %10.1f ms",
+                     (graphicsT2 - graphicsT1) * 1000.0);
+
+  ImGui::End();
 }
