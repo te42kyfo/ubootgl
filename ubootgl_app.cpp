@@ -70,6 +70,25 @@ void UbootGlApp::loop() {
   if (keysPressed[SDLK_PAGEDOWN])
     scale *= pow(0.5, timeDelta);
 
+  int oldPlayerCount = playerCount;
+  if (keysPressed[SDLK_1])
+    playerCount = 1;
+  if (keysPressed[SDLK_2])
+    playerCount = 2;
+  if (keysPressed[SDLK_3])
+    playerCount = 3;
+  if (keysPressed[SDLK_4])
+    playerCount = 4;
+
+  if (playerCount != playerShips.size()) {
+      scale *= (float) playerCount / oldPlayerCount;
+    playerShips.clear();
+    for (unsigned int p = 0; p < playerCount; p++) {
+      playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
+                             glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0]});
+    }
+  }
+
   lastKeyUpdate = updateTime;
 
   double t1 = dtime();

@@ -34,15 +34,6 @@ public:
     textures.push_back(Texture("resources/agent2.png"));
     textures.push_back(Texture("resources/torpedo.png"));
     textures.push_back(Texture("resources/explosion.png", 4, 4));
-    // textures.push_back(Texture("tex_test3x3.png", 3, 3));
-
-
-    playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
-                           glm::vec2(0.55, 0.23), 0.0, 0.0, &textures[0]});
-    playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
-                           glm::vec2(0.45, 0.18), 0.0, 0.0, &textures[0]});
-    playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
-                           glm::vec2(0.145, 0.18), 0.0, 0.0, &textures[0]});
 
     for (int i = 0; i < 100; i++) {
       swarm.addAgent({glm::vec2{0.0025, 0.001}, 0.5, glm::vec2(0, 0),
@@ -65,6 +56,7 @@ public:
   Texture rock_texture;
 
   std::vector<FloatingItem> playerShips;
+  unsigned int playerCount = 1;
 
   std::vector<FloatingItem> debris;
   std::vector<Torpedo> torpedos;
