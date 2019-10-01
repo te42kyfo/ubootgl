@@ -15,6 +15,12 @@ int main(int, char**) {
 
   ImGui_ImplSdlGL3_Init(app.vis.window);
 
+  ImGuiIO& io = ImGui::GetIO();
+  ImFontConfig config;
+  config.GlyphExtraSpacing.x = 1.0f; // Increase spacing between characters
+  io.Fonts->AddFontFromFileTTF("resources/DroidSans.ttf", 17, &config);
+
+
   // Main loop
   bool done = false;
 
