@@ -80,7 +80,6 @@ void UbootGlApp::loop() {
 
     sim.step();
 
-
     sim.advectFloatingItems(&*begin(playerShips), &*end(playerShips));
     sim.advectFloatingItems(&*begin(debris), &*end(debris));
     sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
@@ -179,40 +178,42 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
 void UbootGlApp::draw() {
 
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+  int displayWidth = ImGui::GetIO().DisplaySize.x;
+  int displayHeight = ImGui::GetIO().DisplaySize.y;
+  int renderWidth = displayWidth / 2 * 0.99;
+  int renderHeight = displayHeight;
+  int renderOriginX = renderWidth;
+  int renderOriginY = 0;
+
+  int sideBarSize = 250;
+  if (1.0 * (displayWidth - 250) / (displayHeight - 150) >
+      1.0 * sim.width / sim.height) {
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::SetNextWindowSize(ImVec2(sideBarSize - 10, displayHeight - 10));
+    renderOriginX = sideBarSize;
+    renderWidth = displayWidth - sideBarSize;
+  } else {
+    sideBarSize = 150;
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::SetNextWindowSize(ImVec2(displayWidth - 10, sideBarSize - 10));
+    renderOriginY = 0;
+    renderHeight = displayHeight - sideBarSize;
+  }
+  bool p_open;
+  ImGui::Begin("SideBar", &p_open,
+               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                   ImGuiWindowFlags_ShowBorders);
+  ImGui::TextWrapped("%s", sim.diag.str().c_str());
+  ImGui::Separator();
+  ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
+                     simIterationCounter);
+
+  double graphicsT1 = dtime();
   for (int i = 0; i <= 1; i++) {
-    bool p_open;
 
-    int displayWidth = ImGui::GetIO().DisplaySize.x;
-    int displayHeight = ImGui::GetIO().DisplaySize.y;
-    int renderWidth = displayWidth / 2 * 0.99;
-    int renderHeight = displayHeight;
-    int renderOriginX = renderWidth * (i * 1.01);
-    int renderOriginY = 0;
-
-    int sideBarSize = 250;
-    if (1.0 * (displayWidth - 250) / (displayHeight - 150) >
-        1.0 * sim.width / sim.height) {
-      ImGui::SetNextWindowPos(ImVec2(10, 10));
-      ImGui::SetNextWindowSize(ImVec2(sideBarSize - 10, displayHeight - 10));
-      renderOriginX = sideBarSize;
-      renderWidth = displayWidth - sideBarSize;
-    } else {
-      sideBarSize = 150;
-      ImGui::SetNextWindowPos(ImVec2(10, 10));
-      ImGui::SetNextWindowSize(ImVec2(displayWidth - 10, sideBarSize - 10));
-      renderOriginY = 0;
-      renderHeight = displayHeight - sideBarSize;
-    }
-
-    ImGui::Begin("SideBar", &p_open,
-                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoMove |
-                     ImGuiWindowFlags_NoSavedSettings |
-                     ImGuiWindowFlags_ShowBorders);
-    ImGui::TextWrapped("%s", sim.diag.str().c_str());
-    ImGui::Separator();
-    ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
-                       simIterationCounter);
+    renderOriginX = renderWidth * (i * 1.01);
 
     GL_CALL(
         glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
@@ -225,21 +226,19 @@ void UbootGlApp::draw() {
     // Projection-View-Matrix
     glm::mat4 PVM(1.0f);
     // Projection
-    PVM = glm::translate(PVM, glm::vec3(0.0f, -0.4f, 0.0f));
+    // PVM = glm::translate(PVM, glm::vec3(0.0f, -0.4f, 0.0f));
 
     PVM = glm::scale(
         PVM, glm::vec3(2 * scale, 2 * scale * (float)renderWidth / renderHeight,
                        1.0f));
     // View
-    PVM = glm::rotate(PVM, playerShips[i].rotation - glm::half_pi<float>(),
-                      glm::vec3(0.0f, 0.0f, -1.0f));
+    // PVM = glm::rotate(PVM, playerShips[i].rotation - glm::half_pi<float>(),
+    //                  glm::vec3(0.0f, 0.0f, -1.0f));
     PVM = glm::translate(PVM, glm::vec3(-playerShips[i].pos, 0.0f));
 
     //  PVM = glm::translate(PVM,
     //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth,
     //                     0.0));
-
-    double graphicsT1 = dtime();
 
     Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM);
 
@@ -255,15 +254,14 @@ void UbootGlApp::draw() {
 
     DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM);
     DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
-    double graphicsT2 = dtime();
-    double thisFrameTime = dtime();
-    smoothedFrameRate =
-        0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
-    lastFrameTime = thisFrameTime;
-
-    ImGui::TextWrapped("graphics time: %10.1f ms",
-                       (graphicsT2 - graphicsT1) * 1000.0);
-
-    ImGui::End();
   }
+  double graphicsT2 = dtime();
+  double thisFrameTime = dtime();
+  smoothedFrameRate =
+      0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
+  lastFrameTime = thisFrameTime;
+
+  ImGui::TextWrapped("graphics time: %10.1f ms",
+                     (graphicsT2 - graphicsT1) * 1000.0);
+  ImGui::End();
 }
