@@ -30,7 +30,7 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
   if (t.age < 0.03f) {
       t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 2.0f;
   } else if (t.age < 0.8f) {
-    t.angForce = glm::sign(bestAngle) * 0.00006;
+    t.angForce = glm::sign(bestAngle) * 0.00001;
     if (bestTarget != nullptr)
       t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 6.0f;
     else

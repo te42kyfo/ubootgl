@@ -36,14 +36,6 @@ public:
     textures.push_back(Texture("resources/explosion.png", 4, 4));
     // textures.push_back(Texture("tex_test3x3.png", 3, 3));
 
-    for (int i = 0; i < 10000; i++) {
-      float size = (0.05f + rand() % 100 / 100.0f);
-      debris.push_back(
-          {glm::vec2{0.001, 0.001} * (0.1f + rand() % 100 / 100.0f), size,
-           glm::vec2(0, 0), glm::vec2(0.5, 0.22),
-           rand() % 100 / 100.0f * 2.0f * (float)M_PI, 0.0,
-           &(textures[i % 2 + 1])});
-    }
 
     playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
                            glm::vec2(0.55, 0.23), 0.0, 0.0, &textures[0]});

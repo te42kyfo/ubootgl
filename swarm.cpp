@@ -64,9 +64,9 @@ void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
     //    float angle = atan2(targetDir.y, targetDir.x);
 
     if (directedAngle < 0)
-      ag1.rotation += 0.21;
+      ag1.rotation += 0.021;
     else
-      ag1.rotation -= 0.21;
+      ag1.rotation -= 0.021;
 
     ag1.force = 2.0f * glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) *
                 (dot(targetDir, heading) + 0.5f) / 1.5f;
