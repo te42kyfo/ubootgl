@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gl_error.hpp"
-#include "lodepng.h"
+#include "external/lodepng.h"
 #include <GL/glew.h>
 #include <iostream>
 #include <string>

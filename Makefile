@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CPP_FILES := $(wildcard *.cpp) $(wildcard imgui/*.cpp)
+CPP_FILES := $(wildcard *.cpp) $(wildcard imgui/*.cpp) $(wildcard external/*.cpp)
 HEADERS= $(shell find . -iname "*.hpp")
 OBJ_FILES := $(addprefix obj/,$(CPP_FILES:.cpp=.o))
 DEPS := $(addprefix obj/,$(CPP_FILES:.cpp=.d))

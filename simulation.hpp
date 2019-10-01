@@ -1,7 +1,7 @@
 #pragma once
 #include "db2dgrid.hpp"
 #include "floating_item.hpp"
-#include "lodepng.h"
+#include "external/lodepng.h"
 #include "pressure_solver.hpp"
 #include <cmath>
 #include <functional>
