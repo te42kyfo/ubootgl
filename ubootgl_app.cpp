@@ -181,7 +181,7 @@ void UbootGlApp::draw() {
 
   int displayWidth = ImGui::GetIO().DisplaySize.x;
   int displayHeight = ImGui::GetIO().DisplaySize.y;
-  int renderWidth = displayWidth / 2 * 0.99;
+  int renderWidth = displayWidth / playerShips.size() * 0.99;
   int renderHeight = displayHeight;
   int renderOriginX = renderWidth;
   int renderOriginY = 0;
@@ -211,7 +211,7 @@ void UbootGlApp::draw() {
                      simIterationCounter);
 
   double graphicsT1 = dtime();
-  for (int i = 0; i <= 1; i++) {
+  for (int i = 0; i < playerShips.size(); i++) {
 
     renderOriginX = renderWidth * (i * 1.01);
 
