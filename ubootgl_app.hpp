@@ -19,7 +19,7 @@
 class UbootGlApp {
 public:
   UbootGlApp()
-      : sim("level2.png", 1.0, 0.01f), rock_texture("rock_texture2.png") {
+      : sim("resources/level2.png", 1.0, 0.01f), rock_texture("resources/rock_texture2.png") {
     Draw2DBuf::init();
     DrawStreamlines::init();
     DrawTracers::init();
@@ -27,12 +27,12 @@ public:
 
     scale = 6.0;
 
-    textures.push_back(Texture("ship2.png"));
-    textures.push_back(Texture("debris1.png"));
-    textures.push_back(Texture("debris2.png"));
-    textures.push_back(Texture("agent2.png"));
-    textures.push_back(Texture("torpedo.png"));
-    textures.push_back(Texture("explosion.png", 4, 4));
+    textures.push_back(Texture("resources/ship2.png"));
+    textures.push_back(Texture("resources/debris1.png"));
+    textures.push_back(Texture("resources/debris2.png"));
+    textures.push_back(Texture("resources/agent2.png"));
+    textures.push_back(Texture("resources/torpedo.png"));
+    textures.push_back(Texture("resources/explosion.png", 4, 4));
     // textures.push_back(Texture("tex_test3x3.png", 3, 3));
 
     /*    for (int i = 0; i < 10000; i++) {
@@ -73,6 +73,8 @@ public:
   Texture rock_texture;
 
   FloatingItem ship;
+
+
   std::vector<FloatingItem> debris;
   std::vector<Torpedo> torpedos;
   std::vector<FloatingItem> explosions;
