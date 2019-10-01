@@ -63,7 +63,7 @@ void UbootGlApp::loop() {
 
   if (keysPressed[SDLK_SPACE] || keysPressed[SDLK_a]) {
     torpedos.push_back(
-        {glm::vec2{0.0003, 0.002}, 0.2,
+        {glm::vec2{0.002, 0.0004}, 0.2,
          ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 0.2f,
          ship.pos, ship.rotation, ship.angVel, &(textures[4])});
     keysPressed[SDLK_SPACE] = false;

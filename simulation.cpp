@@ -251,8 +251,8 @@ void Simulation::setDT() {
 }
 
 vec2 inline Simulation::bilinearVel(vec2 c) {
-    c.x = glm::min(glm::max(c.x, 0.5f), vx.width - 1.5f);
-    c.y = glm::min(glm::max(c.y, 0.5f), vy.height - 1.5f);
+  c.x = glm::min(glm::max(c.x, 0.5f), vx.width - 1.5f);
+  c.y = glm::min(glm::max(c.y, 0.5f), vy.height - 1.5f);
 
   vec2 result;
 
@@ -337,10 +337,10 @@ void Simulation::step() {
 }
 
 glm::vec2 sampleNormal(Single2DGrid &flag, glm::vec2 mp) {
-  double p01 = flag(mp.x - 1.0, mp.y + 1.0);
-  double p11 = flag(mp.x + 1.0, mp.y + 1.0);
-  double p00 = flag(mp.x - 1.0, mp.y - 1.0);
-  double p10 = flag(mp.x + 1.0, mp.y - 1.0);
+  double p01 = flag(mp.x - 0.5, mp.y + 1.5);
+  double p11 = flag(mp.x + 1.5, mp.y + 1.5);
+  double p00 = flag(mp.x - 0.5, mp.y - 0.5);
+  double p10 = flag(mp.x + 1.5, mp.y - 0.5);
 
   return glm::vec2(p11 + p10 - p01 - p00, p01 + p11 - p00 - p10);
 }
@@ -353,7 +353,7 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
     item.pos += dt * item.vel;
     item.rotation += dt * item.angVel;
 
-    glm::vec2 gridPos = item.pos / h + 0.5f;
+    glm::vec2 gridPos = item.pos / h;
 
     // Skip out of Bounds objects
     if (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
@@ -361,7 +361,7 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       continue;
 
     // Check terrain collision
-    glm::vec2 mp = (posBefore) / h + 0.5f;
+    glm::vec2 mp = (posBefore) / h;
     glm::vec2 surfaceNormal =
         (sampleNormal(flag, mp) + sampleNormal(flag, gridPos)) * 0.5f;
     if (length(surfaceNormal) > 1.2f) {
@@ -382,35 +382,32 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
     item.angForce = 0;
     item.force = {0, 0};
 
-    int sampleCount = 3;
-    for (int u = 0; u < sampleCount; u++) {
-      for (int v = 0; v < sampleCount; v++) {
-        glm::vec2 samplePoint =
-            glm::vec2(((float)u / (sampleCount - 1) - 0.5f),
-                      ((float)v / (sampleCount - 1) - 0.5f)) *
-            item.size;
+    glm::vec2 surfacePoints[] = {
+        {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};
 
-        glm::vec2 tangent =
-            normalize(glm::rotate(samplePoint, glm::half_pi<float>()));
+    float sideLength[] = {it->size.y, it->size.y, it->size.x, it->size.x};
 
-        if (samplePoint == glm::vec2(0, 0))
-          tangent = glm::vec2(0, 0);
+    for (int i = 0; i < 4; i++) {
+      auto sp = surfacePoints[i];
 
-        auto sampleVel =
-            (item.vel) + tangent * length(samplePoint) * item.angVel;
+      auto tSP = sp * it->size;
 
-        // Calculate forces
-        auto velocityDifference =
-            bilinearVel(gridPos + samplePoint / h) - sampleVel;
+      tSP = rotate(tSP, it->rotation);
 
-        centralForce +=
-            velocityDifference * 10.0f * (1.0f / sampleCount / sampleCount);
+      tSP = tSP + item.pos;
 
-        angForce += glm::dot(tangent, velocityDifference) * 2.0f *
-                    glm::length(samplePoint) *
-                    (1.0f / sampleCount / sampleCount);
-      }
+      auto sampleVel = bilinearVel(tSP / h);
+
+      auto deltaVel = sampleVel - it->vel;
+
+      auto force = rotate(sp, it->rotation) *
+                   glm::min(0.0f, dot(deltaVel, rotate(sp, it->rotation)));
+
+      force *= 10000.0f * sideLength[i];
+
+      centralForce += force * 200.0f * sideLength[i];
     }
+    centralForce += (bilinearVel(it->pos / h) - it->vel) * 6.0f;
 
     // Calculate new velocity
     item.vel += dt * (externalForce + centralForce) / item.mass;

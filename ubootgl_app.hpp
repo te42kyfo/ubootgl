@@ -44,7 +44,7 @@ public:
            &(textures[i % 2 + 1])});
            }*/
 
-    ship = {glm::vec2{0.001, 0.004},
+    ship = {glm::vec2{0.004, 0.001},
             2.2,
             glm::vec2(0, 0),
             glm::vec2(0.5, 0.21),
@@ -53,7 +53,7 @@ public:
             &textures[0]};
 
     for (int i = 0; i < 100; i++) {
-      swarm.addAgent({glm::vec2{0.001, 0.0025}, 0.5, glm::vec2(0, 0),
+      swarm.addAgent({glm::vec2{0.0025, 0.001}, 0.5, glm::vec2(0, 0),
                       glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
     swarm.nnInit();

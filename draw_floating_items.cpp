@@ -57,7 +57,7 @@ template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
     for (auto it : tex_ids[tex_id.first]) {
 
       glm::mat4 TM = glm::translate(PVM, glm::vec3(it->pos, 0.0f));
-      TM = glm::rotate(TM, it->rotation - glm::half_pi<float>(),
+      TM = glm::rotate(TM, it->rotation,
                        glm::vec3(0.0f, 0.0f, 1.0f));
       TM = glm::scale(TM, glm::vec3(it->size.x, it->size.y, 1.0f));
       TM = glm::translate(TM, glm::vec3(-0.5, -0.5, 0.0));
