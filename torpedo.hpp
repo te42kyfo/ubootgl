@@ -2,19 +2,42 @@
 #include <glm/gtx/vector_angle.hpp>
 
 bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
-                    FloatingItem *targetEnd, float simTime) {
+                    FloatingItem *targetEnd, FloatingItem *playerBegin,
+                    FloatingItem *playerEnd, float simTime) {
 
   t.age += simTime;
   FloatingItem *bestTarget = nullptr;
   float bestScore = 5.0;
   float bestAngle = 0.0;
+
   for (auto &target = targetBegin; target != targetEnd; target++) {
     float distance = length(t.pos - target->pos);
     float angle = glm::dot({cos(t.rotation), sin(t.rotation)},
                            (target->pos - t.pos) / distance);
     float score = angle * angle / distance / distance;
     if (distance > 0.06)
+      score = 0.0f;
+
+    if (distance < 0.002)
+      return true;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestTarget = target;
+      bestAngle = glm::orientedAngle({cos(t.rotation), sin(t.rotation)},
+                                     (target->pos - t.pos) / distance);
+    }
+  }
+
+  for (auto &target = playerBegin; target != playerEnd; target++) {
+    if (target->player == t.player)
       continue;
+    float distance = length(t.pos - target->pos);
+    float angle = glm::dot({cos(t.rotation), sin(t.rotation)},
+                           (target->pos - t.pos) / distance);
+    float score = angle * angle / distance / distance;
+    if (distance > 0.06)
+      score = 0.0f;
 
     if (distance < 0.002)
       return true;
@@ -28,7 +51,7 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
   }
 
   if (t.age < 0.03f) {
-      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 2.0f;
+    t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 2.0f;
   } else if (t.age < 0.8f) {
     t.angForce = glm::sign(bestAngle) * 0.00001;
     if (bestTarget != nullptr)
@@ -39,7 +62,7 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
     return true;
   }
 
-  if (t.bumpCount > 0)
+  if (t.bumpCount > 0 && t.age > 0.03f)
     return true;
 
   return false;
