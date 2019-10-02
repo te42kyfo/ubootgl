@@ -270,13 +270,13 @@ void UbootGlApp::draw() {
     //                     glm::vec3(-0.5, -0.5 * renderHeight / renderWidth,
     //                     0.0));
 
-    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM);
-
+    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM,
+                        sim.pwidth);
     Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
-                         PVM);
+                         PVM, sim.pwidth);
 
     DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
-                      sim.height, PVM, simTime, sim.pwidth / (sim.width - 1));
+                      sim.height, PVM, simTime, sim.pwidth);
 
     DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
     DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);

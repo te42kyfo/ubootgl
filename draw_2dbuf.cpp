@@ -1,4 +1,7 @@
 //#include "draw_2dbuf.hpp"
+#include "gl_error.hpp"
+#include "load_shader.hpp"
+#include "texture.hpp"
 #include <GL/glew.h>
 #include <algorithm>
 #include <cmath>
@@ -6,9 +9,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
-#include "gl_error.hpp"
-#include "load_shader.hpp"
-#include "texture.hpp"
 
 using namespace std;
 
@@ -56,7 +56,7 @@ void init() {
                        GL_STATIC_DRAW));
 }
 
-void draw(float* texture_buffer, int tex_width, int tex_height) {
+void draw(float *texture_buffer, int tex_width, int tex_height) {
   // Upload Texture
 
   GL_CALL(glActiveTexture(GL_TEXTURE0));
@@ -86,27 +86,29 @@ void draw(float* texture_buffer, int tex_width, int tex_height) {
   GL_CALL(glDeleteTextures(1, &tex_id));
 }
 
-glm::mat4 transformationMatrix(int tex_width, int tex_height, glm::mat4 PVM) {
+glm::mat4 transformationMatrix(int tex_width, int tex_height, float pwidth,
+                               glm::mat4 PVM) {
   // Model
-  glm::mat4 TM =
-      glm::scale(PVM, glm::vec3(1.0,  (float)tex_height / tex_width, 1.0f));
+  glm::mat4 TM = glm::scale(
+      PVM, glm::vec3(pwidth, pwidth * (float)tex_height / tex_width, 1.0f));
 
   return TM;
 }
 
-void draw_scalar(float* buf_scalar, int nx, int ny, glm::mat4 PVM) {
+void draw_scalar(float *buf_scalar, int nx, int ny, glm::mat4 PVM,
+                 float pwidth) {
   vector<float> vt(buf_scalar, buf_scalar + nx * ny);
   auto upper_bound = vt.begin() + vt.size() - 1;
   nth_element(vt.begin(), upper_bound, vt.end());
   float vmax = *upper_bound;
   //  auto lower_bound = vt.begin() + vt.size() * 0;
   // nth_element(vt.begin(), lower_bound, vt.end());
-  float vmin = 0;  //*lower_bound;
+  float vmin = 0; //*lower_bound;
 
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
 
-  glm::mat4 TM = transformationMatrix(nx, ny, PVM);
+  glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
 
   GL_CALL(
       glUniformMatrix4fv(mag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
@@ -117,7 +119,8 @@ void draw_scalar(float* buf_scalar, int nx, int ny, glm::mat4 PVM) {
   GL_CALL(glUseProgram(0));
 }
 
-void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, glm::mat4 PVM) {
+void draw_mag(float *buf_vx, float *buf_vy, int nx, int ny, glm::mat4 PVM,
+              float pwidth) {
   std::vector<float> V(nx * ny);
   std::vector<float> vt(nx * ny);
 
@@ -140,7 +143,7 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, glm::mat4 PVM) {
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
 
-  glm::mat4 TM = transformationMatrix(nx, ny, PVM);
+  glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
   GL_CALL(
       glUniformMatrix4fv(mag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
 
@@ -150,19 +153,18 @@ void draw_mag(float* buf_vx, float* buf_vy, int nx, int ny, glm::mat4 PVM) {
   GL_CALL(glUseProgram(0));
 }
 
-void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
-               glm::mat4 PVM) {
+void draw_flag(Texture fill_tex, float *buf_flag, int nx, int ny, glm::mat4 PVM,
+               float pwidth) {
   GL_CALL(glUseProgram(flag_shader));
   GL_CALL(glUniform1i(flag_shader_mask_tex_uloc, 0));
   GL_CALL(glUniform1i(flag_shader_fill_tex_uloc, 1));
-  glm::mat4 TM = transformationMatrix(nx, ny, PVM);
+  glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
 
   GL_CALL(
       glUniformMatrix4fv(flag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
 
   GL_CALL(glActiveTexture(GL_TEXTURE1));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
-
 
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 
@@ -171,4 +173,4 @@ void draw_flag(Texture fill_tex, float* buf_flag, int nx, int ny,
   Draw2DBuf::draw(buf_flag, nx, ny);
   GL_CALL(glUseProgram(0));
 }
-}
+} // namespace Draw2DBuf

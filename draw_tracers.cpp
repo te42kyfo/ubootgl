@@ -136,7 +136,6 @@ void drawTracers(const vector<vector<vec2>> &tracers,
                          indices.data()));
   GL_CALL(glDisableVertexAttribArray(0));
   GL_CALL(glDisableVertexAttribArray(1));
-  
 }
 
 float bilinearSample(float x, float y, float const *v, int nx, int ny) {
@@ -181,9 +180,11 @@ void pegToOne(float &xOut, float &yOut, float xIn, float yIn) {
 }
 
 void draw(float *vx, float *vy, float *flag, int nx, int ny, glm::mat4 PVM,
-          float dt, float h) {
+          float dt, float pwidth) {
+  float h = pwidth / (nx - 1);
+
   // Model
-  glm::mat4 TM = glm::scale(PVM, glm::vec3(1.0 / nx, 1.0 / nx, 1.0f));
+  glm::mat4 TM = glm::scale(PVM, glm::vec3(pwidth / nx, pwidth / nx, pwidth));
 
   frameNumber++;
   if (frameNumber == 2) {

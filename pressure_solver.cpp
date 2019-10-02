@@ -152,12 +152,12 @@ void setZeroGradientBC(Single2DGrid &p) {
   }
 }
 
-void drawGrid(Single2DGrid &grid) {
+/*void drawGrid(Single2DGrid &grid) {
   glm::mat4 PVM(1.0f);
   PVM = glm::translate(PVM, glm::vec3(-1, -0.5, 0.0));
   PVM = glm::scale(PVM, glm::vec3(2.0, 2.0, 2.0));
-  Draw2DBuf::draw_scalar(grid.data(), grid.width, grid.height, PVM);
-}
+  Draw2DBuf::draw_scalar(grid.data(), grid.width, grid.height, PVM, 1.0f);
+  }*/
 
 void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
                     float h, int level, bool zeroGradientBC) {
@@ -165,7 +165,7 @@ void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
     for (int i = 0; i < 3; i++) {
       rbgs(p, f, flag, h, 1.0);
     }
-    //drawGrid(flag);
+    // drawGrid(flag);
     return;
   }
 
