@@ -62,7 +62,7 @@ void UbootGlApp::loop() {
       torpedos.push_back(
           {glm::vec2{0.002, 0.0004}, 0.2,
            ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 0.2f,
-           ship.pos, ship.rotation, ship.angVel, &(textures[4])});
+           ship.pos, ship.rotation, ship.angVel, &(textures[4]), player});
   }
 
   if (keysPressed[SDLK_PAGEUP])
@@ -81,11 +81,11 @@ void UbootGlApp::loop() {
     playerCount = 4;
 
   if (playerCount != playerShips.size()) {
-      scale *= (float) playerCount / oldPlayerCount;
+    // scale *= (float)playerCount / oldPlayerCount;
     playerShips.clear();
     for (unsigned int p = 0; p < playerCount; p++) {
       playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
-                             glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0]});
+                             glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0], p});
     }
   }
 
@@ -125,7 +125,7 @@ void UbootGlApp::loop() {
             if (explode) {
               explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
                                     rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
-                                    &(textures[5])});
+                                    &(textures[5]), t.player});
               explosions.back().age = 0.01f;
 
               sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
