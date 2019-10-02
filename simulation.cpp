@@ -1,4 +1,5 @@
 #include "simulation.hpp"
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -345,8 +346,10 @@ glm::vec2 sampleNormal(Single2DGrid &flag, glm::vec2 mp) {
   return glm::vec2(p11 + p10 - p01 - p00, p01 + p11 - p00 - p10);
 }
 template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
-  for (auto it = begin; it != end; it++) {
-    auto &item = *it;
+#pragma omp parallel for
+  for (int it = 0; it < std::distance(begin, end); it++) {
+
+    auto &item = *(begin + it);
     auto posBefore = item.pos;
 
     // Position update
@@ -385,29 +388,29 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
     glm::vec2 surfacePoints[] = {
         {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};
 
-    float sideLength[] = {it->size.y, it->size.y, it->size.x, it->size.x};
+    float sideLength[] = {item.size.y, item.size.y, item.size.x, item.size.x};
 
     for (int i = 0; i < 4; i++) {
       auto sp = surfacePoints[i];
 
-      auto tSP = sp * it->size;
+      auto tSP = sp * item.size;
 
-      tSP = rotate(tSP, it->rotation);
+      tSP = rotate(tSP, item.rotation);
 
       tSP = tSP + item.pos;
 
       auto sampleVel = bilinearVel(tSP / h);
 
-      auto deltaVel = sampleVel - it->vel;
+      auto deltaVel = sampleVel - item.vel;
 
-      auto force = rotate(sp, it->rotation) *
-                   glm::min(0.0f, dot(deltaVel, rotate(sp, it->rotation)));
+      auto force = rotate(sp, item.rotation) *
+                   glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
 
       force *= 10000.0f * sideLength[i];
 
       centralForce += force * 200.0f * sideLength[i];
     }
-    centralForce += (bilinearVel(it->pos / h) - it->vel) * 6.0f;
+    centralForce += (bilinearVel(item.pos / h) - item.vel) * 6.0f;
 
     // Calculate new velocity
     item.vel += dt * (externalForce + centralForce) / item.mass;
@@ -438,8 +441,6 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       vy(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.y;
       vy(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y;
       vy(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.y;
-
-
     }
   }
 }
