@@ -198,10 +198,19 @@ void UbootGlApp::draw() {
 
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
+  int xsplits = 1;
+  int ysplits = 1;
+  if (playerCount == 4) {
+    xsplits = 2;
+    ysplits = 2;
+  } else {
+    xsplits = playerCount;
+  }
+
   int displayWidth = ImGui::GetIO().DisplaySize.x;
   int displayHeight = ImGui::GetIO().DisplaySize.y;
-  int renderWidth = displayWidth / playerShips.size() * 0.99;
-  int renderHeight = displayHeight;
+  int renderWidth = displayWidth / xsplits * 0.99;
+  int renderHeight = displayHeight / ysplits;
   int renderOriginX = renderWidth;
   int renderOriginY = 0;
 
@@ -217,7 +226,7 @@ void UbootGlApp::draw() {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::SetNextWindowSize(ImVec2(displayWidth - 10, sideBarSize - 10));
     renderOriginY = 0;
-    renderHeight = displayHeight - sideBarSize;
+    renderHeight = (displayHeight - sideBarSize) / ysplits;
   }
   bool p_open;
   ImGui::Begin("SideBar", &p_open,
@@ -232,7 +241,8 @@ void UbootGlApp::draw() {
   double graphicsT1 = dtime();
   for (int i = 0; i < playerShips.size(); i++) {
 
-    renderOriginX = renderWidth * (i * 1.01);
+    renderOriginX = renderWidth * (i % xsplits * 1.01);
+    renderOriginY = renderHeight * (i / xsplits) * 1.01;
 
     GL_CALL(
         glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
@@ -248,7 +258,8 @@ void UbootGlApp::draw() {
     // PVM = glm::translate(PVM, glm::vec3(0.0f, -0.4f, 0.0f));
 
     PVM = glm::scale(
-        PVM, glm::vec3(2 * scale, 2 * scale * (float)renderWidth / renderHeight,
+        PVM, glm::vec3(2 * scale * xsplits,
+                       2 * scale * xsplits * (float)renderWidth / renderHeight,
                        1.0f));
     // View
     // PVM = glm::rotate(PVM, playerShips[i].rotation - glm::half_pi<float>(),
