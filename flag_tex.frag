@@ -15,7 +15,7 @@ void main(void) {
   if (tv > 0.5) {
     gl_FragColor = vec4(0, 0, 0, 1.0);
   } else {
-    gl_FragColor = texture(fill_tex, texCoord * -6) * (1.0 - tv);
+    gl_FragColor = texture(fill_tex, texCoord * -6) * (0.8 + 2.0*tv);
   }
 
   /*float tv = 0.125 * (texture(mask_tex, texCoord + 2 * vec2(tdx, 0)).r +
