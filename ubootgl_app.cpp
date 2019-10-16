@@ -46,58 +46,78 @@ auto removeOutOfBounds(T begin, T end, int width, int height,
 }
 
 void UbootGlApp::loop() {
+
+  simulationSteps = min(100.0, max(1.0, 0.02 / lastSimulationTime));
+
+  float timestep = 0.1f / max(1.0, smoothedFrameRate * simulationSteps);
+
   double updateTime = dtime();
-  double timeDelta = updateTime - lastKeyUpdate;
-  for (unsigned int player = 0; player < playerShips.size(); player++) {
-    auto &ship = playerShips[player];
-    if (keysPressed[key_map[{player, CONTROLS::TURN_CLOCKWISE}]])
-      ship.rotation -= 2.0 * timeDelta;
-    if (keysPressed[key_map[{player, CONTROLS::TURN_COUNTERCLOCKWISE}]])
-      ship.rotation += 2.0 * timeDelta;
-    if (keysPressed[key_map[{player, CONTROLS::THRUST_FORWARD}]])
-      ship.force += 6.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-    if (keysPressed[key_map[{player, CONTROLS::THRUST_BACKWARD}]])
-      ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-    if (keysPressed[key_map[{player, CONTROLS::LAUNCH_TORPEDO}]])
-      torpedos.push_back(
-          {glm::vec2{0.002, 0.0004}, 0.2,
-           ship.vel + glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 0.2f,
-           ship.pos, ship.rotation, ship.angVel, &(textures[4]), (int)player});
-  }
+  double timeDelta = (updateTime - lastKeyUpdate) / simulationSteps;
 
-  if (keysPressed[SDLK_PAGEUP])
-    scale *= pow(2, timeDelta);
-  if (keysPressed[SDLK_PAGEDOWN])
-    scale *= pow(0.5, timeDelta);
+  double sim_t1 = dtime();
+  for (int simStep = 0; simStep < simulationSteps; simStep++) {
 
-  if (keysPressed[SDLK_1])
-    playerCount = 1;
-  if (keysPressed[SDLK_2])
-    playerCount = 2;
-  if (keysPressed[SDLK_3])
-    playerCount = 3;
-  if (keysPressed[SDLK_4])
-    playerCount = 4;
-
-  if (playerCount != playerShips.size()) {
-
-    playerShips.clear();
-    for (unsigned int p = 0; p < playerCount; p++) {
-      playerShips.push_back({glm::vec2{0.004, 0.001}, 2.2, glm::vec2(0, 0),
-                             glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0],
-                             (int)p});
+    for (unsigned int player = 0; player < playerShips.size(); player++) {
+      auto &ship = playerShips[player];
+      if (keysPressed[key_map[{player, CONTROLS::TURN_CLOCKWISE}]])
+        ship.rotation -= 4.0 * timeDelta;
+      if (keysPressed[key_map[{player, CONTROLS::TURN_COUNTERCLOCKWISE}]])
+        ship.rotation += 4.0 * timeDelta;
+      if (keysPressed[key_map[{player, CONTROLS::THRUST_FORWARD}]])
+        ship.force +=
+            8.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
+      if (keysPressed[key_map[{player, CONTROLS::THRUST_BACKWARD}]])
+        ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
+      if (keysPressed[key_map[{player, CONTROLS::LAUNCH_TORPEDO}]]) {
+        if (players[player].torpedoCooldown < 0.0001 &&
+            players[player].torpedosLoaded > 1.0) {
+          torpedos.push_back(
+              {glm::vec2{0.002, 0.0004}, 0.15,
+               ship.vel +
+                   glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 0.2f,
+               ship.pos, ship.rotation, ship.angVel, &(textures[4]),
+               (int)player});
+          players[player].torpedoCooldown = 0.015;
+          players[player].torpedosLoaded -= 1.0;
+          players[player].torpedosFired++;
+        }
+      }
+      players[player].torpedoCooldown =
+          max(0.0f, players[player].torpedoCooldown - timestep);
+      players[player].torpedosLoaded =
+          min(8.0f, players[player].torpedosLoaded + 10.0f * timestep);
     }
-  }
 
-  lastKeyUpdate = updateTime;
+    if (keysPressed[SDLK_PAGEUP])
+      scale *= pow(2, timeDelta);
+    if (keysPressed[SDLK_PAGEDOWN])
+      scale *= pow(0.5, timeDelta);
 
-  double t1 = dtime();
+    if (keysPressed[SDLK_1])
+      playerCount = 1;
+    if (keysPressed[SDLK_2])
+      playerCount = 2;
+    if (keysPressed[SDLK_3])
+      playerCount = 3;
+    if (keysPressed[SDLK_4])
+      playerCount = 4;
 
-  simTime = 0;
-  simIterationCounter = 0;
-  while (dtime() - t1 < 0.01) {
+    if (playerCount != playerShips.size()) {
+      players.clear();
+      playerShips.clear();
+      for (unsigned int p = 0; p < playerCount; p++) {
+        playerShips.push_back({glm::vec2{0.006, 0.0015}, 1.3, glm::vec2(0, 0),
+                               glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0],
+                               (int)p});
+        players.push_back(Player());
+      }
+    }
 
-    sim.step();
+    lastKeyUpdate = updateTime;
+
+    simTime = 0;
+
+    sim.step(timestep);
 
     sim.advectFloatingItems(&*begin(playerShips), &*end(playerShips));
     sim.advectFloatingItems(&*begin(debris), &*end(debris));
@@ -105,89 +125,102 @@ void UbootGlApp::loop() {
     sim.advectFloatingItems(&*begin(torpedos), &*end(torpedos));
 
     simTime += sim.dt;
-    simIterationCounter++;
-  }
 
-  respawnOutOfBounds(&*begin(swarm.agents), &*end(swarm.agents), sim.width,
-                     sim.height, sim.flag, sim.h);
-  respawnOutOfBounds(&*begin(playerShips), &*end(playerShips), sim.width,
-                     sim.height, sim.flag, sim.h);
+    respawnOutOfBounds(&*begin(swarm.agents), &*end(swarm.agents), sim.width,
+                       sim.height, sim, sim.h);
+    respawnOutOfBounds(&*begin(playerShips), &*end(playerShips), sim.width,
+                       sim.height, sim, sim.h);
 
-  // sim.sinks.clear();
+    // sim.sinks.clear();
 
-  float explosionDiam = 0.005;
-  torpedos.erase(
-      remove_if(
-          begin(torpedos), end(torpedos),
-          [=](auto &t) {
-            bool explode = processTorpedo(
-                t, &*begin(swarm.agents), &*end(swarm.agents),
-                &*begin(playerShips), &*end(playerShips), simTime);
-            if (explode) {
-              explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
-                                    rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
-                                    &(textures[5]), t.player});
-              explosions.back().age = 0.02f;
+    float explosionDiam = 0.005;
+    torpedos.erase(
+        remove_if(
+            begin(torpedos), end(torpedos),
+            [=](auto &t) {
+              bool explode = processTorpedo(
+                  t, &*begin(swarm.agents), &*end(swarm.agents),
+                  &*begin(playerShips), &*end(playerShips), simTime);
+              if (explode) {
+                explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
+                                      rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
+                                      &(textures[5]), t.player});
+                explosions.back().age = 0.02f;
 
-              sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
-              float diam = explosionDiam / sim.h;
-              for (int y = -diam; y <= diam; y++) {
-                for (int x = -diam; x <= diam; x++) {
-                  auto gridC = (t.pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
-                  if (x * x + y * y > diam * diam)
-                    continue;
-                  if (sim.flag(gridC) < 1.0) {
-                    for (int i = 0; i < 60; i++) {
-                      float velangle =
-                          orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
-                          (rand() % 100) / 100.0f * 2.f * M_PI;
-                      float size = rand() % 100 / 40.0f - 1.25f;
-                      size *= size;
-                      int type = rand() % 2;
-                      debris.push_back(
-                          {glm::vec2{0.0003, 0.0003} * size,
-                           size * (0.4f * type + 0.04f),
-                           t.vel + glm::vec2{cos(velangle), sin(velangle)} *
-                                       (rand() % 100 / 800.0f),
-                           t.pos + glm::vec2(x, y) * sim.h,
-                           rand() % 100 / 100.0f * 2.0f * (float)M_PI,
-                           rand() % 100 - 50.0f, &(textures[type + 1])});
+                sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
+                float diam = explosionDiam / sim.h;
+                for (int y = -diam; y <= diam; y++) {
+                  for (int x = -diam; x <= diam; x++) {
+                    auto gridC =
+                        (t.pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
+                    if (x * x + y * y > diam * diam)
+                      continue;
+                    if (sim.flag(gridC) < 1.0) {
+                      for (int i = 0; i < 50; i++) {
+                        float velangle =
+                            orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
+                            (rand() % 100) / 100.0f * 2.f * M_PI;
+                        float size = rand() % 100 / 200.0f + 0.5;
+                        size *= size;
+                        int type = rand() % 2;
+                        debris.push_back(
+                            {glm::vec2{0.0003, 0.0003} * size,
+                             size * (1.0f * type + 0.1f),
+                             t.vel + glm::vec2{cos(velangle), sin(velangle)} *
+                                         (rand() % 100 / 2000.0f),
+                             t.pos + glm::vec2(x + rand() % 100 / 100.0,
+                                               y + rand() % 100 / 100.0) *
+                                         sim.h,
+                             rand() % 100 / 100.0f * 2.0f * (float)M_PI,
+                             rand() % 100 - 50.0f, &(textures[type + 1])});
+                      }
                     }
+                    sim.setGrids(gridC, 1.0);
                   }
-                  sim.setGrids(gridC, 1.0);
                 }
+                sim.mg.updateFields(sim.flag);
               }
-              sim.mg.updateFields(sim.flag);
-            }
-            return explode;
-          }),
-      end(torpedos));
+              return explode;
+            }),
+        end(torpedos));
 
-  for (auto &exp : explosions) {
-    for (auto &ag : swarm.agents) {
-      if (length(exp.pos - ag.pos) < explosionDiam * 0.7 && exp.age < 0.08f)
-        ag.pos = glm::vec2(-1, -1);
+    for (auto &exp : explosions) {
+      for (auto &ag : swarm.agents) {
+        if (length(exp.pos - ag.pos) < explosionDiam * 0.7 && exp.age < 0.08f)
+          ag.pos = glm::vec2(-1, -1);
+      }
+      for (auto &ag : playerShips) {
+        if (length(exp.pos - ag.pos) <
+                (exp.age + 0.01) * explosionDiam * 30.0f &&
+            exp.age < 0.08f && exp.player != ag.player)
+          ag.pos = glm::vec2(-1, -1);
+      }
     }
-    for (auto &ag : playerShips) {
-      if (length(exp.pos - ag.pos) < (exp.age + 0.01) * explosionDiam * 30.0f &&
-          exp.age < 0.08f && exp.player != ag.player)
-        ag.pos = glm::vec2(-1, -1);
-    }
+
+    explosions.erase(
+        remove_if(begin(explosions), end(explosions),
+                  [=](auto &t) { return processExplosion(t, simTime); }),
+        end(explosions));
+
+    debris.erase(removeOutOfBounds(begin(debris), end(debris), sim.width,
+                                   sim.height, sim, sim.h),
+                 end(debris));
+    debris.erase(remove_if(begin(debris), end(debris),
+                           [](FloatingItem &d) { return rand() % 1000 == 42; }),
+                 end(debris));
+
+    torpedos.erase(removeOutOfBounds(begin(torpedos), end(torpedos), sim.width,
+                                     sim.height, sim, sim.h),
+                   end(torpedos));
+
+    swarm.update(playerShips[0], sim.flag, sim.h);
   }
-
-  explosions.erase(
-      remove_if(begin(explosions), end(explosions),
-                [=](auto &t) { return processExplosion(t, simTime); }),
-      end(explosions));
-
-  debris.erase(removeOutOfBounds(begin(debris), end(debris), sim.width,
-                                 sim.height, sim.flag, sim.h),
-               end(debris));
-  torpedos.erase(removeOutOfBounds(begin(torpedos), end(torpedos), sim.width,
-                                   sim.height, sim.flag, sim.h),
-                 end(torpedos));
-
-  swarm.update(playerShips[0], sim.flag, sim.h);
+  double sim_t2 = dtime();
+  lastSimulationTime = (sim_t2 - sim_t1) / simulationSteps;
+  double thisFrameTime = dtime();
+  smoothedFrameRate =
+      0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
+  lastFrameTime = thisFrameTime;
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
@@ -242,7 +275,7 @@ void UbootGlApp::draw() {
   ImGui::TextWrapped("%s", sim.diag.str().c_str());
   ImGui::Separator();
   ImGui::TextWrapped("FPS: %.1f, %d sims/frame", smoothedFrameRate,
-                     simIterationCounter);
+                     simulationSteps);
 
   double graphicsT1 = dtime();
   for (unsigned int i = 0; i < playerShips.size(); i++) {
@@ -292,10 +325,6 @@ void UbootGlApp::draw() {
     DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
   }
   double graphicsT2 = dtime();
-  double thisFrameTime = dtime();
-  smoothedFrameRate =
-      0.9 * smoothedFrameRate + 0.1 / (thisFrameTime - lastFrameTime);
-  lastFrameTime = thisFrameTime;
 
   ImGui::TextWrapped("graphics time: %10.1f ms",
                      (graphicsT2 - graphicsT1) * 1000.0);

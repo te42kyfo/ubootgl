@@ -1,7 +1,7 @@
 #pragma once
 #include "db2dgrid.hpp"
-#include "floating_item.hpp"
 #include "external/lodepng.h"
+#include "floating_item.hpp"
 #include "pressure_solver.hpp"
 #include <cmath>
 #include <functional>
@@ -118,10 +118,10 @@ public:
   void diffuse();
   void project();
   void centerP();
-  void setDT();
+  float getDT();
   void advect();
 
-  void step();
+  void step(float timestep);
 
   template <typename T> void advectFloatingItems(T *begin, T *end);
 

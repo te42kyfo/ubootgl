@@ -238,7 +238,7 @@ void Simulation::centerP() {
   }
 }
 
-void Simulation::setDT() {
+float Simulation::getDT() {
   float max_vel = 1.0e-7;
 
   for (int y = 1; y < height - 1; y++) {
@@ -247,8 +247,9 @@ void Simulation::setDT() {
     }
   }
 
-  dt = std::min(1.0f, pwidth / (width - 1.0f) / max_vel * 2.5f);
-  diag << "SET_DT: Vmax=" << max_vel << ", dt=" << dt << "\n";
+  float rDT = pwidth / (width - 1.0f) / max_vel * 2.5f;
+  diag << "SET_DT: Vmax=" << max_vel << ", dt=" << rDT << "\n";
+  return rDT;
 }
 
 vec2 inline Simulation::bilinearVel(vec2 c) {
@@ -321,9 +322,12 @@ void Simulation::advect() {
   vy.swap();
 }
 
-void Simulation::step() {
+void Simulation::step(float timestep) {
+  dt = timestep;
   diag.str("SIM\n");
-  setDT();
+
+  diag << "Time Step: dt=" << timestep << "\n";
+  getDT();
 
   diffuse();
 

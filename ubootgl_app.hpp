@@ -48,9 +48,10 @@ public:
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
+  double lastSimulationTime = 1.0;
   float scale;
   float simTime = 0.0;
-  uint simIterationCounter = 0;
+  uint simulationSteps = 0;
   SdlGl vis;
   Simulation sim;
   Texture rock_texture;
