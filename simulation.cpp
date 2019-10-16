@@ -341,14 +341,34 @@ void Simulation::step(float timestep) {
   staleInterpolatedFields = true;
 }
 
-glm::vec2 sampleNormal(Single2DGrid &flag, glm::vec2 mp) {
-  double p01 = flag(mp.x - 0.5, mp.y + 1.5);
-  double p11 = flag(mp.x + 1.5, mp.y + 1.5);
-  double p00 = flag(mp.x - 0.5, mp.y - 0.5);
-  double p10 = flag(mp.x + 1.5, mp.y - 0.5);
+glm::vec2 Simulation::psampleFlagNormal(glm::vec2 pc) {
+  float p01 = psampleFlagLinear(glm::vec2(pc.x - h, pc.y + h));
+  float p11 = psampleFlagLinear(glm::vec2(pc.x + h, pc.y + h));
+  float p00 = psampleFlagLinear(glm::vec2(pc.x - h, pc.y - h));
+  float p10 = psampleFlagLinear(glm::vec2(pc.x + h, pc.y - h));
 
   return glm::vec2(p11 + p10 - p01 - p00, p01 + p11 - p00 - p10);
 }
+
+float Simulation::psampleFlagLinear(glm::vec2 pc) {
+
+  glm::vec2 c = pc / (pwidth / (flag.width)) - 0.5f;
+  glm::ivec2 ic = c;
+  glm::vec2 st = fract(c);
+
+  float p01 = flag(ic + glm::ivec2{0, 1});
+  float p11 = flag(ic + glm::ivec2{1, 1});
+  float p00 = flag(ic + glm::ivec2{0, 0});
+  float p10 = flag(ic + glm::ivec2{1, 0});
+
+  return glm::mix(glm::mix(p00, p10, st.x), glm::mix(p01, p11, st.x), st.y);
+}
+
+float Simulation::psampleFlagNearest(glm::vec2 pc) {
+  glm::vec2 gridPos = pc / (pwidth / (flag.width));
+  return flag(gridPos);
+}
+
 template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
 #pragma omp parallel for
   for (int it = 0; it < std::distance(begin, end); it++) {
@@ -360,7 +380,7 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
     item.pos += dt * item.vel;
     item.rotation += dt * item.angVel;
 
-    glm::vec2 gridPos = item.pos / h;
+    glm::vec2 gridPos = item.pos / (pwidth / (flag.width));
 
     // Skip out of Bounds objects
     if (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
@@ -368,18 +388,25 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       continue;
 
     // Check terrain collision
-    glm::vec2 mp = (posBefore) / h;
-    glm::vec2 surfaceNormal =
-        (sampleNormal(flag, mp) + sampleNormal(flag, gridPos)) * 0.5f;
-    if (length(surfaceNormal) > 1.2f) {
+    if (psampleFlagLinear(item.pos) < 0.5f) {
+      glm::vec2 surfaceNormal =
+          normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
 
-      surfaceNormal = normalize(surfaceNormal);
+      if (psampleFlagLinear(posBefore) > 0.5f)
+        item.pos = posBefore;
 
-      if (dot(item.vel, surfaceNormal) < 0.0)
-        item.vel = reflect(item.vel, surfaceNormal) * 0.9f;
-      item.vel += (0.01f * length(item.vel)) * surfaceNormal * 0.05f;
-      if (dot(item.force, surfaceNormal) < 0.0f)
-        item.force *= 0.0f; //+= dot(item.force, surfaceNormal) * surfaceNormal;
+      if (length(surfaceNormal) > 0.0f) {
+
+        if (dot(item.vel, surfaceNormal) < 0.0)
+          item.vel = reflect(item.vel, surfaceNormal) * 0.7f;
+        item.vel += surfaceNormal * 0.001f;
+        if (dot(item.force, surfaceNormal) < 0.0f)
+          item.force += dot(item.force, surfaceNormal) * surfaceNormal;
+      } else {
+        item.vel = vec2(0.0f);
+        item.force = vec2(0.0f);
+      }
+
       item.bumpCount++;
     }
 

@@ -113,6 +113,9 @@ public:
   }
 
   glm::vec2 bilinearVel(glm::vec2 c);
+  float psampleFlagNearest(glm::vec2 pc);
+  float psampleFlagLinear(glm::vec2 pc);
+  glm::vec2 psampleFlagNormal(glm::vec2 pc);
 
   float diffusion_l2_residual();
   void diffuse();

@@ -13,35 +13,34 @@
 using namespace std;
 
 template <typename T>
-void respawnOutOfBounds(T begin, T end, int width, int height,
-                        Single2DGrid const &flag, float h) {
+void respawnOutOfBounds(T begin, T end, int width, int height, Simulation &sim,
+                        float h) {
 
-  static auto disx = std::uniform_real_distribution<float>(0.0f, 1.0f);
-  static auto disy =
-      std::uniform_real_distribution<float>(0.0f, (float)height / width);
+  static auto disx = std::uniform_real_distribution<float>(0.0f, width);
+  static auto disy = std::uniform_real_distribution<float>(0.0f, height);
   static std::default_random_engine gen(std::random_device{}());
 
   for (auto it = begin; it != end; it++) {
     glm::vec2 gridPos = it->pos / h + 0.5f;
     while (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
            gridPos.y >= height - 2 || gridPos.y <= 1.0 ||
-           flag(gridPos.x, gridPos.y) < 0.01) {
-      it->pos = glm::vec2(disx(gen), disy(gen));
+           sim.psampleFlagLinear(it->pos) < 0.01) {
+      gridPos = glm::vec2(disx(gen), disy(gen));
+      it->pos = gridPos * h;
       it->vel = {0.0f, 0.0f};
       it->angVel = 0;
-      gridPos = it->pos / h + 0.5f;
     }
   }
 }
 template <typename T>
-auto removeOutOfBounds(T begin, T end, int width, int height,
-                       Single2DGrid const &flag, float h) {
+auto removeOutOfBounds(T begin, T end, int width, int height, Simulation &sim,
+                       float h) {
 
   return remove_if(begin, end, [&](auto &it) {
     glm::vec2 gridPos = it.pos / h + 0.5f;
     return (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
             gridPos.y >= height - 2 || gridPos.y <= 1.0 ||
-            flag(gridPos.x, gridPos.y) < 0.01);
+            sim.psampleFlagLinear(it.pos) < 0.01);
   });
 }
 
