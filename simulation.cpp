@@ -437,9 +437,8 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       auto force = rotate(sp, item.rotation) *
                    glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
 
-      force *= 10000.0f * sideLength[i];
-
-      centralForce += force * 200.0f * sideLength[i];
+      centralForce +=
+          force * 1000.0f * (1000.0f * sideLength[i] + 1.0f) * sideLength[i];
     }
     centralForce += (bilinearVel(item.pos / h) - item.vel) * 6.0f;
 
@@ -452,18 +451,26 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
     glm::ivec2 gridPos = it->pos / h + 0.5f;
     if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
         gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
-      float area = it->size.x * it->size.y;
+      float area = it->size.x * it->size.y / (h * h);
       auto deltaVel = bilinearVel(it->pos / h) - it->vel;
 
-      auto deltaVec = deltaVel * area * 200000.0f;
+      auto deltaVec = deltaVel * area * 0.1f;
 
       glm::vec2 cx = it->pos / h - vec2(0.5f, 0.0);
       glm::ivec2 ic = cx;
       vec2 st = fract(cx);
-      vx(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x;
-      vx(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.x;
-      vx(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.x;
-      vx(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.x;
+      vx(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x *
+                                   flag(ic + glm::ivec2{1, 1}) *
+                                   flag(ic + glm::ivec2{0, 1});
+      vx(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.x *
+                                   flag(ic + glm::ivec2{0, 1}) *
+                                   flag(ic + glm::ivec2{-1, 1});
+      vx(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.x *
+                                   flag(ic + glm::ivec2{1, 0}) *
+                                   flag(ic + glm::ivec2{0, 0});
+      vx(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.x *
+                                   flag(ic + glm::ivec2{0, 0}) *
+                                   flag(ic + glm::ivec2{-1, 0});
 
       glm::vec2 cy = it->pos / h - vec2(0.0f, 0.5);
       ic = cy;
