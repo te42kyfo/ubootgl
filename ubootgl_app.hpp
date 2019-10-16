@@ -6,6 +6,7 @@
 #include "draw_tracers.hpp"
 #include "floating_item.hpp"
 #include "imgui/imgui.h"
+#include "player.hpp"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
 #include "swarm.hpp"
@@ -19,7 +20,7 @@
 class UbootGlApp {
 public:
   UbootGlApp()
-      : sim("resources/level2.png", 1.0, 0.01f),
+      : sim("resources/level2.png", 0.8, 0.01f),
         rock_texture("resources/rock_texture2.png") {
     Draw2DBuf::init();
     DrawStreamlines::init();
@@ -35,7 +36,7 @@ public:
     textures.push_back(Texture("resources/torpedo.png"));
     textures.push_back(Texture("resources/explosion.png", 4, 4));
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 3; i++) {
       swarm.addAgent({glm::vec2{0.0025, 0.001}, 0.5, glm::vec2(0, 0),
                       glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
@@ -57,6 +58,7 @@ public:
   Texture rock_texture;
 
   std::vector<FloatingItem> playerShips;
+  std::vector<Player> players;
   unsigned int playerCount = 1;
 
   std::vector<FloatingItem> debris;
