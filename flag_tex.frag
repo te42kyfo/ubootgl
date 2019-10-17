@@ -10,12 +10,15 @@ void main(void) {
   // float tdx = dFdx(texCoord.x);
   // float tdy = dFdy(texCoord.y);
 
-  float tv = texture(mask_tex, texCoord).r;
+  float tv = textureLod(mask_tex, texCoord, 1).r * 0.6 +
+             textureLod(mask_tex, texCoord, 0).r * 0.5 +
+             textureLod(mask_tex, texCoord, 2).r * -0.1;
 
   if (tv > 0.5) {
     gl_FragColor = vec4(0, 0, 0, 1.0);
   } else {
-    gl_FragColor = texture(fill_tex, texCoord * -6) * (0.8 + 2.0*tv);
+    gl_FragColor = texture(fill_tex, texCoord * -6) *
+        (0.6 + smoothstep(0.0, 0.4, textureLod(mask_tex, texCoord, 4).r) * 1.0);
   }
 
   /*float tv = 0.125 * (texture(mask_tex, texCoord + 2 * vec2(tdx, 0)).r +
