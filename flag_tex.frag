@@ -7,7 +7,7 @@ uniform sampler2D fill_tex;
 
 void main(void) {
   vec2 texCoord = FragCoord;
-  // float tdx = dFdx(texCoord.x);
+  float tdx = dFdx(texCoord.x);
   // float tdy = dFdy(texCoord.y);
 
   float tv = textureLod(mask_tex, texCoord, 1).r * 0.6 +
@@ -17,8 +17,11 @@ void main(void) {
   if (tv > 0.5) {
     gl_FragColor = vec4(0, 0, 0, 1.0);
   } else {
-    gl_FragColor = texture(fill_tex, texCoord * -6) *
-        (0.6 + smoothstep(0.0, 0.4, textureLod(mask_tex, texCoord, 4).r) * 1.0);
+    gl_FragColor = vec4(
+        texture(fill_tex, texCoord * -6).rgb *
+            (0.6 +
+             smoothstep(0.0, 0.4, textureLod(mask_tex, texCoord, 4).r) * 1.0),
+        smoothstep(0.5, 0.5-tdx*500.0, tv));
   }
 
   /*float tv = 0.125 * (texture(mask_tex, texCoord + 2 * vec2(tdx, 0)).r +
