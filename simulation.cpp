@@ -195,9 +195,8 @@ void Simulation::project() {
       remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.2f; }),
       end(sinks));
 
-  float residual = calculateResidualField(p, f, flag, r, h);
-
-  diag << "PROJECT: res=" << residual << "\n";
+  //float residual = calculateResidualField(p, f, flag, r, h);
+  //diag << "PROJECT: res=" << residual << "\n";
 
   mg.solve(p, f, flag, h, true);
   // rbgs(p, f, flag, h, 1.0);
@@ -205,9 +204,9 @@ void Simulation::project() {
   centerP();
 
   setPBC();
-  residual = calculateResidualField(p, f, flag, r, h);
-
-  diag << "PROJECT: res=" << residual << "\n";
+  
+  //residual = calculateResidualField(p, f, flag, r, h);
+  //diag << "PROJECT: res=" << residual << "\n";
 #pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 2; x++) {
