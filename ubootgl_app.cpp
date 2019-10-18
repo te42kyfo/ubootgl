@@ -185,13 +185,12 @@ void UbootGlApp::loop() {
 
     for (auto &exp : explosions) {
       for (auto &ag : swarm.agents) {
-        if (length(exp.pos - ag.pos) < explosionDiam * 0.7 && exp.age < 0.08f)
+        if (length(exp.pos - ag.pos) < explosionDiam * 0.9 && exp.age < 0.08f)
           ag.pos = glm::vec2(-1, -1);
       }
       for (auto &ag : playerShips) {
-        if (length(exp.pos - ag.pos) <
-                (exp.age + 0.01) * explosionDiam * 30.0f &&
-            exp.age < 0.08f && exp.player != ag.player)
+        if (length(exp.pos - ag.pos) < explosionDiam * 0.9 && exp.age < 0.08f &&
+            exp.player != ag.player)
           ag.pos = glm::vec2(-1, -1);
       }
     }

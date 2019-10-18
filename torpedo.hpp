@@ -19,7 +19,7 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
       score = 0.0f;
 
 
-    if (distance < (target->size.x + target->size.y) * 0.7f)
+    if (distance < (target->size.x + target->size.y) * 0.6f)
         return true;
 
     if (score > bestScore) {
@@ -40,7 +40,7 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
     if (distance > 0.06)
       score = 0.0f;
 
-    if (distance < (target->size.x + target->size.y) * 20011.0f)
+    if (distance < (target->size.x + target->size.y) * 0.6f)
       return true;
 
     if (score > bestScore) {
@@ -63,7 +63,7 @@ bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
     return true;
   }
 
-  if (t.bumpCount > 0 && t.age > 0.03f)
+  if (t.bumpCount > 0)
     return true;
 
   return false;
