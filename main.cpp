@@ -40,10 +40,11 @@ int main(int, char**) {
     }
 
     ImGui_ImplSdlGL3_NewFrame(app.vis.window);
-    app.loop();
     app.draw();
-
     ImGui::Render();
+
+    glFlush();
+    app.loop();
     SDL_GL_SwapWindow(app.vis.window);
   }
 
