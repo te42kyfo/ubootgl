@@ -112,7 +112,7 @@ void UbootGlApp::loop() {
       playerShips.clear();
       for (unsigned int p = 0; p < playerCount; p++) {
         cout << p << "\n";
-        playerShips.push_back({glm::vec2{0.006, 0.0015}, 1.3, glm::vec2(0, 0),
+        playerShips.push_back({glm::vec2{0.008, 0.002}, 1.3, glm::vec2(0, 0),
                                glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0],
                                (int)p});
         players.push_back(Player(p));
@@ -282,8 +282,7 @@ void UbootGlApp::draw() {
         ((playerShips[pid].pos - glm::vec2{cos(playerShips[pid].rotation),
                                            sin(playerShips[pid].rotation)} *
                                      playerShips[pid].size.x * 0.2f)) /
-                sim.h +
-            glm::vec2(0.75f, 0.2f));
+        (sim.pwidth / (sim.width)));
   }
   DrawTracers::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                              sim.height, simTime, sim.pwidth);

@@ -280,10 +280,11 @@ void Simulation::advect() {
   float ih = 1.0f / h;
   const int steps = 2;
 
-#pragma omp parallel
-#pragma omp single
+  //#pragma omp parallel
+  //#pragma omp single
   {
-#pragma omp taskloop grainsize(1)
+      //#pragma omp taskloop num_tasks(4)
+      #pragma omp parallel for
     for (int y = 1; y < vx.height - 1; y++) {
       for (int x = 1; x < vx.width - 1; x++) {
         if (flag(x, y) < 1.0)
@@ -301,7 +302,8 @@ void Simulation::advect() {
             (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
       }
     }
-#pragma omp taskloop grainsize(1)
+    //#pragma omp taskloop num_tasks(4)
+    #pragma omp parallel for
     for (int y = 1; y < vy.height - 1; y++) {
       for (int x = 1; x < vy.width - 1; x++) {
         vec2 pos = vec2(x, y + 0.5);
