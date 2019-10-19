@@ -3,6 +3,10 @@
 
 namespace DrawTracers {
 void init();
-void draw(float* bufx, float* bufy, float* bufFlag, int nx, int ny,
-          glm::mat4 PVM, float dt, float h);
-}
+void playerTracersAdd(int pid, glm::vec2 pos);
+
+void updateTracers(float *vx, float *vy, float *flag, int nx, int ny, float dt,
+                   float pwidth);
+    
+void draw(int nx, int ny, glm::mat4 PVM, float pwidth);
+} // namespace DrawTracers

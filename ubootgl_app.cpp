@@ -253,8 +253,20 @@ void UbootGlApp::draw() {
   bool p_open;
 
   double graphicsT1 = dtime();
-  for (unsigned int i = 0; i < playerShips.size(); i++) {
 
+  for (int pid = 0; pid < players.size(); pid++) {
+    DrawTracers::playerTracersAdd(
+        pid,
+        ((playerShips[pid].pos - glm::vec2{cos(playerShips[pid].rotation),
+                                           sin(playerShips[pid].rotation)} *
+                                     playerShips[pid].size.x * 0.2f)) /
+                sim.h +
+            glm::vec2(0.75f, 0.2f));
+  }
+  DrawTracers::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
+                             sim.height, simTime, sim.pwidth);
+
+  for (unsigned int i = 0; i < players.size(); i++) {
     renderOriginX = renderWidth * (i % xsplits * 1.01);
     renderOriginY = renderHeight * (i / xsplits) * 1.01;
 
@@ -304,8 +316,7 @@ void UbootGlApp::draw() {
     Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
                          PVM, sim.pwidth);
 
-    DrawTracers::draw(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
-                      sim.height, PVM, simTime, sim.pwidth);
+    DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
 
     DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
     DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);
