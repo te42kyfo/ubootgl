@@ -196,8 +196,11 @@ void UbootGlApp::loop() {
           ag.pos = glm::vec2(-1, -1);
       }
       for (int pid = 0; pid < (int)players.size(); pid++) {
-        if (length(exp.pos - playerShips[pid].pos) < explosionDiam * 0.9 &&
-            exp.age < 0.08f && exp.player != pid) {
+        if (length(exp.pos - playerShips[pid].pos) <
+                explosionDiam * 0.5 +
+                    (playerShips[pid].size.x + playerShips[pid].size.y) * 0.5 &&
+            exp.age < 0.08f && exp.player != pid &&
+            players[pid].deathtimer == 0.0f) {
 
           explosions.push_back({glm::vec2{0.02, 0.02}, 0.01,
                                 playerShips[pid].vel, playerShips[pid].pos,
@@ -206,9 +209,20 @@ void UbootGlApp::loop() {
           explosions.back().age = 0.02f;
           sim.sinks.push_back(glm::vec3(playerShips[pid].pos, 200.0f));
 
-          playerShips[pid].pos = glm::vec2(-1, -1);
+          players[pid].deathtimer = 0.08f;
           players[pid].deaths++;
           players[exp.player].kills++;
+        }
+      }
+    }
+
+    for (auto &p : players) {
+      if (p.deathtimer > 0.0f) {
+        playerShips[p.id].vel = glm::vec2(0.0f, 0.0f);
+        p.deathtimer -= simTime;
+        if (p.deathtimer < 0.0f) {
+          playerShips[p.id].pos = glm::vec2(-1.0f, -1.0f);
+          p.deathtimer = 0.0f;
         }
       }
     }
