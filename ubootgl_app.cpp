@@ -282,7 +282,7 @@ void UbootGlApp::draw() {
         ((playerShips[pid].pos - glm::vec2{cos(playerShips[pid].rotation),
                                            sin(playerShips[pid].rotation)} *
                                      playerShips[pid].size.x * 0.2f)) /
-        (sim.pwidth / (sim.width)));
+            (sim.pwidth / (sim.width)));
   }
   DrawTracers::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                              sim.height, simTime, sim.pwidth);
@@ -339,13 +339,41 @@ void UbootGlApp::draw() {
 
     DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
 
-    DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM);
-    DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM);
-    DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM);
+    DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM, 1.0f);
+    DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM,
+                            1.0f);
+    DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM, 1.0f);
 
-    DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM);
-    DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
+    DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM,
+                            1.0f);
+    DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 1.0f);
   }
+
+  renderOriginX = displayWidth * 0.4;
+  renderOriginY = displayHeight * 0.0;
+  renderWidth = displayWidth * 0.2;
+  renderHeight = displayWidth * 0.2;
+
+  GL_CALL(glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
+
+  GL_CALL(glEnable(GL_FRAMEBUFFER_SRGB));
+
+  GL_CALL(glEnable(GL_BLEND));
+  GL_CALL(glBlendFunc(GL_ONE, GL_ZERO));
+
+  // Projection-View-Matrix
+  glm::mat4 PVM(1.0f);
+  PVM = glm::scale(
+      PVM,
+      glm::vec3(1.0f, 1.0f * (float)renderWidth / renderHeight, 1.0f) * 2.0f);
+  PVM = glm::translate(PVM, glm::vec3(-0.5f, -0.5f, 0.0f));
+  Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height, PVM,
+                       sim.pwidth);
+
+  DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM, 4.0f);
+  DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM, 4.0f);
+  DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 4.0f);
+
   double graphicsT2 = dtime();
   gfxTimes.add((graphicsT2 - graphicsT1) * 1000.0);
 

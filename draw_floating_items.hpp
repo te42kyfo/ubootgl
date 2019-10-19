@@ -7,5 +7,5 @@ namespace DrawFloatingItems {
 
 void init();
 template <typename T>
-void draw(T *begin, T *end, glm::mat4 PVM);
+void draw(T *begin, T *end, glm::mat4 PVM, float enhancement);
 } // namespace DrawFloatingItems

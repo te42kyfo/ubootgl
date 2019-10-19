@@ -37,7 +37,8 @@ void init() {
   GL_CALL(glBindVertexArray(vao));
 }
 
-template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
+template <typename T>
+void draw(T *begin, T *end, glm::mat4 PVM, float enhancement) {
   glm::vec4 p1 = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
   glm::vec4 p2 = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
   glm::vec4 p3 = glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
@@ -62,7 +63,8 @@ template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
 
       glm::mat4 TM = glm::translate(PVM, glm::vec3(it->pos, 0.0f));
       TM = glm::rotate(TM, it->rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-      TM = glm::scale(TM, glm::vec3(it->size.x, it->size.y, 1.0f));
+      TM =
+          glm::scale(TM, glm::vec3(it->size.x, it->size.y, 1.0f) * enhancement);
       TM = glm::translate(TM, glm::vec3(-0.5, -0.5, 0.0));
 
       glm::vec4 screenPos = TM * glm::vec4(0.5, 0.5, 0.0, 1.0);
@@ -134,7 +136,7 @@ template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
     GL_CALL(glBufferData(GL_ARRAY_BUFFER, color_buf.size() * sizeof(int),
                          color_buf.data(), GL_STREAM_DRAW));
     GL_CALL(glEnableVertexAttribArray(3));
-    GL_CALL(glVertexAttribIPointer(3, 1, GL_INT,  0, 0));
+    GL_CALL(glVertexAttribIPointer(3, 1, GL_INT, 0, 0));
 
     GL_CALL(glUniform2i(item_shader_frameGridSize_uloc,
                         tex_ids[tex_id.first][0]->tex->nx,
@@ -144,6 +146,7 @@ template <typename T> void draw(T *begin, T *end, glm::mat4 PVM) {
   }
 }
 template void draw<FloatingItem>(FloatingItem *begin, FloatingItem *end,
-                                 glm::mat4 PVM);
-template void draw<Torpedo>(Torpedo *begin, Torpedo *end, glm::mat4 PVM);
+                                 glm::mat4 PVM, float enhancement);
+template void draw<Torpedo>(Torpedo *begin, Torpedo *end, glm::mat4 PVM,
+                            float enhancement);
 } // namespace DrawFloatingItems
