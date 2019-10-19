@@ -1,6 +1,7 @@
 #include "ubootgl_app.hpp"
 #include "controls.hpp"
 #include "dtime.hpp"
+
 #include "explosion.hpp"
 #include "gl_error.hpp"
 #include "torpedo.hpp"
@@ -46,7 +47,7 @@ auto removeOutOfBounds(T begin, T end, int width, int height, Simulation &sim,
 
 void UbootGlApp::loop() {
 
-  simulationSteps = min(100.0, max(1.0, 0.02 / lastSimulationTime));
+  simulationSteps = 1; // min(100.0, max(1.0, 0.02 / lastSimulationTime));
 
   float timestep = 0.1f / max(1.0, smoothedFrameRate * simulationSteps);
 
@@ -56,34 +57,39 @@ void UbootGlApp::loop() {
   double sim_t1 = dtime();
   for (int simStep = 0; simStep < simulationSteps; simStep++) {
 
-    for (unsigned int player = 0; player < playerShips.size(); player++) {
-      auto &ship = playerShips[player];
-      if (keysPressed[key_map[{player, CONTROLS::TURN_CLOCKWISE}]])
-        ship.rotation -= 4.0 * timeDelta;
-      if (keysPressed[key_map[{player, CONTROLS::TURN_COUNTERCLOCKWISE}]])
-        ship.rotation += 4.0 * timeDelta;
-      if (keysPressed[key_map[{player, CONTROLS::THRUST_FORWARD}]])
-        ship.force += 8.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-      if (keysPressed[key_map[{player, CONTROLS::THRUST_BACKWARD}]])
-        ship.force -= 3.0f * glm::vec2(cos(ship.rotation), sin(ship.rotation));
-      if (keysPressed[key_map[{player, CONTROLS::LAUNCH_TORPEDO}]]) {
-        if (players[player].torpedoCooldown < 0.0001 &&
-            players[player].torpedosLoaded > 1.0) {
-          torpedos.push_back(
-              {glm::vec2{0.002, 0.0004}, 0.15,
-               ship.vel +
-                   glm::vec2{cos(ship.rotation), sin(ship.rotation)} * 0.2f,
-               ship.pos, ship.rotation, ship.angVel, &(textures[4]),
-               (int)player});
-          players[player].torpedoCooldown = 0.015;
-          players[player].torpedosLoaded -= 1.0;
-          players[player].torpedosFired++;
+    for (int pid = 0; pid < (int)players.size(); pid++) {
+
+      if (keysPressed[key_map[{pid, CONTROLS::TURN_CLOCKWISE}]])
+        playerShips[pid].rotation -= 4.0 * timeDelta;
+      if (keysPressed[key_map[{pid, CONTROLS::TURN_COUNTERCLOCKWISE}]])
+        playerShips[pid].rotation += 4.0 * timeDelta;
+      if (keysPressed[key_map[{pid, CONTROLS::THRUST_FORWARD}]])
+        playerShips[pid].force +=
+            8.0f * glm::vec2(cos(playerShips[pid].rotation),
+                             sin(playerShips[pid].rotation));
+      if (keysPressed[key_map[{pid, CONTROLS::THRUST_BACKWARD}]])
+        playerShips[pid].force -=
+            3.0f * glm::vec2(cos(playerShips[pid].rotation),
+                             sin(playerShips[pid].rotation));
+      if (keysPressed[key_map[{pid, CONTROLS::LAUNCH_TORPEDO}]]) {
+        if (players[pid].torpedoCooldown < 0.0001 &&
+            players[pid].torpedosLoaded > 1.0) {
+          torpedos.push_back({glm::vec2{0.002, 0.0004}, 0.15,
+                              playerShips[pid].vel +
+                                  glm::vec2{cos(playerShips[pid].rotation),
+                                            sin(playerShips[pid].rotation)} *
+                                      0.2f,
+                              playerShips[pid].pos, playerShips[pid].rotation,
+                              playerShips[pid].angVel, &(textures[4]), pid});
+          players[pid].torpedoCooldown = 0.015;
+          players[pid].torpedosLoaded -= 1.0;
+          players[pid].torpedosFired++;
         }
       }
-      players[player].torpedoCooldown =
-          max(0.0f, players[player].torpedoCooldown - timestep);
-      players[player].torpedosLoaded =
-          min(8.0f, players[player].torpedosLoaded + 10.0f * timestep);
+      players[pid].torpedoCooldown =
+          max(0.0f, players[pid].torpedoCooldown - timestep);
+      players[pid].torpedosLoaded =
+          min(8.0f, players[pid].torpedosLoaded + 10.0f * timestep);
     }
 
     if (keysPressed[SDLK_PAGEUP])
@@ -100,14 +106,16 @@ void UbootGlApp::loop() {
     if (keysPressed[SDLK_4])
       playerCount = 4;
 
-    if (playerCount != playerShips.size()) {
+    if (playerCount != players.size()) {
+      cout << "respawn, " << playerCount << " " << players.size() << "\n";
       players.clear();
       playerShips.clear();
       for (unsigned int p = 0; p < playerCount; p++) {
+        cout << p << "\n";
         playerShips.push_back({glm::vec2{0.006, 0.0015}, 1.3, glm::vec2(0, 0),
                                glm::vec2(-0.5, -0.5), 0.0, 0.0, &textures[0],
                                (int)p});
-        players.push_back(Player());
+        players.push_back(Player(p));
       }
     }
 
@@ -187,10 +195,21 @@ void UbootGlApp::loop() {
         if (length(exp.pos - ag.pos) < explosionDiam * 0.9 && exp.age < 0.08f)
           ag.pos = glm::vec2(-1, -1);
       }
-      for (auto &ag : playerShips) {
-        if (length(exp.pos - ag.pos) < explosionDiam * 0.9 && exp.age < 0.08f &&
-            exp.player != ag.player)
-          ag.pos = glm::vec2(-1, -1);
+      for (int pid = 0; pid < (int)players.size(); pid++) {
+        if (length(exp.pos - playerShips[pid].pos) < explosionDiam * 0.9 &&
+            exp.age < 0.08f && exp.player != pid) {
+
+          explosions.push_back({glm::vec2{0.02, 0.02}, 0.01,
+                                playerShips[pid].vel, playerShips[pid].pos,
+                                rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
+                                &(textures[5]), pid});
+          explosions.back().age = 0.02f;
+          sim.sinks.push_back(glm::vec3(playerShips[pid].pos, 200.0f));
+
+          playerShips[pid].pos = glm::vec2(-1, -1);
+          players[pid].deaths++;
+          players[exp.player].kills++;
+        }
       }
     }
 
@@ -217,6 +236,9 @@ void UbootGlApp::loop() {
   double thisFrameTime = dtime();
   smoothedFrameRate =
       0.95 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
+
+  frameTimes.add(1000.0f * (thisFrameTime - lastFrameTime));
+
   lastFrameTime = thisFrameTime;
 }
 
@@ -326,15 +348,18 @@ void UbootGlApp::draw() {
     DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM);
   }
   double graphicsT2 = dtime();
+  gfxTimes.add((graphicsT2 - graphicsT1) * 1000.0);
 
   ImGui::SetNextWindowPos(ImVec2(10, 10));
-  ImGui::SetNextWindowSize(ImVec2(400, 40));
+  ImGui::SetNextWindowSize(ImVec2(400, 50));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 
-  ImGui::TextWrapped("gfx: %.0f ms, %.0f FPS, %d sims/frame",
-                     (graphicsT2 - graphicsT1) * 1000.0, smoothedFrameRate,
-                     simulationSteps);
+  ImGui::TextWrapped("Total: %.1f, %.1f, %.1f ", frameTimes.avg(),
+                     frameTimes.high1pct(), frameTimes.largest());
+  ImGui::TextWrapped("GFX: %.1f, %.1f, %.1f ", gfxTimes.avg(),
+                     gfxTimes.high1pct(), gfxTimes.largest());
+
   ImGui::End();
 }

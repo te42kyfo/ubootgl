@@ -75,7 +75,7 @@ public:
       vy.f(x, 0) = vy.b(x, 0) = 0.0;
     }
     for (int y = 0; y < vx.height; y++) {
-      vx.f(0, y) = vx.b(0, y) = 2.0;
+      vx.f(0, y) = vx.b(0, y) = 1.0;
     }
 
     mg = MG(flag);
