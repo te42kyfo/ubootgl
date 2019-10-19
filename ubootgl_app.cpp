@@ -81,7 +81,7 @@ void UbootGlApp::loop() {
                                       0.2f,
                               playerShips[pid].pos, playerShips[pid].rotation,
                               playerShips[pid].angVel, &(textures[4]), pid});
-          players[pid].torpedoCooldown = 0.015;
+          players[pid].torpedoCooldown = 0.014;
           players[pid].torpedosLoaded -= 1.0;
           players[pid].torpedosFired++;
         }
@@ -89,7 +89,7 @@ void UbootGlApp::loop() {
       players[pid].torpedoCooldown =
           max(0.0f, players[pid].torpedoCooldown - timestep);
       players[pid].torpedosLoaded =
-          min(8.0f, players[pid].torpedosLoaded + 10.0f * timestep);
+          min(10.0f, players[pid].torpedosLoaded + 14.0f * timestep);
     }
 
     if (keysPressed[SDLK_PAGEUP])
@@ -381,15 +381,12 @@ void UbootGlApp::draw() {
       PVM,
       glm::vec3(1.0f, 1.0f * (float)renderWidth / renderHeight, 1.0f) * 2.0f);
   PVM = glm::translate(PVM, glm::vec3(-0.5f, -0.5f, 0.0f));
-  Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height, PVM,
+  Draw2DBuf::draw_flag(textures[6], sim.getFlag(), sim.width, sim.height, PVM,
                        sim.pwidth);
 
   DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM, 4.0f);
   DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM, 4.0f);
   DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 4.0f);
-
-  double graphicsT2 = dtime();
-  gfxTimes.add((graphicsT2 - graphicsT1) * 1000.0);
 
   ImGui::SetNextWindowPos(ImVec2(10, 10));
   ImGui::SetNextWindowSize(ImVec2(400, 50));
@@ -403,4 +400,7 @@ void UbootGlApp::draw() {
                      gfxTimes.high1pct(), gfxTimes.largest());
 
   ImGui::End();
+
+  double graphicsT2 = dtime();
+  gfxTimes.add((graphicsT2 - graphicsT1) * 1000.0);
 }

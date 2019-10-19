@@ -27,7 +27,7 @@ public:
     DrawTracers::init();
     DrawFloatingItems::init();
 
-    scale = 5.0;
+    scale = 3.0;
 
     textures.push_back(Texture("resources/ship2.png"));
     textures.push_back(Texture("resources/debris1.png"));
@@ -35,8 +35,9 @@ public:
     textures.push_back(Texture("resources/agent2.png"));
     textures.push_back(Texture("resources/torpedo.png"));
     textures.push_back(Texture("resources/explosion.png", 4, 4));
+    textures.push_back(Texture("resources/black.png"));
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 2; i++) {
       swarm.addAgent({glm::vec2{0.0025, 0.001}, 0.5, glm::vec2(0, 0),
                       glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
