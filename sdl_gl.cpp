@@ -23,7 +23,7 @@ void SdlGl::initDisplay() {
 
   window = SDL_CreateWindow(
       "Uboot", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN);
   if (window == nullptr) SDL_die("SDL_CreateWindow");
 
   gl_context = SDL_GL_CreateContext(window);

@@ -1,6 +1,7 @@
 #pragma once
 #include "db2dgrid.hpp"
 #include "floating_item.hpp"
+#include "entt/entity/registry.hpp"
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -122,23 +123,5 @@ template <int neuronCount, int inputCount> class NeuronLayer {
   std::vector<Matrix2D<float, 7, 1>> lastOutputs;
 };
 
-class Swarm {
-public:
-  void addAgent(FloatingItem agent);
-  void update(FloatingItem ship, const Single2DGrid &flag, float h);
-  void nnInit() {
 
-      /*    gen = std::default_random_engine(221);
-    std::normal_distribution<float> dist(0.0, 0.5);
-
-    auto distgen = std::bind(dist, gen);
-    weights.randInitialize(distgen);
-    bias.randInitialize(distgen);
-      */
-  }
-  void nnUpdate(FloatingItem ship, const Single2DGrid &flag, float h);
-
-  std::vector<FloatingItem> agents;
-  std::vector<NeuronLayer<4, 7>> networks;
-  std::default_random_engine gen;
-};
+void classicSwarmAI(entt::registry& registry,  const Single2DGrid &flag, float h);

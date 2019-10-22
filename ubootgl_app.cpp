@@ -2,6 +2,7 @@
 #include "controls.hpp"
 #include "dtime.hpp"
 
+
 #include "explosion.hpp"
 #include "gl_error.hpp"
 #include "torpedo.hpp"
@@ -74,13 +75,24 @@ void UbootGlApp::loop() {
       if (keysPressed[key_map[{pid, CONTROLS::LAUNCH_TORPEDO}]]) {
         if (players[pid].torpedoCooldown < 0.0001 &&
             players[pid].torpedosLoaded > 1.0) {
-          torpedos.push_back({glm::vec2{0.002, 0.0004}, 0.15,
-                              playerShips[pid].vel +
-                                  glm::vec2{cos(playerShips[pid].rotation),
-                                            sin(playerShips[pid].rotation)} *
-                                      0.2f,
-                              playerShips[pid].pos, playerShips[pid].rotation,
-                              playerShips[pid].angVel, &(textures[4]), pid});
+          /*torpedos.push_back({glm::vec2{0.002, 0.0004}, 0.15,
+                            playerShips[pid].vel +
+                                glm::vec2{cos(playerShips[pid].rotation),
+                                          sin(playerShips[pid].rotation)} *
+                                    0.2f,
+                            playerShips[pid].pos, playerShips[pid].rotation,
+                            playerShips[pid].angVel, &(textures[4]), pid});
+
+*/
+
+          auto newTorpedo = registry.create();
+          registry.assign<CoItem>(newTorpedo, glm::vec2{0.002, 0.0004},
+                                  playerShips[pid].pos,
+                                  playerShips[pid].rotation);
+          registry.assign<CoSprite>(newTorpedo, &textures[4], 0.0f);
+
+          registry.assign<entt::tag<"torpedo_tex"_hs>>(newTorpedo);
+
           players[pid].torpedoCooldown = 0.014;
           players[pid].torpedosLoaded -= 1.0;
           players[pid].torpedosFired++;
@@ -127,18 +139,18 @@ void UbootGlApp::loop() {
 
     sim.advectFloatingItems(&*begin(playerShips), &*end(playerShips));
     sim.advectFloatingItems(&*begin(debris), &*end(debris));
-    sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
+    //sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
     sim.advectFloatingItems(&*begin(torpedos), &*end(torpedos));
 
     simTime += sim.dt;
 
-    respawnOutOfBounds(&*begin(swarm.agents), &*end(swarm.agents), sim.width,
-                       sim.height, sim, sim.h);
+    /*respawnOutOfBounds(&*begin(swarm.agents), &*end(swarm.agents), sim.width,
+      sim.height, sim, sim.h);*/
     respawnOutOfBounds(&*begin(playerShips), &*end(playerShips), sim.width,
                        sim.height, sim, sim.h);
 
     // sim.sinks.clear();
-
+    /*
     float explosionDiam = 0.005;
     torpedos.erase(
         remove_if(
@@ -162,11 +174,11 @@ void UbootGlApp::loop() {
                     if (x * x + y * y > diam * diam)
                       continue;
                     if (sim.flag(gridC) < 1.0) {
-                      for (int i = 0; i < 50; i++) {
+                      for (int i = 0; i < 20; i++) {
                         float velangle =
                             orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
                             (rand() % 100) / 100.0f * 2.f * M_PI;
-                        float size = rand() % 100 / 200.0f + 0.5;
+                        float size = rand() % 100 / 100.0f + 0.6;
                         size *= size;
                         int type = rand() % 2;
                         debris.push_back(
@@ -215,7 +227,7 @@ void UbootGlApp::loop() {
         }
       }
     }
-
+*/
     for (auto &p : players) {
       if (p.deathtimer > 0.0f) {
         playerShips[p.id].vel = glm::vec2(0.0f, 0.0f);
@@ -243,7 +255,7 @@ void UbootGlApp::loop() {
                                      sim.height, sim, sim.h),
                    end(torpedos));
 
-    swarm.update(playerShips[0], sim.flag, sim.h);
+    classicSwarmAI(registry, sim.flag, sim.h);
   }
   double sim_t2 = dtime();
   lastSimulationTime = (sim_t2 - sim_t1) / simulationSteps;
@@ -353,14 +365,19 @@ void UbootGlApp::draw() {
 
     DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
 
-    DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM, 1.0f);
-    DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM,
-                            1.0f);
-    DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM, 1.0f);
+    //    DrawFloatingItems::draw(&*begin(debris), &*end(debris), PVM, 1.0f);
+    // DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM,
+    //                        1.0f);
+    //   DrawFloatingItems::draw(&*begin(torpedos),
+    //   &*end(torpedos), PVM, 1.0f);
 
-    DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM,
-                            1.0f);
-    DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 1.0f);
+    DrawFloatingItems::draw(registry, PVM, 1.0f);
+
+    // DrawFloatingItems::draw(&*begin(playerShips),
+    // &*end(playerShips), PVM,
+    //                        1.0f);
+    // DrawFloatingItems::draw(&*begin(explosions),
+    // &*end(explosions), PVM, 1.0f);
   }
 
   renderOriginX = displayWidth * 0.4;
@@ -385,9 +402,11 @@ void UbootGlApp::draw() {
                        sim.pwidth);
 
   DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM, 4.0f);
-  DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM, 4.0f);
-  DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 4.0f);
-
+  DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM, 5.0f);
+  DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 3.0f);
+  /*DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM,
+                          4.0f);
+*/
   ImGui::SetNextWindowPos(ImVec2(10, 10));
   ImGui::SetNextWindowSize(ImVec2(400, 50));
   ImGui::Begin("SideBar", &p_open,

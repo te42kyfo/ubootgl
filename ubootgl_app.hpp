@@ -3,6 +3,8 @@
 #include "draw_floating_items.hpp"
 #include "draw_streamlines.hpp"
 #include "draw_tracers.hpp"
+#include "entt/entity/helper.hpp"
+#include "entt/entity/registry.hpp"
 #include "floating_item.hpp"
 #include "frame_times.hpp"
 #include "imgui/imgui.h"
@@ -37,11 +39,19 @@ public:
     textures.push_back(Texture("resources/explosion.png", 4, 4));
     textures.push_back(Texture("resources/black.png"));
 
-    for (int i = 0; i < 2; i++) {
-      swarm.addAgent({glm::vec2{0.0025, 0.001}, 0.5, glm::vec2(0, 0),
-                      glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
+    for (int i = 0; i < 2000; i++) {
+      auto newAgent = registry.create();
+      registry.assign<CoItem>(newAgent, glm::vec2{0.0025f, 0.001f},
+                              glm::vec2(0.2f+i*0.001f, 0.2f), 0.0f);
+      registry.assign<CoSprite>(newAgent, &textures[3], 0.0f);
+      registry.assign<CoAgent>(newAgent);
+      registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
+      registry.assign<entt::tag<"agent_tex"_hs>>(newAgent);
+
+      // swarm.addAgent(, 0.5, glm::vec2(0, 0),
+      //             glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
     }
-    swarm.nnInit();
+
   }
 
   void loop();
@@ -68,14 +78,11 @@ public:
   std::vector<FloatingItem> debris;
   std::vector<Torpedo> torpedos;
   std::vector<FloatingItem> explosions;
-  Swarm swarm;
+
 
   double lastKeyUpdate;
-  // std::vector<bool> keysPressed = std::vector<bool>(6, false);
 
-  std::map<SDL_Keycode, bool> keysPressed = {
-      {SDLK_RIGHT, false}, {SDLK_LEFT, false}, {SDLK_UP, false},
-      {SDLK_DOWN, false},  {SDLK_PLUS, false}, {SDLK_MINUS, false},
-      {SDLK_SPACE, false}};
+  entt::registry registry;
+  std::map<SDL_Keycode, bool> keysPressed;
   std::vector<Texture> textures;
 };

@@ -7,76 +7,80 @@
 
 using namespace std;
 
-void Swarm::addAgent(FloatingItem agent) { agents.push_back(agent); }
+void classicSwarmAI(entt::registry& registry, const Single2DGrid &flag, float h) {
 
-void Swarm::update(FloatingItem ship, const Single2DGrid &flag, float h) {
-  for (auto &ag1 : agents) {
+    auto agentView = registry.view<CoAgent, CoItem, CoKinematics>();
+    agentView.less([&](auto entity, auto &item1, auto &kin1) {
     glm::vec2 swarmCenter = {0, 0};
     int swarmCount = 0;
     glm::vec2 rejectionDirection = {};
     glm::vec2 commonDirection = {};
-    for (auto &ag2 : agents) {
 
-      float d = length(ag1.pos - ag2.pos);
+    for (auto ag2 : agentView) {
 
-      if (d < 20.0f * ag1.size.x) {
-        swarmCenter += ag2.pos + ag2.vel * 0.1f;
-        commonDirection += ag2.vel;
+      auto item2 = agentView.get<CoItem>(ag2);
+      auto kin2 = agentView.get<CoKinematics>(ag2);
+
+      float d = length(item1.pos - item2.pos);
+
+      if (d < 20.0f * item1.size.x) {
+        swarmCenter += item2.pos + kin2.vel * 0.1f;
+        commonDirection += kin2.vel;
         swarmCount++;
       }
       if (d < 0.000001f)
         continue;
-      if (d < 4.0f * ag1.size.x) {
-        rejectionDirection += (ag1.pos - ag2.pos) / (d + ag1.size.x);
+      if (d < 4.0f * item1.size.x) {
+        rejectionDirection += (item1.pos - item2.pos) / (d + item1.size.x);
       }
     }
 
     glm::vec2 wallAvoidance = {0.0f, 0.0f};
     glm::vec2 lookAheadPos =
-        ag1.pos + glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 7.0f * h;
+        item1.pos +
+        glm::vec2(cos(item1.rotation), sin(item1.rotation)) * 7.0f * h;
     if (flag(lookAheadPos / h + 0.5f) < 1.0f) {
       wallAvoidance =
-          -glm::vec2(cos(ag1.rotation + 0.1), sin(ag1.rotation + 0.1));
+          -glm::vec2(cos(item1.rotation + 0.1), sin(item1.rotation + 0.1));
     }
-    glm::vec2 lookAheadPos2 = ag1.pos + ag1.vel * 0.2f;
+    glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.2f;
     if (flag(lookAheadPos2 / h + 0.5f) < 1.0f) {
-      wallAvoidance += -ag1.vel;
+      wallAvoidance += -kin1.vel;
     }
 
-    glm::vec2 targetDir;
-    float playerDistance = length(ship.pos - ag1.pos);
-
+    /*
     float interceptionTime = 0.0;
     //     (playerDistance / length(abs(ship.vel) + abs(ag1.vel))) * 0.2f;
     glm::vec2 interceptionVector = (ship.pos + ship.vel * interceptionTime -
                                     ag1.pos + ag1.vel * interceptionTime) /
                                    (playerDistance + 0.2f) / playerDistance;
-
-    targetDir = normalize(
-        glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) * 0.1f +
+    */
+    auto targetDir = normalize(
+        glm::vec2(cos(item1.rotation), sin(item1.rotation)) * 0.1f +
         wallAvoidance * 100.0f +
-        (swarmCenter / (float)swarmCount - (ag1.pos + ag1.vel * 0.1f)) * 10.0f +
-        10.0f * rejectionDirection + 10.0f * commonDirection / (float)swarmCount +
-        0.1f * interceptionVector);
+        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) *
+            10.0f +
+        10.0f * rejectionDirection +
+        10.0f * commonDirection / (float)swarmCount);
 
-    auto heading = glm::vec2{cos(ag1.rotation), sin(ag1.rotation)};
+    auto heading = glm::vec2{cos(item1.rotation), sin(item1.rotation)};
     float directedAngle = glm::orientedAngle(targetDir, heading);
-    //    float angle = atan2(targetDir.y, targetDir.x);
 
     if (directedAngle < 0)
-      ag1.rotation += 0.021;
+      item1.rotation += 0.021;
     else
-      ag1.rotation -= 0.021;
+      item1.rotation -= 0.021;
 
-    ag1.force = 2.0f * glm::vec2(cos(ag1.rotation), sin(ag1.rotation)) *
-                (dot(targetDir, heading) + 0.5f) / 1.5f;
-  }
+    kin1.force = 2.0f * glm::vec2(cos(item1.rotation), sin(item1.rotation)) *
+                 (dot(targetDir, heading) + 0.5f) / 1.5f;
+  });
 }
 
+/*
 enum class AGENT_ACTION : int { acc, rot_left, rot_right, nop };
 
 void Swarm::nnUpdate(FloatingItem ship, const Single2DGrid &flag, float h) {
-  /*  Matrix2D<float, 4, 7> wgrad(0.0);
+    Matrix2D<float, 4, 7> wgrad(0.0);
 Matrix2D<float, 4, 1> bgrad(0.0);
 
 float totalReward = 0.0;
@@ -149,6 +153,6 @@ bgrad.clamp(-0.2f, 0.2f);
 
 weights = weights + wgrad * 0.001f;
 bias = bias + bgrad * 0.001f;
-  */
+
   //  cout << "\n\n";
-}
+  }*/
