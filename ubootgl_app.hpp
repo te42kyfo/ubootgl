@@ -39,7 +39,7 @@ public:
     textures.push_back(Texture("resources/explosion.png", 4, 4));
     textures.push_back(Texture("resources/black.png"));
 
-    for (int i = 0; i < 2000; i++) {
+    for (int i = 0; i < 200; i++) {
       auto newAgent = registry.create();
       registry.assign<CoItem>(newAgent, glm::vec2{0.0025f, 0.001f},
                               glm::vec2(0.2f+i*0.001f, 0.2f), 0.0f);

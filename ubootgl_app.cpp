@@ -2,7 +2,6 @@
 #include "controls.hpp"
 #include "dtime.hpp"
 
-
 #include "explosion.hpp"
 #include "gl_error.hpp"
 #include "torpedo.hpp"
@@ -89,6 +88,12 @@ void UbootGlApp::loop() {
           registry.assign<CoItem>(newTorpedo, glm::vec2{0.002, 0.0004},
                                   playerShips[pid].pos,
                                   playerShips[pid].rotation);
+          registry.assign<CoKinematics>(
+              newTorpedo, 0.15,
+              playerShips[pid].vel + glm::vec2{cos(playerShips[pid].rotation),
+                                               sin(playerShips[pid].rotation)} *
+                                         0.2f,
+              playerShips[pid].angVel);
           registry.assign<CoSprite>(newTorpedo, &textures[4], 0.0f);
 
           registry.assign<entt::tag<"torpedo_tex"_hs>>(newTorpedo);
@@ -137,10 +142,11 @@ void UbootGlApp::loop() {
 
     sim.step(timestep);
 
-    sim.advectFloatingItems(&*begin(playerShips), &*end(playerShips));
-    sim.advectFloatingItems(&*begin(debris), &*end(debris));
-    //sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
-    sim.advectFloatingItems(&*begin(torpedos), &*end(torpedos));
+    // sim.advectFloatingItems(&*begin(playerShips), &*end(playerShips));
+    // sim.advectFloatingItems(&*begin(debris), &*end(debris));
+    // sim.advectFloatingItems(&*begin(swarm.agents), &*end(swarm.agents));
+    // sim.advectFloatingItems(&*begin(torpedos), &*end(torpedos));
+    sim.advectFloatingItems(registry);
 
     simTime += sim.dt;
 
@@ -404,9 +410,7 @@ void UbootGlApp::draw() {
   DrawFloatingItems::draw(&*begin(torpedos), &*end(torpedos), PVM, 4.0f);
   DrawFloatingItems::draw(&*begin(playerShips), &*end(playerShips), PVM, 5.0f);
   DrawFloatingItems::draw(&*begin(explosions), &*end(explosions), PVM, 3.0f);
-  /*DrawFloatingItems::draw(&*begin(swarm.agents), &*end(swarm.agents), PVM,
-                          4.0f);
-*/
+
   ImGui::SetNextWindowPos(ImVec2(10, 10));
   ImGui::SetNextWindowSize(ImVec2(400, 50));
   ImGui::Begin("SideBar", &p_open,
