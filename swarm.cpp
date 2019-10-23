@@ -10,7 +10,7 @@ using namespace std;
 void classicSwarmAI(entt::registry& registry, const Single2DGrid &flag, float h) {
 
     auto agentView = registry.view<CoAgent, CoItem, CoKinematics>();
-    agentView.less([&](auto entity, auto &item1, auto &kin1) {
+    agentView.less([&]( auto &item1, auto &kin1) {
     glm::vec2 swarmCenter = {0, 0};
     int swarmCount = 0;
     glm::vec2 rejectionDirection = {};

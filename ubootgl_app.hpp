@@ -8,7 +8,6 @@
 #include "floating_item.hpp"
 #include "frame_times.hpp"
 #include "imgui/imgui.h"
-#include "player.hpp"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
 #include "swarm.hpp"
@@ -46,10 +45,7 @@ public:
       registry.assign<CoSprite>(newAgent, &textures[3], 0.0f);
       registry.assign<CoAgent>(newAgent);
       registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
-      registry.assign<entt::tag<"agent_tex"_hs>>(newAgent);
-
-      // swarm.addAgent(, 0.5, glm::vec2(0, 0),
-      //             glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
+      registry.assign<CoRespawnsOoB>(newAgent);
     }
 
   }
@@ -71,9 +67,6 @@ public:
   Simulation sim;
   Texture rock_texture;
 
-  std::vector<FloatingItem> playerShips;
-  std::vector<Player> players;
-  unsigned int playerCount = 1;
 
   std::vector<FloatingItem> debris;
   std::vector<Torpedo> torpedos;

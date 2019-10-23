@@ -53,7 +53,7 @@ struct CoItem {
 struct CoKinematics {
   CoKinematics(float mass, glm::vec2 vel, float angVel)
       : mass(mass), vel(vel), force({0.0f, 0.0f}), angVel(angVel),
-        angForce(0.0f), bumpCount(0) {};
+        angForce(0.0f), bumpCount(0){};
 
   float mass;
 
@@ -82,10 +82,18 @@ struct CoAgent {};
 struct CoExplosion {};
 
 struct CoPlayer {
+  CoPlayer(int keySet) : keySet(keySet){};
   float torpedoCooldown = 0.0;
   float torpedosLoaded = 10.0;
   float deathtimer = 0.0f;
   int deaths = 0;
   int kills = 0;
   int torpedosFired = 0;
+  int keySet = 0;
+};
+
+struct CoRespawnsOoB {};
+struct CoDeletedOoB {};
+struct CoDecays {
+  int halflife;
 };
