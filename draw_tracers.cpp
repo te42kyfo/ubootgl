@@ -139,31 +139,38 @@ void drawTracers(const vector<vector<vec2>> &tracers,
 
   GL_CALL(glEnable(GL_BLEND));
 
-  if (players)
+  if (players) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  else
+  } else {
     GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
+  }
 
   GL_CALL(glBindVertexArray(vao));
 
   // player VBO
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_players));
-  GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, players_buf.size() * sizeof(int),
-                          players_buf.data()));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, players_buf.size() * sizeof(int), NULL,
+                       GL_STREAM_DRAW));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, players_buf.size() * sizeof(int),
+                       players_buf.data(), GL_STREAM_DRAW));
   GL_CALL(glEnableVertexAttribArray(2));
   GL_CALL(glVertexAttribIPointer(2, 1, GL_INT, 0, 0));
 
   // Alpha VBO
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_alphas));
-  GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, vAlphas.size() * sizeof(GLfloat),
-                          vAlphas.data()));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, vAlphas.size() * sizeof(GLfloat), NULL,
+                       GL_STREAM_DRAW));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, vAlphas.size() * sizeof(GLfloat),
+                       vAlphas.data(), GL_STREAM_DRAW));
   GL_CALL(glEnableVertexAttribArray(1));
   GL_CALL(glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, 0));
 
   // Vertex VBO
   GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo_vertices));
-  GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(vec4),
-                          vertices.data()));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec4), NULL,
+                       GL_STREAM_DRAW));
+  GL_CALL(glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec4),
+                       vertices.data(), GL_STREAM_DRAW));
   GL_CALL(glEnableVertexAttribArray(0));
   GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
 
