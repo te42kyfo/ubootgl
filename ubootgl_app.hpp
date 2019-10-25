@@ -38,16 +38,16 @@ public:
     textures.push_back(Texture("resources/explosion.png", 4, 4));
     textures.push_back(Texture("resources/black.png"));
 
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 2; i++) {
       auto newAgent = registry.create();
       registry.assign<CoItem>(newAgent, glm::vec2{0.0025f, 0.001f},
-                              glm::vec2(0.2f+i*0.001f, 0.2f), 0.0f);
+                              glm::vec2(0.2f + i * 0.001f, 0.2f), 0.0f);
       registry.assign<CoSprite>(newAgent, &textures[3], 0.0f);
       registry.assign<CoAgent>(newAgent);
       registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
       registry.assign<CoRespawnsOoB>(newAgent);
+      registry.assign<CoTarget>(newAgent);
     }
-
   }
 
   void loop();
@@ -67,11 +67,11 @@ public:
   Simulation sim;
   Texture rock_texture;
 
+  void processTorpedos();
 
   std::vector<FloatingItem> debris;
   std::vector<Torpedo> torpedos;
   std::vector<FloatingItem> explosions;
-
 
   double lastKeyUpdate;
 

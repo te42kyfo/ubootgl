@@ -25,7 +25,8 @@ void UbootGlApp::loop() {
   double sim_t1 = dtime();
   for (int simStep = 0; simStep < simulationSteps; simStep++) {
 
-    registry.view<CoPlayer, CoItem, CoKinematics>().each([&](auto &player,
+    registry.view<CoPlayer, CoItem, CoKinematics>().each([&](auto playerEntity,
+                                                             auto &player,
                                                              auto &item,
                                                              auto &kin) {
       if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
@@ -40,6 +41,7 @@ void UbootGlApp::loop() {
       if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]]) {
         if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
           auto newTorpedo = registry.create();
+          registry.assign<CoTorpedo>(newTorpedo);
           registry.assign<CoItem>(newTorpedo, glm::vec2{0.002, 0.0004},
                                   item.pos, item.rotation);
           registry.assign<CoKinematics>(
@@ -49,6 +51,7 @@ void UbootGlApp::loop() {
               kin.angVel);
           registry.assign<CoSprite>(newTorpedo, &textures[4], 0.0f);
           registry.assign<CoDeletedOoB>(newTorpedo);
+          registry.assign<CoPlayerAligned>(newTorpedo, playerEntity);
 
           player.torpedoCooldown = 0.014;
           player.torpedosLoaded -= 1.0;
@@ -88,6 +91,8 @@ void UbootGlApp::loop() {
         registry.assign<CoSprite>(newPlayer, &textures[0], 0.0f);
         registry.assign<CoPlayer>(newPlayer, p);
         registry.assign<CoRespawnsOoB>(newPlayer);
+        registry.assign<CoTarget>(newPlayer);
+        registry.assign<CoPlayerAligned>(newPlayer, newPlayer);
       }
     }
 
@@ -126,59 +131,9 @@ void UbootGlApp::loop() {
         registry.destroy(entity);
     });
 
-    // sim.sinks.clear();
+    processTorpedos();
+
     /*
-    float explosionDiam = 0.005;
-    torpedos.erase(
-        remove_if(
-            begin(torpedos), end(torpedos),
-            [=](auto &t) {
-              bool explode = processTorpedo(
-                  t, &*begin(swarm.agents), &*end(swarm.agents),
-                  &*begin(playerShips), &*end(playerShips), simTime);
-              if (explode) {
-                explosions.push_back({glm::vec2{0.01, 0.01}, 0.01, t.vel, t.pos,
-                                      rand() % 100 * 100.0f * 2.0f * 3.14f, 0,
-                                      &(textures[5]), t.player});
-                explosions.back().age = 0.02f;
-
-                sim.sinks.push_back(glm::vec3(t.pos, 100.0f));
-                float diam = explosionDiam / sim.h;
-                for (int y = -diam; y <= diam; y++) {
-                  for (int x = -diam; x <= diam; x++) {
-                    auto gridC =
-                        (t.pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
-                    if (x * x + y * y > diam * diam)
-                      continue;
-                    if (sim.flag(gridC) < 1.0) {
-                      for (int i = 0; i < 20; i++) {
-                        float velangle =
-                            orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
-                            (rand() % 100) / 100.0f * 2.f * M_PI;
-                        float size = rand() % 100 / 100.0f + 0.6;
-                        size *= size;
-                        int type = rand() % 2;
-                        debris.push_back(
-                            {glm::vec2{0.0003, 0.0003} * size,
-                             size * (1.0f * type + 0.1f),
-                             t.vel + glm::vec2{cos(velangle), sin(velangle)} *
-                                         (rand() % 100 / 2000.0f),
-                             t.pos + glm::vec2(x + rand() % 100 / 100.0,
-                                               y + rand() % 100 / 100.0) *
-                                         sim.h,
-                             rand() % 100 / 100.0f * 2.0f * (float)M_PI,
-                             rand() % 100 - 50.0f, &(textures[type + 1])});
-                      }
-                    }
-                    sim.setGrids(gridC, 1.0);
-                  }
-                }
-                sim.mg.updateFields(sim.flag);
-              }
-              return explode;
-            }),
-        end(torpedos));
-
     for (auto &exp : explosions) {
       for (auto &ag : swarm.agents) {
         if (length(exp.pos - ag.pos) < explosionDiam * 0.9 && exp.age < 0.08f)
@@ -204,7 +159,7 @@ void UbootGlApp::loop() {
         }
       }
     }
-*/
+    */
 
     registry.view<CoPlayer, CoItem, CoKinematics>().each(
         [&](auto &player, auto &item, auto &kin) {
@@ -289,11 +244,6 @@ void UbootGlApp::draw() {
   DrawTracers::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
                              sim.height, simTime, sim.pwidth);
 
-  GL_CALL(glEnable(GL_FRAMEBUFFER_SRGB));
-
-  GL_CALL(glEnable(GL_BLEND));
-  GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
-
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
     renderOriginX = renderWidth * (player.keySet % xsplits * 1.01);
     renderOriginY = renderHeight * (player.keySet / xsplits) * 1.01;
@@ -316,6 +266,10 @@ void UbootGlApp::draw() {
 
     GL_CALL(
         glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
+    GL_CALL(glEnable(GL_FRAMEBUFFER_SRGB));
+
+    GL_CALL(glEnable(GL_BLEND));
+    GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
 
     // Projection-View-Matrix
     glm::mat4 PVM(1.0f);

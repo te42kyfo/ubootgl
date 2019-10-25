@@ -1,4 +1,5 @@
 #pragma once
+#include "entt/entity/registry.hpp"
 #include "texture.hpp"
 #include <glm/glm.hpp>
 
@@ -72,14 +73,18 @@ struct CoSprite {
 };
 
 struct CoPlayerAligned {
-  int player;
+  entt::entity player;
 };
 
-struct CoTorpedo {};
+struct CoTorpedo {
+  float age = 0.0f;
+};
 
 struct CoAgent {};
 
-struct CoExplosion {};
+struct CoExplosion {
+  float age;
+};
 
 struct CoPlayer {
   CoPlayer(int keySet) : keySet(keySet){};
@@ -95,5 +100,11 @@ struct CoPlayer {
 struct CoRespawnsOoB {};
 struct CoDeletedOoB {};
 struct CoDecays {
-  int halflife;
+  float halflife;
+};
+
+struct CoTarget {};
+
+struct CoAnimated {
+  float frame;
 };
