@@ -5,12 +5,13 @@
 class FrameTimes {
 public:
   void add(double t) {
-
-    if (values.size() < 300) {
+    if (t > 10000)
+      return;
+    if (values.size() < 500) {
       values.push_back(t);
     }
 
-    if (pointer >= values.size()) {
+    if (pointer >= (int)values.size()) {
       pointer = 0;
     }
     values[pointer] = t;
@@ -18,7 +19,7 @@ public:
   }
   double avg() {
     double sum = 0.0;
-    for (int i = 0; i < values.size(); i++) {
+    for (int i = 0; i < (int)values.size(); i++) {
       sum += values[i];
     }
     return sum / values.size();
