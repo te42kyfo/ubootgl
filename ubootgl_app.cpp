@@ -74,7 +74,7 @@ void UbootGlApp::loop() {
       if (keysPressed[key_map[{pid, CONTROLS::LAUNCH_TORPEDO}]]) {
         if (players[pid].torpedoCooldown < 0.0001 &&
             players[pid].torpedosLoaded > 1.0) {
-          torpedos.push_back({glm::vec2{0.002, 0.0004}, 0.15,
+          torpedos.push_back({glm::vec2{0.003, 0.0006}, 0.15,
                               playerShips[pid].vel +
                                   glm::vec2{cos(playerShips[pid].rotation),
                                             sin(playerShips[pid].rotation)} *
@@ -139,7 +139,7 @@ void UbootGlApp::loop() {
 
     // sim.sinks.clear();
 
-    float explosionDiam = 0.005;
+    float explosionDiam = 0.007;
     torpedos.erase(
         remove_if(
             begin(torpedos), end(torpedos),
@@ -162,11 +162,11 @@ void UbootGlApp::loop() {
                     if (x * x + y * y > diam * diam)
                       continue;
                     if (sim.flag(gridC) < 1.0) {
-                      for (int i = 0; i < 50; i++) {
+                      for (int i = 0; i < 14; i++) {
                         float velangle =
                             orientedAngle(t.vel, glm::vec2{0.0f, 1.0f}) +
                             (rand() % 100) / 100.0f * 2.f * M_PI;
-                        float size = rand() % 100 / 200.0f + 0.5;
+                        float size = rand() % 100 / 120.0f + 0.6;
                         size *= size;
                         int type = rand() % 2;
                         debris.push_back(

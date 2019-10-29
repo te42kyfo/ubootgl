@@ -12,7 +12,7 @@ varying float v_side;
 
 vec3 playerColors[5] =
     vec3[](vec3(1.8, 0.0, -10.0), vec3(0.0, 1.0, -10.0), vec3(1.0, 1.0, -10.0),
-           vec3(1.0, 0.6, -10.0), vec3(1.4, 0.0, 1.0));
+           vec3(1.0, 0.2, -10.0), vec3(1.4, 0.0, 1.0));
 
 void main(void) {
   if (in_Player >= 0)
