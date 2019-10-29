@@ -8,7 +8,8 @@ namespace DrawFloatingItems {
 
 void init();
 
-void draw(entt::registry &registry, glm::mat4 PVM, float magnification);
+void draw(entt::registry &registry, entt::component component, Texture texture,
+          glm::mat4 PVM, float magnification);
 
 template <typename T>
 void draw(T *begin, T *end, glm::mat4 PVM, float enhancement);

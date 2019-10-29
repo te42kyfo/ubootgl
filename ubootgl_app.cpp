@@ -49,7 +49,7 @@ void UbootGlApp::loop() {
               kin.vel +
                   glm::vec2{cos(item.rotation), sin(item.rotation)} * 0.8f,
               kin.angVel);
-          registry.assign<CoSprite>(newTorpedo, &textures[4], 0.0f);
+          registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
           registry.assign<CoDeletedOoB>(newTorpedo);
           registry.assign<CoPlayerAligned>(newTorpedo, playerEntity);
 
@@ -88,7 +88,7 @@ void UbootGlApp::loop() {
         registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.002},
                                 glm::vec2(0.5, 0.5), 0.0f);
         registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
-        registry.assign<CoSprite>(newPlayer, &textures[0], 0.0f);
+        registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
         registry.assign<CoPlayer>(newPlayer, p);
         registry.assign<CoRespawnsOoB>(newPlayer);
         registry.assign<CoTarget>(newPlayer);
@@ -291,7 +291,25 @@ void UbootGlApp::draw() {
 
     DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
 
-    DrawFloatingItems::draw(registry, PVM, 1.0f);
+    DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
+                            textures[registry.type<entt::tag<"tex_ship"_hs>>()],
+                            PVM, 1.0f);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
+        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f);
+
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_agents"_hs>>(),
+        textures[registry.type<entt::tag<"tex_agents"_hs>>()], PVM, 1.0f);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
+        textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_debris2"_hs>>(),
+        textures[registry.type<entt::tag<"tex_debris2"_hs>>()], PVM, 1.0f);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
+        textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f);
   });
 
   renderOriginX = displayWidth * 0.4;
@@ -309,10 +327,10 @@ void UbootGlApp::draw() {
       PVM,
       glm::vec3(1.0f, 1.0f * (float)renderWidth / renderHeight, 1.0f) * 2.0f);
   PVM = glm::translate(PVM, glm::vec3(-0.5f, -0.5f, 0.0f));
-  Draw2DBuf::draw_flag(textures[6], sim.getFlag(), sim.width, sim.height, PVM,
+  Draw2DBuf::draw_flag(black_texture, sim.getFlag(), sim.width, sim.height, PVM,
                        sim.pwidth);
 
-  DrawFloatingItems::draw(registry, PVM, 1.0f);
+  // DrawFloatingItems::draw(registry, PVM, 1.0f);
 
   ImGui::SetNextWindowPos(ImVec2(10, 10));
   ImGui::SetNextWindowSize(ImVec2(400, 50));

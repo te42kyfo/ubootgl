@@ -30,19 +30,24 @@ public:
 
     scale = 3.0;
 
-    textures.push_back(Texture("resources/ship2.png"));
-    textures.push_back(Texture("resources/debris1.png"));
-    textures.push_back(Texture("resources/debris2.png"));
-    textures.push_back(Texture("resources/agent2.png"));
-    textures.push_back(Texture("resources/torpedo.png"));
-    textures.push_back(Texture("resources/explosion.png", 4, 4));
-    textures.push_back(Texture("resources/black.png"));
+    textures.emplace(registry.type<entt::tag<"tex_ship"_hs>>(),
+                     Texture("resources/ship2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_debris1"_hs>>(),
+                     Texture("resources/debris1.png"));
+    textures.emplace(registry.type<entt::tag<"tex_debris2"_hs>>(),
+                     Texture("resources/debris2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_agent"_hs>>(),
+                     Texture("resources/agent2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_torpedo"_hs>>(),
+                     Texture("resources/torpedo.png"));
+    textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
+                     Texture("resources/explosion.png", 4, 4));
 
     for (int i = 0; i < 2; i++) {
       auto newAgent = registry.create();
       registry.assign<CoItem>(newAgent, glm::vec2{0.0025f, 0.001f},
                               glm::vec2(0.2f + i * 0.001f, 0.2f), 0.0f);
-      registry.assign<CoSprite>(newAgent, &textures[3], 0.0f);
+      registry.assign<entt::tag<"tex_agent"_hs>>(newAgent);
       registry.assign<CoAgent>(newAgent);
       registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
       registry.assign<CoRespawnsOoB>(newAgent);
@@ -53,6 +58,8 @@ public:
   void loop();
   void draw();
   void handleKey(SDL_KeyboardEvent event);
+
+  void processTorpedos();
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
@@ -66,8 +73,7 @@ public:
   SdlGl vis;
   Simulation sim;
   Texture rock_texture;
-
-  void processTorpedos();
+  Texture black_texture = Texture("resources/black.png");
 
   std::vector<FloatingItem> debris;
   std::vector<Torpedo> torpedos;
@@ -77,5 +83,5 @@ public:
 
   entt::registry registry;
   std::map<SDL_Keycode, bool> keysPressed;
-  std::vector<Texture> textures;
+  std::map<entt::component, Texture> textures;
 };

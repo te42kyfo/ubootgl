@@ -61,7 +61,7 @@ void UbootGlApp::processTorpedos() {
 
           auto newExplosion = registry.create();
           registry.assign<CoExplosion>(newExplosion, 0.02f);
-          registry.assign<CoSprite>(newExplosion, &(textures[5]), 0.0f);
+          registry.assign<entt::tag<"tex_explosion"_hs>>(newExplosion);
           registry.assign<CoItem>(newExplosion, glm::vec2{0.01, 0.01}, item.pos,
                                   randRotationDist(gen));
           registry.assign<CoPlayerAligned>(newExplosion, playerAligned);
@@ -74,11 +74,11 @@ void UbootGlApp::processTorpedos() {
                 continue;
               sim.sinks.push_back(glm::vec3(item.pos, 400.0f));
               if (sim.flag(gridC) < 1.0) {
-                for (int i = 0; i < 300; i++) {
+                for (int i = 0; i < 3000; i++) {
                   float velangle =
                       orientedAngle(kin.vel, glm::vec2{0.0f, 1.0f}) +
                       randRotationDist(gen);
-                  float size = dist(gen) + 0.6;
+                  float size = dist(gen) + 0.2;
                   size *= size;
                   int type = (int)(dist(gen) * 2.0f);
 
@@ -88,8 +88,11 @@ void UbootGlApp::processTorpedos() {
                       item.pos +
                           glm::vec2(x + dist(gen), y + dist(gen)) * sim.h,
                       randRotationDist(gen));
-                  registry.assign<CoSprite>(newDebris, &(textures[type + 1]),
-                                            0.0f);
+                  
+                  if (type == 0)
+                    registry.assign<entt::tag<"tex_debris1"_hs>>(newDebris);
+                  else
+                    registry.assign<entt::tag<"tex_debris2"_hs>>(newDebris);
                   registry.assign<CoKinematics>(
                       newDebris, size * (0.8f * type + 0.2f),
                       kin.vel + glm::vec2{cos(velangle), sin(velangle)} *
@@ -97,7 +100,7 @@ void UbootGlApp::processTorpedos() {
                       dist(gen) - 0.5f);
                   registry.assign<CoDeletedOoB>(newDebris);
                   registry.assign<CoTarget>(newDebris);
-                  registry.assign<CoDecays>(newDebris, 0.05f);
+                  registry.assign<CoDecays>(newDebris, 10.05f);
                 }
               }
               sim.setGrids(gridC, 1.0);
