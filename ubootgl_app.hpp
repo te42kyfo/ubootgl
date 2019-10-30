@@ -60,6 +60,7 @@ public:
   void handleKey(SDL_KeyboardEvent event);
 
   void processTorpedos();
+  void processExplosions();
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
@@ -75,9 +76,6 @@ public:
   Texture rock_texture;
   Texture black_texture = Texture("resources/black.png");
 
-  std::vector<FloatingItem> debris;
-  std::vector<Torpedo> torpedos;
-  std::vector<FloatingItem> explosions;
 
   double lastKeyUpdate;
 
