@@ -52,7 +52,7 @@ void UbootGlApp::loop() {
           registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
           registry.assign<CoDeletedOoB>(newTorpedo);
           registry.assign<CoPlayerAligned>(newTorpedo, playerEntity);
-
+          registry.assign<CoTarget>(newTorpedo);
           player.torpedoCooldown = 0.014;
           player.torpedosLoaded -= 1.0;
           player.torpedosFired++;
@@ -133,7 +133,6 @@ void UbootGlApp::loop() {
 
     processTorpedos();
     processExplosions();
-
 
     registry.view<CoPlayer, CoItem, CoKinematics>().each(
         [&](auto &player, auto &item, auto &kin) {

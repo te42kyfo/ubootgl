@@ -17,6 +17,10 @@ void UbootGlApp::processTorpedos() {
             [&](auto target, auto &target_item) {
               if (playerAligned.player == target)
                 return;
+              if (registry.has<CoPlayerAligned>(target) &&
+                  registry.get<CoPlayerAligned>(target).player ==
+                      playerAligned.player)
+                return;
 
               float distance = length(item.pos - target_item.pos);
               float angle = glm::dot({cos(item.rotation), sin(item.rotation)},
