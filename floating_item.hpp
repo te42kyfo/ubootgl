@@ -38,10 +38,10 @@ struct CoTorpedo {
   float age = 0.0f;
 };
 
-struct CoAgent {};
-
 struct CoExplosion {
+  CoExplosion(float explosionDiam) : age(0.0f), explosionDiam(explosionDiam){};
   float age;
+  float explosionDiam;
 };
 
 struct CoPlayer {
@@ -54,6 +54,8 @@ struct CoPlayer {
   int torpedosFired = 0;
   int keySet = 0;
 };
+
+struct CoAgent {};
 
 struct CoRespawnsOoB {};
 struct CoDeletedOoB {};

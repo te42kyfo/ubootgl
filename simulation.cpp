@@ -185,14 +185,15 @@ void Simulation::project() {
     auto gC = glm::vec2(sink) / h + 0.5f;
     for (int y = -2; y <= 2; y++) {
       for (int x = -2; x <= 2; x++) {
-        f(gC.x + x, gC.y + y) = sink.z - 20.0f;
+        f(gC.x + x, gC.y + y) = sink.z;
       }
     }
-    sink.z *= 0.7f;
+    sink.z *= 0.1f;
   }
 
+
   sinks.erase(
-      remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.2f; }),
+      remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.05f; }),
       end(sinks));
 
   // float residual = calculateResidualField(p, f, flag, r, h);

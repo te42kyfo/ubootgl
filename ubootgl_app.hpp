@@ -43,7 +43,7 @@ public:
     textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
                      Texture("resources/explosion.png", 4, 4));
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 4; i++) {
       auto newAgent = registry.create();
       registry.assign<CoItem>(newAgent, glm::vec2{0.0025f, 0.001f},
                               glm::vec2(0.2f + i * 0.001f, 0.2f), 0.0f);
@@ -60,6 +60,8 @@ public:
   void handleKey(SDL_KeyboardEvent event);
 
   void processTorpedos();
+  void newExplosion(glm::vec2 pos, float explosionDiam, entt::entity player);
+  void newExplosion(float explosionDiam, entt::entity player);
   void processExplosions();
 
   double lastFrameTime = 0;
@@ -75,7 +77,6 @@ public:
   Simulation sim;
   Texture rock_texture;
   Texture black_texture = Texture("resources/black.png");
-
 
   double lastKeyUpdate;
 
