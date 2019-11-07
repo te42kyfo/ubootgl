@@ -183,14 +183,15 @@ void Simulation::project() {
 
   for (auto &sink : sinks) {
     auto gC = glm::vec2(sink) / h + 0.5f;
-    for (int y = -2; y <= 2; y++) {
-      for (int x = -2; x <= 2; x++) {
+    if (gC.x <= 3 || gC.x > width - 3 || gC.y <= 3 || gC.y > height - 3)
+      continue;
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -1; x <= 1; x++) {
         f(gC.x + x, gC.y + y) = sink.z;
       }
     }
     sink.z *= 0.1f;
   }
-
 
   sinks.erase(
       remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.05f; }),
@@ -373,7 +374,7 @@ float Simulation::psampleFlagNearest(glm::vec2 pc) {
 
 void Simulation::advectFloatingItems(entt::registry &registry) {
   auto floatingItemView = registry.view<CoItem, CoKinematics>();
-  floatingItemView.each([&]( auto &item, auto &kin) {
+  floatingItemView.each([&](auto &item, auto &kin) {
     auto posBefore = item.pos;
 
     // Position update
@@ -445,10 +446,10 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
     // Calculate new velocity
     kin.vel += dt * (externalForce + centralForce) / kin.mass;
 
-    float angMass = item.size.x*item.size.y * kin.mass * (1.0f / 12.0f);
+    float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
     kin.angVel += dt * angForce / angMass;
   });
-  floatingItemView.each([&]( auto &item, auto &kin) {
+  floatingItemView.each([&](auto &item, auto &kin) {
     glm::ivec2 gridPos = item.pos / h + 0.5f;
     if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
         gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
