@@ -38,7 +38,7 @@ void init() {
 }
 
 void draw(entt::registry &registry, entt::component component, Texture texture,
-          glm::mat4 PVM, float magnification) {
+          glm::mat4 PVM, float magnification, bool blendSum) {
   glm::vec4 p1 = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
   glm::vec4 p2 = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
   glm::vec4 p3 = glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
@@ -113,7 +113,12 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                           GL_LINEAR_MIPMAP_LINEAR));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-  GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+  if (blendSum) {
+    GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE));
+  } else {
+    GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+  }
   GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.2));
 
   GL_CALL(glBindVertexArray(vao));
