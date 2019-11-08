@@ -374,8 +374,13 @@ float Simulation::psampleFlagNearest(glm::vec2 pc) {
 
 void Simulation::advectFloatingItems(entt::registry &registry) {
   auto floatingItemView = registry.view<CoItem, CoKinematics>();
-  floatingItemView.each([&](auto &item, auto &kin) {
-    auto posBefore = item.pos;
+
+  
+  for (auto entity : floatingItemView) {
+    auto &item = floatingItemView.get<CoItem>(entity);
+    auto &kin = floatingItemView.get<CoKinematics>(entity);
+
+    glm::vec2 posBefore = item.pos;
 
     // Position update
     item.pos += dt * kin.vel;
@@ -386,18 +391,16 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
     // Skip out of Bounds objects
     if (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
         gridPos.y <= 1.0)
-      return;
+      // return;
+      continue;
 
     // Check terrain collision
     if (psampleFlagLinear(item.pos) < 0.5f) {
       glm::vec2 surfaceNormal =
           normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
-
       if (psampleFlagLinear(posBefore) > 0.5f)
         item.pos = posBefore;
-
       if (length(surfaceNormal) > 0.0f) {
-
         if (dot(kin.vel, surfaceNormal) < 0.0)
           kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
         kin.vel += surfaceNormal * 0.001f;
@@ -407,7 +410,6 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
         kin.vel = vec2(0.0f);
         kin.force = vec2(0.0f);
       }
-
       kin.bumpCount++;
     }
 
@@ -426,15 +428,10 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
       auto sp = surfacePoints[i];
 
       auto tSP = sp * item.size;
-
       tSP = rotate(tSP, item.rotation);
-
       tSP = tSP + item.pos;
-
       auto sampleVel = bilinearVel(tSP / h);
-
       auto deltaVel = sampleVel - kin.vel;
-
       auto force = rotate(sp, item.rotation) *
                    glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
 
@@ -448,7 +445,9 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
 
     float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
     kin.angVel += dt * angForce / angMass;
-  });
+
+  }
+
   floatingItemView.each([&](auto &item, auto &kin) {
     glm::ivec2 gridPos = item.pos / h + 0.5f;
     if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
