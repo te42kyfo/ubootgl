@@ -114,8 +114,8 @@ void UbootGlApp::loop() {
       static std::default_random_engine gen(std::random_device{}());
 
       glm::vec2 gridPos = item.pos / sim.h + 0.5f;
-      while (gridPos.x >= sim.width - 2 || gridPos.x <= 1.0 ||
-             gridPos.y >= sim.height - 2 || gridPos.y <= 1.0 ||
+      while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
+             gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
              sim.psampleFlagLinear(item.pos) < 0.01) {
         gridPos = glm::vec2(disx(gen), disy(gen));
         item.pos = gridPos * sim.h;
@@ -126,8 +126,8 @@ void UbootGlApp::loop() {
 
     registry.view<CoDeletedOoB, CoItem>().less([&](auto entity, auto &item) {
       glm::vec2 gridPos = item.pos / sim.h + 0.5f;
-      if (gridPos.x >= sim.width - 2 || gridPos.x <= 1.0 ||
-          gridPos.y >= sim.height - 2 || gridPos.y <= 1.0 ||
+      if (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
+          gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
           sim.psampleFlagLinear(item.pos) < 0.01)
         registry.destroy(entity);
     });
