@@ -307,11 +307,14 @@ void UbootGlApp::draw() {
 
   DrawFloatingItems::draw(
       registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
-      textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 2.0f,
+      textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
       true);
   DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
                           textures[registry.type<entt::tag<"tex_ship"_hs>>()],
                           PVM, 4.0f, false);
+  DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_agent"_hs>>(),
+                          textures[registry.type<entt::tag<"tex_agent"_hs>>()],
+                          PVM, 2.0f, false);
   DrawFloatingItems::draw(
       registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
       textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false);

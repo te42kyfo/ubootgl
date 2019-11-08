@@ -45,7 +45,7 @@ public:
 
     for (int i = 0; i < 4; i++) {
       auto newAgent = registry.create();
-      registry.assign<CoItem>(newAgent, glm::vec2{0.0025f, 0.001f},
+      registry.assign<CoItem>(newAgent, glm::vec2{0.005f, 0.002f},
                               glm::vec2(0.2f + i * 0.001f, 0.2f), 0.0f);
       registry.assign<entt::tag<"tex_agent"_hs>>(newAgent);
       registry.assign<CoAgent>(newAgent);
