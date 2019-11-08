@@ -25,19 +25,20 @@ void UbootGlApp::loop() {
   double sim_t1 = dtime();
   for (int simStep = 0; simStep < simulationSteps; simStep++) {
 
-    registry.view<CoPlayer, CoItem, CoKinematics>().each([&](auto playerEntity,
-                                                             auto &player,
-                                                             auto &item,
-                                                             auto &kin) {
+    registry.view<CoPlayer, CoItem, CoKinematics>().each([&](const auto pEnt,
+                                                             const auto player,
+                                                             const auto item,
+                                                             const auto kin) {
       if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
-        item.rotation -= 4.0 * timeDelta;
+        rot(pEnt) -= 4.0 * timeDelta;
       if (keysPressed[key_map[{player.keySet,
                                CONTROLS::TURN_COUNTERCLOCKWISE}]])
-        item.rotation += 4.0 * timeDelta;
+        rot(pEnt) += 4.0 * timeDelta;
+
       if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]])
-        kin.force += 8.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
+        force(pEnt) += 8.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
       if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]])
-        kin.force -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
+        force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
       if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]]) {
         if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
           auto newTorpedo = registry.create();
@@ -51,16 +52,16 @@ void UbootGlApp::loop() {
               kin.angVel);
           registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
           registry.assign<CoDeletedOoB>(newTorpedo);
-          registry.assign<CoPlayerAligned>(newTorpedo, playerEntity);
+          registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
           registry.assign<CoTarget>(newTorpedo);
-          player.torpedoCooldown = 0.014;
-          player.torpedosLoaded -= 1.0;
-          player.torpedosFired++;
+          torpedoCooldown(pEnt) = 0.014;
+          torpedosLoaded(pEnt) -= 1.0;
+          torpedosFired(pEnt)++;
         }
       }
-      player.torpedoCooldown = max(0.0f, player.torpedoCooldown - timestep);
-      player.torpedosLoaded =
-          min(10.0f, player.torpedosLoaded + 14.0f * timestep);
+      torpedoCooldown(pEnt) = max(0.0f, torpedoCooldown(pEnt) - timestep);
+      torpedosLoaded(pEnt) =
+          min(10.0f, torpedosLoaded(pEnt) + 1400.0f * timestep);
     });
 
     if (keysPressed[SDLK_PAGEUP])
