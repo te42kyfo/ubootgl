@@ -39,9 +39,12 @@ struct CoTorpedo {
 };
 
 struct CoExplosion {
-  CoExplosion(float explosionDiam) : age(0.0f), explosionDiam(explosionDiam){};
+  CoExplosion(float explosionDiam, int fragmentLevel)
+      : age(0.0f), explosionDiam(explosionDiam), fragmentLevel(fragmentLevel){};
   float age;
   float explosionDiam;
+  bool fragmented = false;
+  int fragmentLevel = 0;
 };
 
 struct CoPlayer {
@@ -68,3 +71,7 @@ struct CoTarget {};
 struct CoAnimated {
   float frame;
 };
+
+inline float &frame(entt::registry &registry, entt::entity entity) {
+  return registry.get<CoAnimated>(entity).frame;
+}

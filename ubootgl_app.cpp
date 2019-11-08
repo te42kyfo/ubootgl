@@ -135,11 +135,12 @@ void UbootGlApp::loop() {
     processExplosions();
 
     registry.view<CoPlayer, CoItem, CoKinematics>().each(
-        [&](auto &player, auto &item, auto &kin) {
+        [&](auto pEnt, auto &player, auto &item, auto &kin) {
           if (player.deathtimer > 0.0f) {
             kin.vel = glm::vec2(0.0f, 0.0f);
             player.deathtimer -= simTime;
             if (player.deathtimer < 0.0f) {
+              registry.assign<entt::tag<"tex_ship"_hs>>(pEnt);
               item.pos = glm::vec2(-1.0f, -1.0f);
               player.deathtimer = 0.0f;
             }

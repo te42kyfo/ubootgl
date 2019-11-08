@@ -53,6 +53,7 @@ public:
       registry.assign<CoRespawnsOoB>(newAgent);
       registry.assign<CoTarget>(newAgent);
     }
+    sim.step(0.003);
   }
 
   void loop();
@@ -60,9 +61,56 @@ public:
   void handleKey(SDL_KeyboardEvent event);
 
   void processTorpedos();
-  void newExplosion(glm::vec2 pos, float explosionDiam, entt::entity player);
+  void newExplosion(glm::vec2 pos, float explosionDiam, entt::entity player,
+                    int fragmentLevel = 0);
   void newExplosion(float explosionDiam, entt::entity player);
   void processExplosions();
+
+  glm::vec2 &pos(entt::entity entity) {
+    return registry.get<CoItem>(entity).pos;
+  }
+
+  float &rot(entt::entity entity) {
+    return registry.get<CoItem>(entity).rotation;
+  }
+
+  glm::vec2 &size(entt::entity entity) {
+    return registry.get<CoItem>(entity).size;
+  }
+
+  glm::vec2 &force(entt::entity entity) {
+    return registry.get<CoKinematics>(entity).force;
+  }
+
+  int &bumpCount(entt::entity entity) {
+    return registry.get<CoKinematics>(entity).bumpCount;
+  }
+
+  float &age(entt::entity entity) {
+    return registry.get<CoExplosion>(entity).age;
+  }
+
+  float &torpedoCooldown(entt::entity entity) {
+    return registry.get<CoPlayer>(entity).torpedoCooldown;
+  }
+  float &torpedosLoaded(entt::entity entity) {
+    return registry.get<CoPlayer>(entity).torpedosLoaded;
+  }
+  int &torpedosFired(entt::entity entity) {
+    return registry.get<CoPlayer>(entity).torpedosFired;
+  }
+
+  float &frame(entt::entity entity) {
+    return registry.get<CoAnimated>(entity).frame;
+  }
+
+  float &explosionDiam(entt::entity entity) {
+    return registry.get<CoExplosion>(entity).explosionDiam;
+  }
+
+  int &fragmentLevel(entt::entity entity) {
+    return registry.get<CoExplosion>(entity).fragmentLevel;
+  }
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
@@ -81,6 +129,7 @@ public:
   double lastKeyUpdate;
 
   entt::registry registry;
+  entt::registry &reg = registry;
   std::map<SDL_Keycode, bool> keysPressed;
   std::map<entt::component, Texture> textures;
 };
