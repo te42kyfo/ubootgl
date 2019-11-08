@@ -261,25 +261,30 @@ void UbootGlApp::draw() {
 
     DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
 
-    DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
-                            textures[registry.type<entt::tag<"tex_ship"_hs>>()],
-                            PVM, 1.0f);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
+        textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f,
+        true);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_debris2"_hs>>(),
+        textures[registry.type<entt::tag<"tex_debris2"_hs>>()], PVM, 1.0f,
+        true);
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f);
+        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
+        false);
 
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_agent"_hs>>(),
-        textures[registry.type<entt::tag<"tex_agent"_hs>>()], PVM, 1.0f);
-    DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
-        textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f);
-    DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_debris2"_hs>>(),
-        textures[registry.type<entt::tag<"tex_debris2"_hs>>()], PVM, 1.0f);
+        textures[registry.type<entt::tag<"tex_agent"_hs>>()], PVM, 1.0f, false);
+    DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
+                            textures[registry.type<entt::tag<"tex_ship"_hs>>()],
+                            PVM, 1.0f);
+
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
-        textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f);
+        textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
+        true);
   });
 
   renderOriginX = displayWidth * 0.4;
@@ -302,13 +307,14 @@ void UbootGlApp::draw() {
 
   DrawFloatingItems::draw(
       registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
-      textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 2.0f);
+      textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 2.0f,
+      true);
   DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
                           textures[registry.type<entt::tag<"tex_ship"_hs>>()],
-                          PVM, 4.0f);
+                          PVM, 4.0f, false);
   DrawFloatingItems::draw(
       registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-      textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f);
+      textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false);
 
   ImGui::SetNextWindowPos(ImVec2(200, 10));
   ImGui::SetNextWindowSize(ImVec2(300, 300));
