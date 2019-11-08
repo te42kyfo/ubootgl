@@ -309,8 +309,8 @@ void UbootGlApp::draw() {
       registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
       textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f);
 
-  ImGui::SetNextWindowPos(ImVec2(10, 10));
-  ImGui::SetNextWindowSize(ImVec2(400, 50));
+  ImGui::SetNextWindowPos(ImVec2(200, 10));
+  ImGui::SetNextWindowSize(ImVec2(300, 300));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -319,6 +319,11 @@ void UbootGlApp::draw() {
                      frameTimes.high1pct(), frameTimes.largest());
   ImGui::TextWrapped("GFX: %.1f, %.1f, %.1f ", gfxTimes.avg(),
                      gfxTimes.high1pct(), gfxTimes.largest());
+
+  ImGui::PlotLines("", frameTimes.data().data(), frameTimes.data().size(), 0,
+                   NULL, 0, frameTimes.largest(), ImVec2(300, 80));
+  ImGui::PlotLines("", gfxTimes.data().data(), gfxTimes.data().size(), 0, NULL,
+                   0, gfxTimes.largest(), ImVec2(300, 80));
 
   ImGui::End();
 
