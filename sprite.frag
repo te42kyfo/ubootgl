@@ -8,8 +8,12 @@ uniform sampler2D tex;
 uniform ivec2 frameGridSize;
 
 vec3 playerColors[5] =
-    vec3[](vec3(1.8, 0.0, 0.0), vec3(0.0, 1.8, 0.0), vec3(1.8,  1.8, 0.0),
-           vec3(1.8, 0.2, 0.0), vec3(1.4, 0.0, 1.0));
+
+    //    vec3[](vec3(1.8, 0.0, 0.0), vec3(0.0, 1.8, 0.0), vec3(1.8,  1.8, 0.0),
+    //           vec3(1.8, 0.2, 0.0), vec3(1.4, 0.0, 1.0));
+
+    vec3[](vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.1), vec3(1.0, 1.0, 0.0),
+           vec3(0.8, 0.0, 1.0), vec3(1.0, 0.0, 1.0));
 
 void main(void) {
 

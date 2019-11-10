@@ -183,20 +183,22 @@ void Simulation::project() {
 
   for (auto &sink : sinks) {
     auto gC = glm::vec2(sink) / h + 0.5f;
-    for (int y = -2; y <= 2; y++) {
-      for (int x = -2; x <= 2; x++) {
-        f(gC.x + x, gC.y + y) = sink.z - 20.0f;
+    if (gC.x <= 3 || gC.x > width - 3 || gC.y <= 3 || gC.y > height - 3)
+      continue;
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -1; x <= 1; x++) {
+        f(gC.x + x, gC.y + y) = sink.z;
       }
     }
-    sink.z *= 0.7f;
+    sink.z *= 0.1f;
   }
 
   sinks.erase(
-      remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.2f; }),
+      remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.05f; }),
       end(sinks));
 
-  //float residual = calculateResidualField(p, f, flag, r, h);
-  //diag << "PROJECT: res=" << residual << "\n";
+  // float residual = calculateResidualField(p, f, flag, r, h);
+  // diag << "PROJECT: res=" << residual << "\n";
 
   mg.solve(p, f, flag, h, true);
   // rbgs(p, f, flag, h, 1.0);
@@ -204,9 +206,9 @@ void Simulation::project() {
   centerP();
 
   setPBC();
-  
-  //residual = calculateResidualField(p, f, flag, r, h);
-  //diag << "PROJECT: res=" << residual << "\n";
+
+  // residual = calculateResidualField(p, f, flag, r, h);
+  // diag << "PROJECT: res=" << residual << "\n";
 #pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 2; x++) {
@@ -283,8 +285,8 @@ void Simulation::advect() {
   //#pragma omp parallel
   //#pragma omp single
   {
-      //#pragma omp taskloop num_tasks(4)
-      #pragma omp parallel for
+//#pragma omp taskloop num_tasks(4)
+#pragma omp parallel for
     for (int y = 1; y < vx.height - 1; y++) {
       for (int x = 1; x < vx.width - 1; x++) {
         if (flag(x, y) < 1.0)
@@ -302,8 +304,8 @@ void Simulation::advect() {
             (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
       }
     }
-    //#pragma omp taskloop num_tasks(4)
-    #pragma omp parallel for
+//#pragma omp taskloop num_tasks(4)
+#pragma omp parallel for
     for (int y = 1; y < vy.height - 1; y++) {
       for (int x = 1; x < vy.width - 1; x++) {
         vec2 pos = vec2(x, y + 0.5);
@@ -370,52 +372,52 @@ float Simulation::psampleFlagNearest(glm::vec2 pc) {
   return flag(gridPos);
 }
 
-template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
-#pragma omp parallel for
-  for (int it = 0; it < std::distance(begin, end); it++) {
+void Simulation::advectFloatingItems(entt::registry &registry) {
+  auto floatingItemView = registry.view<CoItem, CoKinematics>();
 
-    auto &item = *(begin + it);
-    auto posBefore = item.pos;
+  
+  for (auto entity : floatingItemView) {
+    auto &item = floatingItemView.get<CoItem>(entity);
+    auto &kin = floatingItemView.get<CoKinematics>(entity);
+
+    glm::vec2 posBefore = item.pos;
 
     // Position update
-    item.pos += dt * item.vel;
-    item.rotation += dt * item.angVel;
+    item.pos += dt * kin.vel;
+    item.rotation += dt * kin.angVel;
 
     glm::vec2 gridPos = item.pos / (pwidth / (flag.width));
 
     // Skip out of Bounds objects
     if (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
         gridPos.y <= 1.0)
+      // return;
       continue;
 
     // Check terrain collision
     if (psampleFlagLinear(item.pos) < 0.5f) {
       glm::vec2 surfaceNormal =
           normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
-
       if (psampleFlagLinear(posBefore) > 0.5f)
         item.pos = posBefore;
-
       if (length(surfaceNormal) > 0.0f) {
-
-        if (dot(item.vel, surfaceNormal) < 0.0)
-          item.vel = reflect(item.vel, surfaceNormal) * 0.7f;
-        item.vel += surfaceNormal * 0.001f;
-        if (dot(item.force, surfaceNormal) < 0.0f)
-          item.force += dot(item.force, surfaceNormal) * surfaceNormal;
+        if (dot(kin.vel, surfaceNormal) < 0.0)
+          kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
+        kin.vel += surfaceNormal * 0.001f;
+        if (dot(kin.force, surfaceNormal) < 0.0f)
+          kin.force += dot(kin.force, surfaceNormal) * surfaceNormal;
       } else {
-        item.vel = vec2(0.0f);
-        item.force = vec2(0.0f);
+        kin.vel = vec2(0.0f);
+        kin.force = vec2(0.0f);
       }
-
-      item.bumpCount++;
+      kin.bumpCount++;
     }
 
-    glm::vec2 externalForce = glm::vec2(0.0, -0.5) * item.mass + item.force;
+    glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
     glm::vec2 centralForce = glm::vec2(0.0, 0.0);
-    float angForce = item.angForce;
-    item.angForce = 0;
-    item.force = {0, 0};
+    float angForce = kin.angForce;
+    kin.angForce = 0;
+    kin.force = {0, 0};
 
     glm::vec2 surfacePoints[] = {
         {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};
@@ -426,38 +428,36 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       auto sp = surfacePoints[i];
 
       auto tSP = sp * item.size;
-
       tSP = rotate(tSP, item.rotation);
-
       tSP = tSP + item.pos;
-
       auto sampleVel = bilinearVel(tSP / h);
-
-      auto deltaVel = sampleVel - item.vel;
-
+      auto deltaVel = sampleVel - kin.vel;
       auto force = rotate(sp, item.rotation) *
                    glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
 
       centralForce +=
           force * 1000.0f * (1000.0f * sideLength[i] + 1.0f) * sideLength[i];
     }
-    centralForce += (bilinearVel(item.pos / h) - item.vel) * 6.0f;
+    centralForce += (bilinearVel(item.pos / h) - kin.vel) * 6.0f;
 
     // Calculate new velocity
-    item.vel += dt * (externalForce + centralForce) / item.mass;
-    item.angVel += dt * angForce / item.angMass;
+    kin.vel += dt * (externalForce + centralForce) / kin.mass;
+
+    float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
+    kin.angVel += dt * angForce / angMass;
+
   }
 
-  for (auto it = begin; it != end; it++) {
-    glm::ivec2 gridPos = it->pos / h + 0.5f;
+  floatingItemView.each([&](auto &item, auto &kin) {
+    glm::ivec2 gridPos = item.pos / h + 0.5f;
     if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
         gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
-      float area = it->size.x * it->size.y / (h * h);
-      auto deltaVel = bilinearVel(it->pos / h) - it->vel;
+      float area = item.size.x * item.size.y / (h * h);
+      auto deltaVel = bilinearVel(item.pos / h) - kin.vel;
 
       auto deltaVec = deltaVel * area * 0.1f;
 
-      glm::vec2 cx = it->pos / h - vec2(0.5f, 0.0);
+      glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
       glm::ivec2 ic = cx;
       vec2 st = fract(cx);
       vx(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x *
@@ -473,7 +473,7 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
                                    flag(ic + glm::ivec2{0, 0}) *
                                    flag(ic + glm::ivec2{-1, 0});
 
-      glm::vec2 cy = it->pos / h - vec2(0.0f, 0.5);
+      glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
       ic = cy;
       st = fract(cy);
       vy(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.y;
@@ -481,11 +481,5 @@ template <typename T> void Simulation::advectFloatingItems(T *begin, T *end) {
       vy(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y;
       vy(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.y;
     }
-  }
+  });
 }
-
-template void Simulation::advectFloatingItems<FloatingItem>(FloatingItem *begin,
-                                                            FloatingItem *end);
-
-template void Simulation::advectFloatingItems<Torpedo>(Torpedo *begin,
-                                                       Torpedo *end);

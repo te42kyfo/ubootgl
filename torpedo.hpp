@@ -1,70 +1,64 @@
 #include "floating_item.hpp"
 #include <glm/gtx/vector_angle.hpp>
 
-bool processTorpedo(Torpedo &t, FloatingItem *targetBegin,
-                    FloatingItem *targetEnd, FloatingItem *playerBegin,
-                    FloatingItem *playerEnd, float simTime) {
+void UbootGlApp::processTorpedos() {
 
-  t.age += simTime;
-  FloatingItem *bestTarget = nullptr;
-  float bestScore = 7.0;
-  float bestAngle = 0.0;
+  registry.view<CoTorpedo, CoItem, CoKinematics, CoPlayerAligned>().each(
+      [&](auto entity, auto &torpedo, auto &item, auto &kin,
+          auto &playerAligned) {
+        torpedo.age += simTime;
+        entt::entity bestTarget = entt::null;
+        float bestScore = 7.0;
+        float bestAngle = 0.0;
 
-  for (auto &target = targetBegin; target != targetEnd; target++) {
-    float distance = length(t.pos - target->pos);
-    float angle = glm::dot({cos(t.rotation), sin(t.rotation)},
-                           (target->pos - t.pos) / distance);
-    float score = angle * angle / distance / distance;
-    if (distance > 0.3)
-      score = 0.0f;
+        bool explodes = false;
 
+        registry.view<CoTarget, CoItem>().less(
+            [&](auto target, auto &target_item) {
+              if (playerAligned.player == target)
+                return;
+              if (registry.has<CoPlayerAligned>(target) &&
+                  registry.get<CoPlayerAligned>(target).player ==
+                      playerAligned.player)
+                return;
 
-    if (distance < (target->size.x + target->size.y) * 0.6f)
-        return true;
+              float distance = length(item.pos - target_item.pos);
+              float angle = glm::dot({cos(item.rotation), sin(item.rotation)},
+                                     (target_item.pos - item.pos) / distance);
+              float score = angle * angle / distance / distance *
+                            target_item.size.x * target_item.size.y * 20000.0f;
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestTarget = target;
-      bestAngle = glm::orientedAngle({cos(t.rotation), sin(t.rotation)},
-                                     (target->pos - t.pos) / distance);
-    }
-  }
+              if (distance < (target_item.size.x + target_item.size.y) * 0.6f)
+                explodes = true;
 
-  for (auto &target = playerBegin; target != playerEnd; target++) {
-    if (target->player == t.player)
-      continue;
-    float distance = length(t.pos - target->pos);
-    float angle = glm::dot({cos(t.rotation), sin(t.rotation)},
-                           (target->pos - t.pos) / distance);
-    float score = angle * angle / distance / distance;
-    if (distance > 0.06)
-      score = 0.0f;
+              if (score > bestScore) {
+                bestScore = score;
+                bestTarget = target;
+                bestAngle =
+                    glm::orientedAngle({cos(item.rotation), sin(item.rotation)},
+                                       (target_item.pos - item.pos) / distance);
+              }
+            });
 
-    if (distance < (target->size.x + target->size.y) * 0.6f)
-      return true;
+        if (torpedo.age < 0.03f) {
+          kin.force = glm::vec2(cos(item.rotation), sin(item.rotation)) * 2.0f;
+        } else if (torpedo.age < 0.8f) {
+          kin.angVel = glm::sign(bestAngle) * 20.0;
+          if (bestTarget != entt::null)
+            kin.force =
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
+          else
+            kin.force =
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 1.0f;
+        } else {
+          explodes = true;
+        }
+        if (kin.bumpCount > 0)
+          explodes = true;
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestTarget = target;
-      bestAngle = glm::orientedAngle({cos(t.rotation), sin(t.rotation)},
-                                     (target->pos - t.pos) / distance);
-    }
-  }
-
-  if (t.age < 0.03f) {
-    t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 2.0f;
-  } else if (t.age < 0.8f) {
-    t.angVel = glm::sign(bestAngle) * 10.0;
-    if (bestTarget != nullptr)
-      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 4.0f;
-    else
-      t.force = glm::vec2(cos(t.rotation), sin(t.rotation)) * 1.0f; // *
-  } else {
-    return true;
-  }
-
-  if (t.bumpCount > 0)
-    return true;
-
-  return false;
+        if (explodes) {
+          newExplosion(item.pos, 0.008, playerAligned.player);
+          registry.destroy(entity);
+        }
+      });
 }

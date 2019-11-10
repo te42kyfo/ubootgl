@@ -3,10 +3,11 @@
 #include "draw_floating_items.hpp"
 #include "draw_streamlines.hpp"
 #include "draw_tracers.hpp"
+#include "entt/entity/helper.hpp"
+#include "entt/entity/registry.hpp"
 #include "floating_item.hpp"
 #include "frame_times.hpp"
 #include "imgui/imgui.h"
-#include "player.hpp"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
 #include "swarm.hpp"
@@ -29,24 +30,89 @@ public:
 
     scale = 3.0;
 
-    textures.push_back(Texture("resources/ship2.png"));
-    textures.push_back(Texture("resources/debris1.png"));
-    textures.push_back(Texture("resources/debris2.png"));
-    textures.push_back(Texture("resources/agent2.png"));
-    textures.push_back(Texture("resources/torpedo.png"));
-    textures.push_back(Texture("resources/explosion.png", 4, 4));
-    textures.push_back(Texture("resources/black.png"));
+    textures.emplace(registry.type<entt::tag<"tex_ship"_hs>>(),
+                     Texture("resources/ship2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_debris1"_hs>>(),
+                     Texture("resources/debris1.png"));
+    textures.emplace(registry.type<entt::tag<"tex_debris2"_hs>>(),
+                     Texture("resources/debris2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_agent"_hs>>(),
+                     Texture("resources/agent2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_torpedo"_hs>>(),
+                     Texture("resources/torpedo.png"));
+    textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
+                     Texture("resources/explosion.png", 4, 4));
 
-    for (int i = 0; i < 2; i++) {
-      swarm.addAgent({glm::vec2{0.0025, 0.001}, 0.5, glm::vec2(0, 0),
-                      glm::vec2(-1.0, -1.0), 0.0, 0.0, &(textures[3])});
+    for (int i = 0; i < 4; i++) {
+      auto newAgent = registry.create();
+      registry.assign<CoItem>(newAgent, glm::vec2{0.005f, 0.002f},
+                              glm::vec2(0.2f + i * 0.001f, 0.2f), 0.0f);
+      registry.assign<entt::tag<"tex_agent"_hs>>(newAgent);
+      registry.assign<CoAgent>(newAgent);
+      registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
+      registry.assign<CoRespawnsOoB>(newAgent);
+      registry.assign<CoTarget>(newAgent);
     }
-    swarm.nnInit();
+    sim.step(0.003);
   }
 
   void loop();
   void draw();
   void handleKey(SDL_KeyboardEvent event);
+
+  void processTorpedos();
+  void newExplosion(glm::vec2 pos, float explosionDiam, entt::entity player,
+                    int fragmentLevel = 0);
+  void newExplosion(float explosionDiam, entt::entity player);
+  void processExplosions();
+
+  void shiftMap();
+
+  glm::vec2 &pos(entt::entity entity) {
+    return registry.get<CoItem>(entity).pos;
+  }
+
+  float &rot(entt::entity entity) {
+    return registry.get<CoItem>(entity).rotation;
+  }
+
+  glm::vec2 &size(entt::entity entity) {
+    return registry.get<CoItem>(entity).size;
+  }
+
+  glm::vec2 &force(entt::entity entity) {
+    return registry.get<CoKinematics>(entity).force;
+  }
+
+  int &bumpCount(entt::entity entity) {
+    return registry.get<CoKinematics>(entity).bumpCount;
+  }
+
+  float &age(entt::entity entity) {
+    return registry.get<CoExplosion>(entity).age;
+  }
+
+  float &torpedoCooldown(entt::entity entity) {
+    return registry.get<CoPlayer>(entity).torpedoCooldown;
+  }
+  float &torpedosLoaded(entt::entity entity) {
+    return registry.get<CoPlayer>(entity).torpedosLoaded;
+  }
+  int &torpedosFired(entt::entity entity) {
+    return registry.get<CoPlayer>(entity).torpedosFired;
+  }
+
+  float &frame(entt::entity entity) {
+    return registry.get<CoAnimated>(entity).frame;
+  }
+
+  float &explosionDiam(entt::entity entity) {
+    return registry.get<CoExplosion>(entity).explosionDiam;
+  }
+
+  int &fragmentLevel(entt::entity entity) {
+    return registry.get<CoExplosion>(entity).fragmentLevel;
+  }
 
   double lastFrameTime = 0;
   double smoothedFrameRate = 0;
@@ -60,22 +126,12 @@ public:
   SdlGl vis;
   Simulation sim;
   Texture rock_texture;
-
-  std::vector<FloatingItem> playerShips;
-  std::vector<Player> players;
-  unsigned int playerCount = 1;
-
-  std::vector<FloatingItem> debris;
-  std::vector<Torpedo> torpedos;
-  std::vector<FloatingItem> explosions;
-  Swarm swarm;
+  Texture black_texture = Texture("resources/black.png");
 
   double lastKeyUpdate;
-  // std::vector<bool> keysPressed = std::vector<bool>(6, false);
 
-  std::map<SDL_Keycode, bool> keysPressed = {
-      {SDLK_RIGHT, false}, {SDLK_LEFT, false}, {SDLK_UP, false},
-      {SDLK_DOWN, false},  {SDLK_PLUS, false}, {SDLK_MINUS, false},
-      {SDLK_SPACE, false}};
-  std::vector<Texture> textures;
+  entt::registry registry;
+  entt::registry &reg = registry;
+  std::map<SDL_Keycode, bool> keysPressed;
+  std::map<entt::component, Texture> textures;
 };

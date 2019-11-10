@@ -1,5 +1,6 @@
 #pragma once
 #include "db2dgrid.hpp"
+#include "entt/entity/registry.hpp"
 #include "external/lodepng.h"
 #include "floating_item.hpp"
 #include "pressure_solver.hpp"
@@ -126,7 +127,7 @@ public:
 
   void step(float timestep);
 
-  template <typename T> void advectFloatingItems(T *begin, T *end);
+  void advectFloatingItems(entt::registry& registry);
 
   float pwidth;
   float mu;
