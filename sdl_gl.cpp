@@ -8,7 +8,8 @@ SdlGl::SdlGl() { initDisplay(); }
 SdlGl::~SdlGl() { deinitDisplay(); }
 
 void SdlGl::initDisplay() {
-  if (SDL_Init(SDL_INIT_VIDEO) == -1) SDL_die("SDL_Init");
+  if (SDL_Init(SDL_INIT_VIDEO) == -1)
+    SDL_die("SDL_Init");
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
@@ -19,21 +20,24 @@ void SdlGl::initDisplay() {
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
-  window = SDL_CreateWindow(
-      "Uboot", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN);
-  if (window == nullptr) SDL_die("SDL_CreateWindow");
+  window = SDL_CreateWindow("Uboot", SDL_WINDOWPOS_UNDEFINED,
+                            SDL_WINDOWPOS_UNDEFINED, 800, 600,
+                            SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
+                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN);
+  if (window == nullptr)
+    SDL_die("SDL_CreateWindow");
 
   gl_context = SDL_GL_CreateContext(window);
-  if (gl_context == nullptr) SDL_die("SDL_GL_CreateContext");
+  if (gl_context == nullptr)
+    SDL_die("SDL_GL_CreateContext");
   SDL_GL_SetSwapInterval(1);
 
   glewExperimental = GL_TRUE;
   glewInit();
-  glGetError();  // glewInit always sets the GL_INVALID_ENUM error, this call
-                 // clears it
+  glGetError(); // glewInit always sets the GL_INVALID_ENUM error, this call
+                // clears it
 
   GLint flags;
   glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
@@ -67,8 +71,8 @@ void SdlGl::SDL_die(string error) {
 }
 
 void glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
-                   GLsizei length, const GLchar *message,
-                   const void *userParam) {
+                   GLsizei length [[maybe_unused]], const GLchar *message,
+                   const void *userParam [[maybe_unused]]) {
   // ignore non-significant error/warning codes
   // if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
@@ -76,71 +80,71 @@ void glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
   std::cout << "Debug message (" << id << "): " << message << std::endl;
 
   switch (source) {
-    case GL_DEBUG_SOURCE_API:
-      std::cout << "Source: API";
-      break;
-    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-      std::cout << "Source: Window System";
-      break;
-    case GL_DEBUG_SOURCE_SHADER_COMPILER:
-      std::cout << "Source: Shader Compiler";
-      break;
-    case GL_DEBUG_SOURCE_THIRD_PARTY:
-      std::cout << "Source: Third Party";
-      break;
-    case GL_DEBUG_SOURCE_APPLICATION:
-      std::cout << "Source: Application";
-      break;
-    case GL_DEBUG_SOURCE_OTHER:
-      std::cout << "Source: Other";
-      break;
+  case GL_DEBUG_SOURCE_API:
+    std::cout << "Source: API";
+    break;
+  case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+    std::cout << "Source: Window System";
+    break;
+  case GL_DEBUG_SOURCE_SHADER_COMPILER:
+    std::cout << "Source: Shader Compiler";
+    break;
+  case GL_DEBUG_SOURCE_THIRD_PARTY:
+    std::cout << "Source: Third Party";
+    break;
+  case GL_DEBUG_SOURCE_APPLICATION:
+    std::cout << "Source: Application";
+    break;
+  case GL_DEBUG_SOURCE_OTHER:
+    std::cout << "Source: Other";
+    break;
   }
   std::cout << "; ";
 
   switch (type) {
-    case GL_DEBUG_TYPE_ERROR:
-      std::cout << "Type: Error";
-      break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-      std::cout << "Type: Deprecated Behaviour";
-      break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-      std::cout << "Type: Undefined Behaviour";
-      break;
-    case GL_DEBUG_TYPE_PORTABILITY:
-      std::cout << "Type: Portability";
-      break;
-    case GL_DEBUG_TYPE_PERFORMANCE:
-      std::cout << "Type: Performance";
-      break;
-    case GL_DEBUG_TYPE_MARKER:
-      std::cout << "Type: Marker";
-      break;
-    case GL_DEBUG_TYPE_PUSH_GROUP:
-      std::cout << "Type: Push Group";
-      break;
-    case GL_DEBUG_TYPE_POP_GROUP:
-      std::cout << "Type: Pop Group";
-      break;
-    case GL_DEBUG_TYPE_OTHER:
-      std::cout << "Type: Other";
-      break;
+  case GL_DEBUG_TYPE_ERROR:
+    std::cout << "Type: Error";
+    break;
+  case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+    std::cout << "Type: Deprecated Behaviour";
+    break;
+  case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+    std::cout << "Type: Undefined Behaviour";
+    break;
+  case GL_DEBUG_TYPE_PORTABILITY:
+    std::cout << "Type: Portability";
+    break;
+  case GL_DEBUG_TYPE_PERFORMANCE:
+    std::cout << "Type: Performance";
+    break;
+  case GL_DEBUG_TYPE_MARKER:
+    std::cout << "Type: Marker";
+    break;
+  case GL_DEBUG_TYPE_PUSH_GROUP:
+    std::cout << "Type: Push Group";
+    break;
+  case GL_DEBUG_TYPE_POP_GROUP:
+    std::cout << "Type: Pop Group";
+    break;
+  case GL_DEBUG_TYPE_OTHER:
+    std::cout << "Type: Other";
+    break;
   }
   std::cout << "; ";
 
   switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH:
-      std::cout << "Severity: high";
-      break;
-    case GL_DEBUG_SEVERITY_MEDIUM:
-      std::cout << "Severity: medium";
-      break;
-    case GL_DEBUG_SEVERITY_LOW:
-      std::cout << "Severity: low";
-      break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-      std::cout << "Severity: notification";
-      break;
+  case GL_DEBUG_SEVERITY_HIGH:
+    std::cout << "Severity: high";
+    break;
+  case GL_DEBUG_SEVERITY_MEDIUM:
+    std::cout << "Severity: medium";
+    break;
+  case GL_DEBUG_SEVERITY_LOW:
+    std::cout << "Severity: low";
+    break;
+  case GL_DEBUG_SEVERITY_NOTIFICATION:
+    std::cout << "Severity: notification";
+    break;
   }
   std::cout << std::endl;
 }
