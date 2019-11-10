@@ -17,7 +17,7 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
   registry.assign<entt::tag<"tex_explosion"_hs>>(newExp);
   registry.assign<CoAnimated>(newExp, 0.0f);
 
-  float diam = explosionDiam / sim.h;
+  float diam = explosionDiam * 0.8f / sim.h;
   for (int y = -diam; y <= diam; y++) {
     for (int x = -diam; x <= diam; x++) {
       auto gridC = (pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
@@ -120,7 +120,7 @@ void UbootGlApp::processExplosions() {
         while (glm::length(v) > 1.0)
           v = glm::vec2(dist(gen), dist(gen));
 
-        newExplosion(pos(expEnt) + v * explosionDiam(expEnt),
+        newExplosion(pos(expEnt) + v * explosionDiam(expEnt) * 0.6f,
                      explosionDiam(expEnt) * 0.8f,
                      registry.get<CoPlayerAligned>(expEnt).player,
                      fragmentLevel(expEnt) + 1);

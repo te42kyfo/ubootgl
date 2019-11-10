@@ -57,7 +57,7 @@ void UbootGlApp::processTorpedos() {
           explodes = true;
 
         if (explodes) {
-          newExplosion(item.pos, 0.008, playerAligned.player);
+          newExplosion(item.pos, 0.009, playerAligned.player);
           registry.destroy(entity);
         }
       });
