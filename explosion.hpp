@@ -62,7 +62,9 @@ void UbootGlApp::processExplosions() {
 
   auto explosionView = registry.view<CoExplosion>();
   auto targetView = registry.view<CoTarget>();
-  targetView.each([&](auto targetEnt, const auto exp) {
+
+  for (auto it = std::begin(targetView); it != std::end(targetView); it++) {
+    auto targetEnt = *it;
     for (auto expIter = std::begin(explosionView);
          expIter != std::end(explosionView); expIter++) {
       auto expEnt = *expIter;
@@ -80,14 +82,12 @@ void UbootGlApp::processExplosions() {
         if (registry.has<CoAgent>(targetEnt)) {
           // newExplosion(pos(targetEnt), 0.008f, entt::null);
           pos(targetEnt) = glm::vec2(-1, -1);
-          return;
         } else if (registry.has<CoTorpedo>(targetEnt)) {
           bumpCount(targetEnt) += 1;
-          return;
         } else if (registry.has<CoPlayer>(targetEnt)) {
           auto &targetPlayer = registry.get<CoPlayer>(targetEnt);
           if (targetPlayer.deathtimer > 0)
-            return;
+            continue;
 
           newExplosion(pos(targetEnt), 0.015f, targetEnt);
 
@@ -99,11 +99,10 @@ void UbootGlApp::processExplosions() {
           if (registry.has<CoPlayerAligned>(expEnt))
             registry.get<CoPlayer>(registry.get<CoPlayerAligned>(expEnt).player)
                 .kills++;
-          return;
         }
       }
     }
-  });
+  }
   registry.view<CoExplosion>().each([&](auto expEnt, auto &exp) {
     exp.age += simTime;
     frame(expEnt) = exp.age * 210.1f + 2; // / exp.explosionDiam * 1.5 + 0.5;
