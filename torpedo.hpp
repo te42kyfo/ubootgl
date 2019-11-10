@@ -49,7 +49,7 @@ void UbootGlApp::processTorpedos() {
                 glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
           else
             kin.force =
-                glm::vec2(cos(item.rotation), sin(item.rotation)) * 0.0f;
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 1.0f;
         } else {
           explodes = true;
         }
@@ -57,7 +57,7 @@ void UbootGlApp::processTorpedos() {
           explodes = true;
 
         if (explodes) {
-          newExplosion(item.pos, 0.007, playerAligned.player);
+          newExplosion(item.pos, 0.008, playerAligned.player);
           registry.destroy(entity);
         }
       });
