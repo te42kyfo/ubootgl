@@ -66,6 +66,8 @@ public:
   void newExplosion(float explosionDiam, entt::entity player);
   void processExplosions();
 
+  void shiftMap();
+
   glm::vec2 &pos(entt::entity entity) {
     return registry.get<CoItem>(entity).pos;
   }

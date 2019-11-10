@@ -166,6 +166,9 @@ void UbootGlApp::loop() {
   frameTimes.add(1000.0f * (thisFrameTime - lastFrameTime));
 
   lastFrameTime = thisFrameTime;
+
+
+  //shiftMap();
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
@@ -176,6 +179,37 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
   default:
     keysPressed[event.keysym.sym] = event.state;
   }
+}
+
+void UbootGlApp::shiftMap() {
+
+  for (int y = 0; y < sim.flag.height; y++) {
+    for (int x = 1; x < sim.flag.width; x++) {
+      sim.flag(x - 1, y) = sim.flag(x, y);
+    }
+  }
+
+  for (int y = 0; y < sim.vx.height; y++) {
+    for (int x = 2; x < sim.vx.width; x++) {
+      sim.vx(x - 1, y) = sim.vx(x, y);
+    }
+  }
+
+  for (int y = 0; y < sim.vy.height; y++) {
+    for (int x = 1; x < sim.vy.width; x++) {
+      sim.vy(x - 1, y) = sim.vy(x, y);
+    }
+  }
+
+  for (int y = 0; y < sim.p.height; y++) {
+    for (int x = 1; x < sim.p.width; x++) {
+      sim.p(x - 1, y) = sim.p(x, y);
+    }
+  }
+  sim.mg.updateFields(sim.flag);
+
+  registry.view<CoItem>().each(
+      [&](auto &item) { item.pos.x -= sim.pwidth / (sim.flag.width - 1); });
 }
 
 void UbootGlApp::draw() {
