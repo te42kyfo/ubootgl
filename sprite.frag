@@ -1,11 +1,14 @@
-#version 330
+#version 430
+
+layout(std430, binding = 3) buffer frame { float data_frame[]; };
+layout(std430, binding = 4) buffer playerColor { int data_playerColor[]; };
 
 smooth in vec2 out_UV;
-flat in float out_Frame;
-flat in int out_PlayerColor;
 
 uniform sampler2D tex;
 uniform ivec2 frameGridSize;
+
+layout(location = 0) out vec4 outColor;
 
 vec3 playerColors[5] =
 
@@ -19,8 +22,10 @@ void main(void) {
 
   int frameCount = frameGridSize.x * frameGridSize.y;
 
+  float frame = data_frame[gl_PrimitiveID / 2];
+
   float nowFrame = 0;
-  float blendFactor = modf(out_Frame, nowFrame);
+  float blendFactor = modf(frame, nowFrame);
   float nextFrame = nowFrame + 1;
 
   nowFrame = mod(nowFrame, frameCount);
@@ -37,15 +42,16 @@ void main(void) {
   vec2 nextTexCoord = out_UV / frameGridSize +
                       nextFrameGridIdx * (vec2(1.0, -1.0) / frameGridSize);
 
+  int out_PlayerColor = data_playerColor[gl_PrimitiveID/2];
   if (out_PlayerColor < 0) {
-    gl_FragColor =
+    outColor =
         mix(texture(tex, nowTexCoord), texture(tex, nextTexCoord), blendFactor);
   } else {
     vec4 texColor =
         mix(texture(tex, nowTexCoord), texture(tex, nextTexCoord), blendFactor);
 
-    gl_FragColor = vec4(texColor.r * playerColors[out_PlayerColor] +
-                            texColor.g * vec3(1.0, 1.0, 1.0),
-                        texColor.a);
+    outColor = vec4(texColor.r * playerColors[out_PlayerColor] +
+                        texColor.g * vec3(1.0, 1.0, 1.0),
+                    texColor.a);
   }
 }

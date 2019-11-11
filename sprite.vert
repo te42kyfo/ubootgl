@@ -1,17 +1,38 @@
-#version 330
+#version 430
 
-in vec2 in_Position;
-in float in_Frame;
-in vec2 in_UV;
-in int in_PlayerColor;
+layout(std430, binding = 0) buffer pos { vec2 data_pos[]; };
+layout(std430, binding = 1) buffer size { vec2 data_size[]; };
+layout(std430, binding = 2) buffer rot { float data_rot[]; };
 
 smooth out vec2 out_UV;
-flat out float out_Frame;
-flat out int out_PlayerColor;
+
+uniform mat4 PVM;
 
 void main(void) {
-  out_UV = in_UV;
-  gl_Position = vec4(in_Position, 0.0, 1.0);
-  out_Frame = in_Frame;
-  out_PlayerColor = in_PlayerColor;
+  int quadID = gl_VertexID / 4;
+
+
+  switch (gl_VertexID % 4) {
+  case 0:
+    out_UV = vec2(0.0, 0.0);
+    break;
+  case 1:
+    out_UV = vec2(0.0, 1.0);
+    break;
+  case 2:
+    out_UV = vec2(1.0, 1.0);
+    break;
+  case 3:
+    out_UV = vec2(1.0, 0.0);
+    break;
+  }
+
+  vec2 edge = (out_UV - 0.5) * data_size[quadID];
+
+  float s = sin(data_rot[quadID]);
+  float c = cos(data_rot[quadID]);
+  mat2 m = mat2(c, -s, s, c);
+  edge = edge *m;
+
+  gl_Position = PVM * vec4(edge + data_pos[quadID], 0.0, 1.0);
 }

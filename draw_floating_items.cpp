@@ -15,64 +15,59 @@ namespace DrawFloatingItems {
 using namespace std;
 
 GLuint item_shader;
-GLuint vao, position_vbo, frame_vbo, uv_vbo, color_vbo;
-GLint item_shader_frameGridSize_uloc;
+GLuint vao;
+GLint item_shader_frameGridSize_uloc, item_shader_PVM_uloc;
+GLuint pos_ssbo;
+GLuint size_ssbo;
+GLuint rot_ssbo;
+GLuint frame_ssbo;
+GLuint player_ssbo;
+vector<GLuint> idx_buf;
 
 void init() {
-  item_shader = loadShader("./sprite.vert", "./sprite.frag",
-                           {{0, "in_Position"},
-                            {1, "in_Frame"},
-                            {2, "in_UV"},
-                            {3, "in_PlayerColor"}});
+  item_shader = loadShader("./sprite.vert", "./sprite.frag", {});
   item_shader_frameGridSize_uloc =
       glGetUniformLocation(item_shader, "frameGridSize");
 
+  item_shader_PVM_uloc = glGetUniformLocation(item_shader, "PVM");
+
   // Quad Geometry
   GL_CALL(glGenVertexArrays(1, &vao));
-  GL_CALL(glGenBuffers(1, &position_vbo));
-  GL_CALL(glGenBuffers(1, &frame_vbo));
-  GL_CALL(glGenBuffers(1, &uv_vbo));
-  GL_CALL(glGenBuffers(1, &color_vbo));
-
   GL_CALL(glBindVertexArray(vao));
+
+  glGenBuffers(1, &pos_ssbo);
+  glGenBuffers(1, &size_ssbo);
+  glGenBuffers(1, &rot_ssbo);
+  glGenBuffers(1, &frame_ssbo);
+  glGenBuffers(1, &player_ssbo);
 }
 
 void draw(entt::registry &registry, entt::component component, Texture texture,
           glm::mat4 PVM, float magnification, bool blendSum) {
-  glm::vec4 p1 = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
-  glm::vec4 p2 = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
-  glm::vec4 p3 = glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
-  glm::vec4 p4 = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
 
   entt::component components[] = {component, registry.type<CoItem>()};
   auto spriteView = registry.runtime_view(begin(components), end(components));
   if (spriteView.empty())
     return;
 
-  vector<glm::vec2> screenPos_buf;
+  vector<glm::vec2> pos_buf;
+  vector<glm::vec2> size_buf;
   vector<float> frame_buf;
-  vector<glm::vec2> uv_buf;
-  vector<int> color_buf;
+  vector<float> rot_buf;
+  vector<int> player_buf;
+
+  auto inversePVM = glm::inverse(PVM);
+  auto screenP1 = inversePVM * glm::vec4(-1.0, -1.0, 0.0, 1.0);
+  auto screenP2 = inversePVM * glm::vec4(1.0, 1.0, 0.0, 1.0);
 
   for (auto entity : spriteView) {
     auto item = registry.get<CoItem>(entity);
 
-    glm::mat4 TM = glm::translate(PVM, glm::vec3(item.pos, 0.0f));
-    TM = glm::rotate(TM, item.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-    TM = glm::scale(TM,
-                    glm::vec3(item.size.x, item.size.y, 1.0f) * magnification);
-    TM = glm::translate(TM, glm::vec3(-0.5, -0.5, 0.0));
-
-    glm::vec4 screenPos = TM * glm::vec4(0.5, 0.5, 0.0, 1.0);
-    if (screenPos.x > -1.1 && screenPos.x < 1.1 && screenPos.y > -1.1 &&
-        screenPos.y < 1.1) {
-
-      screenPos_buf.push_back(glm::vec2(TM * p1));
-      screenPos_buf.push_back(glm::vec2(TM * p2));
-      screenPos_buf.push_back(glm::vec2(TM * p3));
-      screenPos_buf.push_back(glm::vec2(TM * p2));
-      screenPos_buf.push_back(glm::vec2(TM * p4));
-      screenPos_buf.push_back(glm::vec2(TM * p3));
+    if (item.pos.x > screenP1.x && item.pos.x < screenP2.x &&
+        item.pos.y > screenP1.y && item.pos.y < screenP2.y) {
+      pos_buf.push_back(item.pos);
+      size_buf.push_back(item.size);
+      rot_buf.push_back(item.rotation);
 
       float f = 0.0f;
       if (registry.has<CoAnimated>(entity)) {
@@ -80,32 +75,52 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
       }
 
       frame_buf.push_back(f);
-      frame_buf.push_back(f);
-      frame_buf.push_back(f);
-      frame_buf.push_back(f);
-      frame_buf.push_back(f);
-      frame_buf.push_back(f);
+    }
 
-      uv_buf.push_back(glm::vec2(p1));
-      uv_buf.push_back(glm::vec2(p2));
-      uv_buf.push_back(glm::vec2(p3));
-      uv_buf.push_back(glm::vec2(p2));
-      uv_buf.push_back(glm::vec2(p4));
-      uv_buf.push_back(glm::vec2(p3));
+    int p = -1;
+    if (registry.has<CoPlayerAligned>(entity)) {
+      p = registry.get<CoPlayer>(registry.get<CoPlayerAligned>(entity).player)
+              .keySet;
+    }
+    player_buf.push_back(p);
+  }
 
-      int p = -1;
-      if (registry.has<CoPlayerAligned>(entity)) {
-        p = registry.get<CoPlayer>(registry.get<CoPlayerAligned>(entity).player)
-                .keySet;
-      }
-      color_buf.push_back(p);
-      color_buf.push_back(p);
-      color_buf.push_back(p);
-      color_buf.push_back(p);
-      color_buf.push_back(p);
-      color_buf.push_back(p);
+  if (idx_buf.size() < pos_buf.size() * 6) {
+    for (int i = (int)idx_buf.size() / 6; i < (int)pos_buf.size() * 6; i++) {
+      idx_buf.push_back(i * 4 + 0);
+      idx_buf.push_back(i * 4 + 1);
+      idx_buf.push_back(i * 4 + 2);
+      idx_buf.push_back(i * 4 + 2);
+      idx_buf.push_back(i * 4 + 3);
+      idx_buf.push_back(i * 4 + 0);
     }
   }
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, pos_ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, pos_buf.size() * sizeof(glm::vec2),
+               pos_buf.data(), GL_STREAM_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, pos_ssbo);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, size_ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, size_buf.size() * sizeof(glm::vec2),
+               size_buf.data(), GL_STREAM_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, size_ssbo);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, rot_ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, rot_buf.size() * sizeof(float),
+               rot_buf.data(), GL_STREAM_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, rot_ssbo);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, frame_ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, frame_buf.size() * sizeof(float),
+               frame_buf.data(), GL_STREAM_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, frame_ssbo);
+  
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, player_buf.size() * sizeof(int),
+               player_buf.data(), GL_STREAM_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, player_ssbo);
+  
 
   GL_CALL(glUseProgram(item_shader));
   GL_CALL(glActiveTexture(GL_TEXTURE0));
@@ -123,34 +138,13 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
 
   GL_CALL(glBindVertexArray(vao));
 
-  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, position_vbo));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER,
-                       screenPos_buf.size() * sizeof(glm::vec2),
-                       screenPos_buf.data(), GL_STREAM_DRAW));
-  GL_CALL(glEnableVertexAttribArray(0));
-  GL_CALL(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0));
-
-  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, frame_vbo));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER, frame_buf.size() * sizeof(GL_FLOAT),
-                       frame_buf.data(), GL_STREAM_DRAW));
-  GL_CALL(glEnableVertexAttribArray(1));
-  GL_CALL(glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, 0));
-
-  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, uv_vbo));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER, uv_buf.size() * sizeof(glm::vec2),
-                       uv_buf.data(), GL_STREAM_DRAW));
-  GL_CALL(glEnableVertexAttribArray(2));
-  GL_CALL(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0));
-
-  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, color_vbo));
-  GL_CALL(glBufferData(GL_ARRAY_BUFFER, color_buf.size() * sizeof(int),
-                       color_buf.data(), GL_STREAM_DRAW));
-  GL_CALL(glEnableVertexAttribArray(3));
-  GL_CALL(glVertexAttribIPointer(3, 1, GL_INT, 0, 0));
-
   GL_CALL(glUniform2i(item_shader_frameGridSize_uloc, texture.nx, texture.ny));
+  GL_CALL(glUniformMatrix4fv(item_shader_PVM_uloc, 1, GL_FALSE,
+                             glm::value_ptr(PVM)));
 
-  GL_CALL(glDrawArrays(GL_TRIANGLES, 0, screenPos_buf.size()));
-}
+  GL_CALL(glDrawElements(GL_TRIANGLES, pos_buf.size() * 6, GL_UNSIGNED_INT,
+                         idx_buf.data()));
+
+} // namespace DrawFloatingItems
 
 } // namespace DrawFloatingItems
