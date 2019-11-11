@@ -107,6 +107,10 @@ void UbootGlApp::processExplosions() {
     exp.age += simTime;
     frame(expEnt) = exp.age * 210.1f + 2; // / exp.explosionDiam * 1.5 + 0.5;
 
+    auto playerEnt = registry.has<CoPlayerAligned>(expEnt)
+                         ? registry.get<CoPlayerAligned>(expEnt).player
+                         : entt::null;
+
     if (exp.explosionDiam > 0.0002 && exp.age > 0.003 && !exp.fragmented) {
       exp.fragmented = true;
       static std::default_random_engine gen(std::random_device{}());
@@ -121,8 +125,7 @@ void UbootGlApp::processExplosions() {
           v = glm::vec2(dist(gen), dist(gen));
 
         newExplosion(pos(expEnt) + v * explosionDiam(expEnt) * 0.6f,
-                     explosionDiam(expEnt) * 0.8f,
-                     registry.get<CoPlayerAligned>(expEnt).player,
+                     explosionDiam(expEnt) * 0.8f, playerEnt,
                      fragmentLevel(expEnt) + 1);
       }
     }
