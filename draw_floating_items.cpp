@@ -56,6 +56,8 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
   vector<float> rot_buf;
   vector<int> player_buf;
 
+
+
   auto inversePVM = glm::inverse(PVM);
   auto screenP1 = inversePVM * glm::vec4(-1.0, -1.0, 0.0, 1.0);
   auto screenP2 = inversePVM * glm::vec4(1.0, 1.0, 0.0, 1.0);
@@ -66,7 +68,7 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
     if (item.pos.x > screenP1.x && item.pos.x < screenP2.x &&
         item.pos.y > screenP1.y && item.pos.y < screenP2.y) {
       pos_buf.push_back(item.pos);
-      size_buf.push_back(item.size);
+      size_buf.push_back(item.size * magnification);
       rot_buf.push_back(item.rotation);
 
       float f = 0.0f;
@@ -75,14 +77,13 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
       }
 
       frame_buf.push_back(f);
+      int p = -1;
+      if (registry.has<CoPlayerAligned>(entity)) {
+        p = registry.get<CoPlayer>(registry.get<CoPlayerAligned>(entity).player)
+                .keySet;
+      }
+      player_buf.push_back(p);
     }
-
-    int p = -1;
-    if (registry.has<CoPlayerAligned>(entity)) {
-      p = registry.get<CoPlayer>(registry.get<CoPlayerAligned>(entity).player)
-              .keySet;
-    }
-    player_buf.push_back(p);
   }
 
   if (idx_buf.size() < pos_buf.size() * 6) {
@@ -115,12 +116,11 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
   glBufferData(GL_SHADER_STORAGE_BUFFER, frame_buf.size() * sizeof(float),
                frame_buf.data(), GL_STREAM_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, frame_ssbo);
-  
+
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_ssbo);
   glBufferData(GL_SHADER_STORAGE_BUFFER, player_buf.size() * sizeof(int),
                player_buf.data(), GL_STREAM_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, player_ssbo);
-  
 
   GL_CALL(glUseProgram(item_shader));
   GL_CALL(glActiveTexture(GL_TEXTURE0));
