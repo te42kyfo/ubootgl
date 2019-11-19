@@ -163,6 +163,9 @@ void UbootGlApp::loop() {
 
     classicSwarmAI(registry, sim.flag, sim.h);
   }
+  if (rand() % 200 == 0)
+    shiftMap();
+
   double sim_t2 = dtime();
   lastSimulationTime = (sim_t2 - sim_t1) / simulationSteps;
   double thisFrameTime = dtime();
@@ -172,9 +175,6 @@ void UbootGlApp::loop() {
   frameTimes.add(1000.0f * (thisFrameTime - lastFrameTime));
 
   lastFrameTime = thisFrameTime;
-
-
-  //shiftMap();
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
@@ -189,12 +189,6 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
 
 void UbootGlApp::shiftMap() {
 
-  for (int y = 0; y < sim.flag.height; y++) {
-    for (int x = 1; x < sim.flag.width; x++) {
-      sim.flag(x - 1, y) = sim.flag(x, y);
-    }
-  }
-
   for (int y = 0; y < sim.vx.height; y++) {
     for (int x = 2; x < sim.vx.width; x++) {
       sim.vx(x - 1, y) = sim.vx(x, y);
@@ -202,7 +196,7 @@ void UbootGlApp::shiftMap() {
   }
 
   for (int y = 0; y < sim.vy.height; y++) {
-    for (int x = 1; x < sim.vy.width; x++) {
+    for (int x = 2; x < sim.vy.width; x++) {
       sim.vy(x - 1, y) = sim.vy(x, y);
     }
   }
@@ -212,6 +206,61 @@ void UbootGlApp::shiftMap() {
       sim.p(x - 1, y) = sim.p(x, y);
     }
   }
+
+  for (int y = 0; y < sim.flag.height; y++) {
+    for (int x = 1; x < sim.flag.width; x++) {
+      sim.setGrids(glm::vec2(x - 1, y), sim.flag(x, y));
+    }
+  }
+  for (int i = 0; i < 40; i++) {
+    int y = rand() % (sim.flag.height - 2) + 1;
+    if (fabs(sim.vx(sim.vx.width - 1, y)) < 0.01)
+      sim.setGrids(glm::vec2(sim.flag.width - 1, y), rand() % 20 <= 7);
+  }
+
+  for (int y = 1; y < sim.flag.height - 2; y++) {
+    float v =
+        sim.flag(sim.flag.width - 2, y) - sim.flag(sim.flag.width - 2, y + 1);
+    float v2 =
+        sim.flag(sim.flag.width - 2, y - 1) - sim.flag(sim.flag.width - 2, y);
+
+    if (rand() % 2 == 0) {
+      if (v > 0 && rand() % 1 == 0) {
+        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 0.0);
+      }
+      if (v < 0 && rand() % 1 == 0) {
+        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 1.0);
+      }
+    } else {
+
+      if (v2 > 0 && rand() % 1 == 0) {
+        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 1.0);
+      }
+      if (v2 < 0 && rand() % 1 == 0) {
+        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 0.0);
+      }
+    }
+  }
+
+  for (int y = 1; y < sim.flag.height - 2; y++) {
+    float v = (sim.flag(sim.flag.width - 1, y - 1) +
+               sim.flag(sim.flag.width - 1, y) * 1.0 +
+               sim.flag(sim.flag.width - 1, y + 1)) /
+              3.0f;
+    if (v > 0.5f)
+      sim.setGrids(glm::vec2(sim.flag.width - 1, y), 1.0);
+    else if (v < 0.5f)
+      sim.setGrids(glm::vec2(sim.flag.width - 1, y), 0.0);
+  }
+
+  float inletArea = 1.0f;
+  for (int y = 0; y < sim.vy.height; y++) {
+    inletArea += sim.flag(0, y);
+  }
+  for (int y = 0; y < sim.vy.height; y++) {
+    sim.vx(0, y) = 30.0 / inletArea;
+  }
+
   sim.mg.updateFields(sim.flag);
 
   registry.view<CoItem>().each(
