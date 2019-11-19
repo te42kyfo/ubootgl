@@ -17,7 +17,7 @@ void UbootGlApp::loop() {
 
   simulationSteps = 1; // min(100.0, max(1.0, 0.02 / lastSimulationTime));
 
-  float timestep = 0.1f / max(1.0, smoothedFrameRate * simulationSteps);
+  float timestep = 0.1f / max(5.0, smoothedFrameRate * simulationSteps);
 
   double updateTime = dtime();
   double timeDelta = (updateTime - lastKeyUpdate) / simulationSteps;
