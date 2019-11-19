@@ -441,7 +441,7 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
                    glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
 
       centralForce +=
-          force * 1000.0f * (1000.0f * sideLength[i] + 1.0f) * sideLength[i];
+          force * 1500.0f * (200.0f * sideLength[i] + 1.0f) * sideLength[i];
     }
     centralForce += (bilinearVel(item.pos / h) - kin.vel) * 6.0f;
 
