@@ -21,8 +21,9 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
   for (int y = -diam; y <= diam; y++) {
     for (int x = -diam; x <= diam; x++) {
       auto gridC = (pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
-      if (x * x + y * y > diam * diam || gridC.x < 1 ||
-          gridC.x > sim.width - 1 || gridC.y < 1 || gridC.y > sim.height - 1)
+      if (x * x + y * y > diam * diam || gridC.x < 0 ||
+          gridC.x > sim.flag.width || gridC.y < 1 ||
+          gridC.y > sim.flag.height-2 )
         continue;
       if (explosionDiam > 0.002)
         sim.sinks.push_back(glm::vec3(gridC * sim.h, 40.0f));
