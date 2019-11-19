@@ -201,7 +201,7 @@ void Simulation::project() {
   // diag << "PROJECT: res=" << residual << "\n";
 
   mg.solve(p, f, flag, h, true);
-  // rbgs(p, f, flag, h, 1.0);
+  // rbgs(p, f, flag, h, 1.6);
 
   centerP();
 
@@ -254,13 +254,15 @@ float Simulation::getDT() {
 }
 
 vec2 inline Simulation::bilinearVel(vec2 c) {
-  c.x = glm::min(glm::max(c.x, 0.5f), vx.width - 1.5f);
-  c.y = glm::min(glm::max(c.y, 0.5f), vy.height - 1.5f);
 
   vec2 result;
-
   vec2 cx = c - vec2(0.5, 0.0);
+
+  cx.x = glm::min(glm::max(cx.x, 0.0f), vx.width - 1.01f);
+  cx.y = glm::min(glm::max(cx.y, 0.0f), vx.height - 1.01f);
+
   glm::ivec2 ic = cx;
+
   vec2 st = fract(cx);
 
   result.x = glm::mix(
@@ -268,7 +270,11 @@ vec2 inline Simulation::bilinearVel(vec2 c) {
       glm::mix(vx(ic.x, ic.y + 1), vx(ic.x + 1, ic.y + 1), st.x), st.y);
 
   vec2 cy = c - vec2(0.0, 0.5);
+  cy.x = glm::min(glm::max(cy.x, 0.0f), vy.width - 1.01f);
+  cy.y = glm::min(glm::max(cy.y, 0.0f), vy.height - 1.01f);
+
   ic = cy;
+
   st = fract(cy);
 
   result.y = glm::mix(
@@ -375,7 +381,6 @@ float Simulation::psampleFlagNearest(glm::vec2 pc) {
 void Simulation::advectFloatingItems(entt::registry &registry) {
   auto floatingItemView = registry.view<CoItem, CoKinematics>();
 
-  
   for (auto entity : floatingItemView) {
     auto &item = floatingItemView.get<CoItem>(entity);
     auto &kin = floatingItemView.get<CoKinematics>(entity);
@@ -445,7 +450,6 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
 
     float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
     kin.angVel += dt * angForce / angMass;
-
   }
 
   floatingItemView.each([&](auto &item, auto &kin) {
