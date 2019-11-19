@@ -79,7 +79,7 @@ void UbootGlApp::processExplosions() {
         }
 
         if (registry.has<CoAgent>(targetEnt)) {
-          // newExplosion(pos(targetEnt), 0.008f, entt::null);
+          newExplosion(pos(targetEnt), 0.008f, entt::null);
           pos(targetEnt) = glm::vec2(-1, -1);
         } else if (registry.has<CoTorpedo>(targetEnt)) {
           bumpCount(targetEnt) += 1;
