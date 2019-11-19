@@ -36,6 +36,8 @@ public:
                      Texture("resources/debris1.png"));
     textures.emplace(registry.type<entt::tag<"tex_debris2"_hs>>(),
                      Texture("resources/debris2.png"));
+    textures.emplace(registry.type<entt::tag<"tex_debris"_hs>>(),
+                     Texture("resources/debris.png", 2, 1));
     textures.emplace(registry.type<entt::tag<"tex_agent"_hs>>(),
                      Texture("resources/agent2.png"));
     textures.emplace(registry.type<entt::tag<"tex_torpedo"_hs>>(),
@@ -53,7 +55,23 @@ public:
       registry.assign<CoRespawnsOoB>(newAgent);
       registry.assign<CoTarget>(newAgent);
     }
-    sim.step(0.003);
+
+    static auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    static std::default_random_engine gen(23);
+
+    for (int i = 0; i < 1000; i++) {
+      auto newDebris = registry.create();
+      registry.assign<CoItem>(newDebris, glm::vec2{0.0003, 0.0003} * 3.0f,
+                              glm::vec2(dist(gen), dist(gen)), 1.2f);
+
+      registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
+
+      registry.assign<CoRespawnsOoB>(newDebris);
+      registry.assign<CoAnimated>(newDebris, static_cast<float>(i % 2));
+      registry.assign<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
+                                    0.0f);
+    }
+    // sim.step(0.003);
   }
 
   void loop();

@@ -25,7 +25,6 @@ void UbootGlApp::loop() {
   double sim_t1 = dtime();
   for (int simStep = 0; simStep < simulationSteps; simStep++) {
 
-
     registry.view<CoPlayer, CoItem, CoKinematics>().each([&](const auto pEnt,
                                                              const auto player,
                                                              const auto item,
@@ -58,7 +57,6 @@ void UbootGlApp::loop() {
           torpedoCooldown(pEnt) = 0.014;
           torpedosLoaded(pEnt) -= 1.0;
           torpedosFired(pEnt)++;
-
         }
       }
       torpedoCooldown(pEnt) = max(0.0f, torpedoCooldown(pEnt) - timestep);
@@ -108,7 +106,6 @@ void UbootGlApp::loop() {
 
     simTime += sim.dt;
 
-
     registry.view<CoRespawnsOoB, CoItem, CoKinematics>().less([&](auto &item,
                                                                   auto &kin) {
       static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
@@ -124,7 +121,6 @@ void UbootGlApp::loop() {
         item.pos = gridPos * sim.h;
         kin.vel = {0.0f, 0.0f};
         kin.angVel = 0;
-
       }
     });
 
@@ -300,13 +296,17 @@ void UbootGlApp::draw() {
     DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
 
     DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_debris"_hs>>(),
+        textures[registry.type<entt::tag<"tex_debris"_hs>>()], PVM, 1.0f, true);
+
+    DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
         textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f,
         true);
-    DrawFloatingItems::draw(
+    /*    DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_debris2"_hs>>(),
         textures[registry.type<entt::tag<"tex_debris2"_hs>>()], PVM, 1.0f,
-        true);
+        true);*/
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
         textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
@@ -315,6 +315,7 @@ void UbootGlApp::draw() {
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_agent"_hs>>(),
         textures[registry.type<entt::tag<"tex_agent"_hs>>()], PVM, 1.0f, false);
+
     DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
                             textures[registry.type<entt::tag<"tex_ship"_hs>>()],
                             PVM, 1.0f);

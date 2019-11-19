@@ -40,10 +40,8 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
               pos + glm::vec2(x + dist(gen), y + dist(gen)) * sim.h,
               randRotationDist(gen));
 
-          if (type == 0)
-            registry.assign<entt::tag<"tex_debris1"_hs>>(newDebris);
-          else
-            registry.assign<entt::tag<"tex_debris2"_hs>>(newDebris);
+          registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
+          registry.assign<CoAnimated>(newDebris, static_cast<float>(type));
           registry.assign<CoKinematics>(
               newDebris, size * (0.2f * type + 0.2f),
               glm::normalize(glm::vec2(x, y)) * 1.0f +
