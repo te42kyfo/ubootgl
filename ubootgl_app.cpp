@@ -35,10 +35,15 @@ void UbootGlApp::loop() {
                                CONTROLS::TURN_COUNTERCLOCKWISE}]])
         rot(pEnt) += 4.0 * timeDelta;
 
-      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]])
+      registry.get<CoAnimated>(pEnt).frame = 0.0;
+      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]]) {
         force(pEnt) += 8.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]])
+        registry.get<CoAnimated>(pEnt).frame = 1.0;
+      }
+      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]]) {
         force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
+        registry.get<CoAnimated>(pEnt).frame = 1.0;
+      }
       if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]]) {
         if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
           auto newTorpedo = registry.create();
@@ -87,12 +92,13 @@ void UbootGlApp::loop() {
       for (int p = 0; p < playerCount; p++) {
         auto newPlayer = registry.create();
         registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.002},
-                                glm::vec2(0.5, 0.5), 0.0f);
+                                glm::vec2(0.2, 0.2), 0.0f);
         registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
         registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
         registry.assign<CoPlayer>(newPlayer, p);
         registry.assign<CoRespawnsOoB>(newPlayer);
         registry.assign<CoTarget>(newPlayer);
+        registry.assign<CoAnimated>(newPlayer, 0.0f);
         registry.assign<CoPlayerAligned>(newPlayer, newPlayer);
       }
     }
