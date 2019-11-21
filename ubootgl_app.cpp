@@ -163,8 +163,8 @@ void UbootGlApp::loop() {
 
     classicSwarmAI(registry, sim.flag, sim.h);
   }
-  if (rand() % 200 == 0)
-    shiftMap();
+  //if (rand() % 200 == 0)
+  //  shiftMap();
 
   double sim_t2 = dtime();
   lastSimulationTime = (sim_t2 - sim_t1) / simulationSteps;
