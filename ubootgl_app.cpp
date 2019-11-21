@@ -59,14 +59,13 @@ void UbootGlApp::loop() {
           registry.assign<CoDeletedOoB>(newTorpedo);
           registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
           registry.assign<CoTarget>(newTorpedo);
-          torpedoCooldown(pEnt) = 0.014;
-          torpedosLoaded(pEnt) -= 1.0;
+          torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
+          torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
           torpedosFired(pEnt)++;
         }
       }
       torpedoCooldown(pEnt) = max(0.0f, torpedoCooldown(pEnt) - timestep);
-      torpedosLoaded(pEnt) =
-          min(10.0f, torpedosLoaded(pEnt) + 1400.0f * timestep);
+      torpedosLoaded(pEnt) = min(8.0f, torpedosLoaded(pEnt) + 10.0f * timestep);
     });
 
     if (keysPressed[SDLK_PAGEUP])
@@ -163,7 +162,7 @@ void UbootGlApp::loop() {
 
     classicSwarmAI(registry, sim.flag, sim.h);
   }
-  //if (rand() % 200 == 0)
+  // if (rand() % 200 == 0)
   //  shiftMap();
 
   double sim_t2 = dtime();
@@ -182,6 +181,11 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
   switch (event.keysym.sym) {
   case SDLK_ESCAPE:
     exit(0);
+    break;
+  case SDLK_HASH:
+    if (event.state)
+      cheatMode ^= true;
+    break;
   default:
     keysPressed[event.keysym.sym] = event.state;
   }

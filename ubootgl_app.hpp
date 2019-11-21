@@ -147,6 +147,7 @@ public:
   Texture black_texture = Texture("resources/black.png");
 
   double lastKeyUpdate;
+  bool cheatMode = false;
 
   entt::registry registry;
   entt::registry &reg = registry;
