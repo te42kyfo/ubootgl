@@ -28,7 +28,7 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
       if (explosionDiam > 0.002)
         sim.sinks.push_back(glm::vec3(gridC * sim.h, 40.0f));
       if (sim.flag(gridC) < 1.0) {
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < 20; i++) {
           float velangle = randRotationDist(gen);
           float size = dist(gen) * 0.8 + 1.0;
           size *= size;
@@ -43,7 +43,7 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
           registry.assign<CoAnimated>(newDebris, static_cast<float>(type));
           registry.assign<CoKinematics>(
-              newDebris, size * (0.2f * type + 0.2f),
+              newDebris, size * (0.2f * type + 0.1f),
               glm::normalize(glm::vec2(x, y)) * 1.0f +
                   glm::vec2{cos(velangle), sin(velangle)} * dist(gen) * 0.4f,
               dist(gen) - 0.5f);

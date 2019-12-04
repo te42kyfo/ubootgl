@@ -190,7 +190,7 @@ void Simulation::project() {
         f(gC.x + x, gC.y + y) = sink.z;
       }
     }
-    sink.z = 0.f;
+    sink.z *= 0.05f;
   }
 
   sinks.erase(
