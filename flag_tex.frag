@@ -1,9 +1,11 @@
-#version 150
+#version 450
 
 varying vec2 FragCoord;
 
 uniform sampler2D mask_tex;
 uniform sampler2D fill_tex;
+
+out vec4 fragColor;
 
 void main(void) {
   vec2 texCoord = FragCoord;
@@ -13,30 +15,12 @@ void main(void) {
              textureLod(mask_tex, texCoord, 0).r * 0.5 +
              textureLod(mask_tex, texCoord, 2).r * -0.1;
 
-  if (tv > 0.5) {
-    gl_FragColor = vec4(0, 0, 0, 1.0);
-  } else {
-    gl_FragColor =
-        vec4(texture(fill_tex, texCoord * -6).rgb *
-             (0.6 +
-              smoothstep(0.0, 0.4, textureLod(mask_tex, texCoord, 4).r) * 1.0), 1.0);
-  }
+  float aaf = length(fwidth(texCoord)) * 64.0f;
+  float opaque = 1.0 - smoothstep( max(0.1, 0.5 - aaf), min(0.9, 0.5 + aaf), tv);
 
-  /*float tv = 0.125 * (texture(mask_tex, texCoord + 2 * vec2(tdx, 0)).r +
-                      texture(mask_tex, texCoord - 2 * vec2(tdx, 0)).r +
-                      texture(mask_tex, texCoord + 2 * vec2(0, tdy)).r +
-                      texture(mask_tex, texCoord - 2 * vec2(0, tdy)).r +
-                      texture(mask_tex, texCoord).r * 4.0);
-
-  if (tv > 0.7) {
-    gl_FragColor = vec4(0, 0, 0, 1.0);
-  } else {
-    float tv = 0.25 * (texture(mask_tex, texCoord + 20 * vec2(tdx, 0)).r +
-                       texture(mask_tex, texCoord - 20 * vec2(tdx, 0)).r +
-                       texture(mask_tex, texCoord + 20 * vec2(0, tdy)).r +
-                       texture(mask_tex, texCoord - 20  * vec2(0, tdy)).r +
-                       texture(mask_tex, texCoord).r * -4.0);
-
-    gl_FragColor = (1 - 1.0 * tv) * texture(fill_tex, texCoord * -6);
-    }*/
+  fragColor = vec4(
+      opaque * texture(fill_tex, texCoord * -6).rgb *
+          (0.6 +
+           smoothstep(0.0, 0.4, textureLod(mask_tex, texCoord, 4).r) * 1.0),
+      1.0);
 }
