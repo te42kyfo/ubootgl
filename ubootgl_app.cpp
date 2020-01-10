@@ -111,6 +111,9 @@ void UbootGlApp::loop() {
 
     simTime += sim.dt;
 
+    processTorpedos();
+    processExplosions();
+
     registry.view<CoRespawnsOoB, CoItem, CoKinematics>().less([&](auto &item,
                                                                   auto &kin) {
       static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
@@ -122,10 +125,13 @@ void UbootGlApp::loop() {
       while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
              gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
              sim.psampleFlagLinear(item.pos) < 0.01) {
+        cout << "respawn\n";
         gridPos = glm::vec2(disx(gen), disy(gen));
         item.pos = gridPos * sim.h;
         kin.vel = {0.0f, 0.0f};
         kin.angVel = 0;
+        kin.force = {0.0f, 0.0f};
+        cout << item.pos.x << " " << item.pos.y << "\n";
       }
     });
 
@@ -136,9 +142,6 @@ void UbootGlApp::loop() {
           sim.psampleFlagLinear(item.pos) < 0.01)
         registry.destroy(entity);
     });
-
-    processTorpedos();
-    processExplosions();
 
     registry.view<CoPlayer, CoItem, CoKinematics>().each(
         [&](auto pEnt, auto &player, auto &item, auto &kin) {
