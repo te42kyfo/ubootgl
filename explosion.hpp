@@ -23,7 +23,7 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
       auto gridC = (pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
       if (x * x + y * y > diam * diam || gridC.x < 0 ||
           gridC.x > sim.flag.width || gridC.y < 2 ||
-          gridC.y > sim.flag.height-3 )
+          gridC.y > sim.flag.height - 3)
         continue;
       if (explosionDiam > 0.002)
         sim.sinks.push_back(glm::vec3(gridC * sim.h, 40.0f));
@@ -79,8 +79,9 @@ void UbootGlApp::processExplosions() {
         }
 
         if (registry.has<CoAgent>(targetEnt)) {
-          newExplosion(pos(targetEnt), 0.008f, entt::null);
+          newExplosion(pos(targetEnt), 0.005f, entt::null);
           pos(targetEnt) = glm::vec2(-1, -1);
+
         } else if (registry.has<CoTorpedo>(targetEnt)) {
           bumpCount(targetEnt) += 1;
         } else if (registry.has<CoPlayer>(targetEnt)) {
