@@ -1,5 +1,6 @@
 #include "simulation.hpp"
 #include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -149,11 +150,12 @@ void Simulation::diffuse() {
     {
       // y-velocity diffusion
       vy.copyFrontToBack();
+
       for (int i = 1; i < 3; i++) {
         for (int y = 1; y < vy.height - 1; y++) {
           for (int x = 1; x < vy.width - 1; x++) {
             float val = 0;
-            val += vy.b(x, y - 1) * flag(x, y) * flag(x - 1, y);
+            val += vy.b(x, y - 1) * flag(x, y) * flag(x, y - 1);
             val += vy.b(x, y + 1) * flag(x, y + 1) * flag(x, y + 2);
 
             float fve = flag(x + 1, y) * flag(x + 1, y + 1);
@@ -305,6 +307,8 @@ void Simulation::advect() {
           pos -= dt * ih / steps * tempVel;
           vel = bilinearVel(pos);
         }
+        pos.x = glm::min(glm::max(0.0f, pos.x), (float)vx.width);
+        pos.y = glm::min(glm::max(0.0f, pos.y), (float)vx.height);
 
         vx.b(x, y) =
             (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
@@ -322,6 +326,10 @@ void Simulation::advect() {
           pos -= dt * ih / steps * tempVel;
           vel = bilinearVel(pos);
         }
+
+        pos.x = glm::min(glm::max(0.0f, pos.x), (float)vy.width);
+        pos.y = glm::min(glm::max(0.0f, pos.y), (float)vy.height);
+
         vy.b(x, y) =
             (0.2f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.8f * vel.y);
       }
@@ -363,6 +371,7 @@ float Simulation::psampleFlagLinear(glm::vec2 pc) {
 
   glm::vec2 c = pc / (pwidth / (flag.width)) - 0.5f;
   glm::ivec2 ic = c;
+  ic = glm::max({0, 0}, glm::min({flag.width - 1, flag.height - 1}, ic));
   glm::vec2 st = fract(c);
 
   float p01 = flag(ic + glm::ivec2{0, 1});
@@ -466,24 +475,34 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
       vec2 st = fract(cx);
       vx(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x *
                                    flag(ic + glm::ivec2{1, 1}) *
-                                   flag(ic + glm::ivec2{0, 1});
+                                   flag(ic + glm::ivec2{2, 1});
       vx(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.x *
                                    flag(ic + glm::ivec2{0, 1}) *
-                                   flag(ic + glm::ivec2{-1, 1});
+                                   flag(ic + glm::ivec2{1, 1});
       vx(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.x *
                                    flag(ic + glm::ivec2{1, 0}) *
-                                   flag(ic + glm::ivec2{0, 0});
+                                   flag(ic + glm::ivec2{2, 0});
       vx(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.x *
                                    flag(ic + glm::ivec2{0, 0}) *
-                                   flag(ic + glm::ivec2{-1, 0});
+                                   flag(ic + glm::ivec2{1, 0});
+      assert(!std::isnan(vx(ic)));
 
       glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
       ic = cy;
       st = fract(cy);
-      vy(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.y;
-      vy(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.y;
-      vy(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y;
-      vy(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.y;
+      vy(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.y *
+                                   flag(ic + glm::ivec2{1, 1}) *
+                                   flag(ic + glm::ivec2{1, 2});
+      vy(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.y *
+                                   flag(ic + glm::ivec2{0, 1}) *
+                                   flag(ic + glm::ivec2{0, 2});
+      vy(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y *
+                                   flag(ic + glm::ivec2{1, 0}) *
+                                   flag(ic + glm::ivec2{1, 1});
+      vy(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.y *
+                                   flag(ic + glm::ivec2{0, 1}) *
+                                   flag(ic + glm::ivec2{0, 2});
+      assert(!std::isnan(vy(ic)));
     }
   });
 }
