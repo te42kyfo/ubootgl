@@ -125,13 +125,12 @@ void UbootGlApp::loop() {
       while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
              gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
              sim.psampleFlagLinear(item.pos) < 0.01) {
-        cout << "respawn\n";
+
         gridPos = glm::vec2(disx(gen), disy(gen));
         item.pos = gridPos * sim.h;
         kin.vel = {0.0f, 0.0f};
         kin.angVel = 0;
         kin.force = {0.0f, 0.0f};
-        cout << item.pos.x << " " << item.pos.y << "\n";
       }
     });
 
@@ -365,10 +364,6 @@ void UbootGlApp::draw() {
         registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
         textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f,
         true);
-    /*    DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_debris2"_hs>>(),
-        textures[registry.type<entt::tag<"tex_debris2"_hs>>()], PVM, 1.0f,
-        true);*/
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
         textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
