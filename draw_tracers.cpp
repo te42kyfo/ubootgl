@@ -98,9 +98,9 @@ void drawTracers(const vector<vector<vec2>> &tracers,
 
       normal = glm::fastNormalize(normal);
 
-      float tracerWidth = 0.2f;
+      float tracerWidth = 0.4f;
       if (players)
-        tracerWidth = 0.5f;
+        tracerWidth = 1.0f;
 
       vertices.push_back(
           vec4(tracers[n][t] + normal * tracerWidth, 0.0f, 1.0f));
@@ -211,7 +211,7 @@ void advectTracers(vector<vec2> &tracers, float const *vx, float const *vy,
   for (size_t i = 0; i < tracers.size(); i++) {
     auto &tracer = tracers[i];
     const int steps = 4;
-    float dth = dt / h / steps;
+    float dth = 1.0 * dt / h / steps;
     for (int step = 0; step < steps; step++) {
       float dx = bilinearSample(tracer.x, tracer.y, vx, nx, ny);
       float dy = bilinearSample(tracer.x, tracer.y, vy, nx, ny);
@@ -261,14 +261,13 @@ void updateTracers(float *vx, float *vy, float *flag, int nx, int ny, float dt,
     float x = tracers[tailCount - 1][t].x;
     float y = tracers[tailCount - 1][t].y;
 
-    if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0 ||
-        bilinearSample(x, y, flag, nx, ny) < 0.8) {
+    if (x < 1.0 || x > nx - 1 || y < 1.0 || y > ny - 1 || alphas[t] < -1.0) {
       float tx = dis(gen) * nx;
       float ty = dis(gen) * ny;
-      while (bilinearSample(tx, ty, flag, nx, ny) == 0) {
+      //while (bilinearSample(tx*0.5, ty*0.5, flag, nx*0.5, ny*0.5) == 0) {
         tx = dis(gen) * nx;
         ty = dis(gen) * ny;
-      }
+        //}
 
       tracers[0][t] = {tx, ty};
       for (int n = 1; n < tailCount; n++) {
