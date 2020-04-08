@@ -162,7 +162,8 @@ void UbootGlApp::loop() {
         registry.destroy(entity);
     });
 
-    classicSwarmAI(registry, sim.flag, sim.h);
+    classicSwarmAI(registry, sim.flag, sim.getVX(), sim.getVY(), sim.vx.width,
+                   sim.h);
   }
   // if (rand() % 200 == 0)
   //  shiftMap();

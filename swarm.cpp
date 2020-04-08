@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
+void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* vx, float* vy, int vwidth,
                     float h) {
 
   auto agentView = registry.view<CoAgent, CoItem, CoKinematics>();
@@ -24,61 +24,81 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
 
       float d = length(item1.pos - item2.pos);
 
-      if (d < 20.0f * item1.size.x) {
-        swarmCenter += item2.pos; // + kin2.vel * 0.1f;
+      if (d < 10.0f * (item1.size.x + item1.size.y)) {
+        swarmCenter += item2.pos + kin2.vel * 0.1f;
         commonDirection += kin2.vel;
         swarmCount++;
       }
       if (d < 0.000001f)
         continue;
-      if (d < (item1.size.x + item1.size.y)) {
-        rejectionDirection += (item1.pos - item2.pos) / (d + item1.size.x);
-      }
+      if (d < (item1.size.x + item1.size.y)*1.0f) {
+          rejectionDirection += (item1.pos + kin1.vel * 0.1f - item2.pos - kin2.vel * 0.1f) / (d + item1.size.x);
+          }
     }
 
     glm::vec2 wallAvoidance = {0.0f, 0.0f};
     glm::vec2 lookAheadPos =
         item1.pos +
-        glm::vec2(cos(item1.rotation), sin(item1.rotation)) * 7.0f * h;
+        glm::vec2(cos(item1.rotation), sin(item1.rotation)) * 1.0f * h;
 
     lookAheadPos = glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos));
 
     if (flag(lookAheadPos / h + 0.5f) < 1.0f) {
       wallAvoidance =
-          -glm::vec2(cos(item1.rotation + 0.1), sin(item1.rotation + 0.1));
+          glm::vec2(cos(item1.rotation - 0.5*3.1), sin(item1.rotation - 0.5*3.1));
     }
-    glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.2f;
+    glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.1f;
     lookAheadPos2 =
         glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos2));
 
     if (flag(lookAheadPos2 / h + 0.5f) < 1.0f) {
-      wallAvoidance += -kin1.vel;
+        wallAvoidance += glm::vec2(kin1.vel.y, -kin1.vel.x);
     }
 
-    /*
-    float interceptionTime = 0.0;
-    //     (playerDistance / length(abs(ship.vel) + abs(ag1.vel))) * 0.2f;
-    glm::vec2 interceptionVector = (ship.pos + ship.vel * interceptionTime -
-                                    ag1.pos + ag1.vel * interceptionTime) /
-                                   (playerDistance + 0.2f) / playerDistance;
-    */
-    auto targetDir = normalize(
-        glm::vec2(-0.001, 0) + wallAvoidance * 100.0f +
+
+    auto vgridPos = glm::ivec2 ((item1.pos / h * 2.0f) + 0.5f);
+    auto flowDir = -glm::normalize(glm::vec2(vx[vgridPos.y * vwidth + vgridPos.x],
+                                         vy[vgridPos.y * vwidth + vgridPos.x]));
+
+    /*    auto targetDir = normalize(
+        glm::vec2(-0.001, 0) + wallAvoidance * 400.0f +
         (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) *
             20.0f +
-        10.0f * rejectionDirection +
-        10.0f * commonDirection / (float)swarmCount);
+        100.0f * rejectionDirection +
+        5.0f * commonDirection / (float)swarmCount);
+    */
 
-    auto heading = glm::vec2{cos(item1.rotation), sin(item1.rotation)};
-    float directedAngle = glm::orientedAngle(targetDir, heading);
+    auto targetDir = flowDir * 0.1f + wallAvoidance * 400.0f +
+        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) * 20.0f +
+        100.0f * rejectionDirection +
+        5.0f * commonDirection / (float)swarmCount;
 
-    if (directedAngle < 0)
-      item1.rotation += 0.041;
+
+
+
+    float directedAngle = 0.0f;
+    if (glm::length(targetDir) > 0.0f) {
+        auto heading = glm::vec2{cos(item1.rotation), sin(item1.rotation)};
+        directedAngle = glm::orientedAngle(normalize(targetDir), heading);
+    }
+
+    if( directedAngle < 0)
+        kin1.angVel = min( max( kin1.angVel + 60.0, -120.0), 120.0);
+    else if( directedAngle > 0)
+        kin1.angVel = min( max( kin1.angVel - 60.0, -120.0), 120.0);
     else
-      item1.rotation -= 0.041;
+        kin1.angVel = min( max( kin1.angVel - 4.0, -120.0), 120.0);
+    
+    kin1.angVel*=0.6;
 
-    kin1.force = 2.0f * glm::vec2(cos(item1.rotation), sin(item1.rotation)) *
-                 (dot(targetDir, heading) + 0.5f) / 1.5f;
+    /*    if (directedAngle < 0)
+        item1.rotation -= max(directedAngle, -0.2f);
+    else
+        item1.rotation -= min(directedAngle, +0.2f);
+    */
+
+    kin1.force = 2.0f * glm::vec2(cos(item1.rotation), sin(item1.rotation));// *
+    //                 (dot(targetDir, heading) + 0.5f) / 1.5f;
     assert(!std::isnan(kin1.force.x));
     assert(!std::isnan(kin1.force.y));
   });

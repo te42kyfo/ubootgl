@@ -3,6 +3,7 @@
 #include "draw_floating_items.hpp"
 #include "draw_streamlines.hpp"
 #include "draw_tracers.hpp"
+#include "draw_tracers_cs.hpp"
 #include "entt/entity/helper.hpp"
 #include "entt/entity/registry.hpp"
 #include "floating_item.hpp"
@@ -26,6 +27,7 @@ public:
     Draw2DBuf::init();
     DrawStreamlines::init();
     DrawTracers::init();
+    DrawTracersCS::init();
     DrawFloatingItems::init();
 
     scale = 3.0;
@@ -45,10 +47,10 @@ public:
     textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
                      Texture("resources/explosion.png", 4, 4));
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 60; i++) {
       auto newAgent = registry.create();
       registry.assign<CoItem>(newAgent, glm::vec2{0.005f, 0.002f},
-                              glm::vec2(0.2f + i * 0.001f, 0.2f), 0.0f);
+                              glm::vec2(-1, -1), 0.0f);
       registry.assign<entt::tag<"tex_agent"_hs>>(newAgent);
       registry.assign<CoAgent>(newAgent);
       registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
