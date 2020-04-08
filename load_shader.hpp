@@ -6,3 +6,5 @@
 
 GLuint loadShader(std::string vshader, std::string fshader,
                   std::vector<std::pair<GLuint, std::string>> attribs);
+
+GLuint loadComputeShader(std::string cshader);
