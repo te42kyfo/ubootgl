@@ -28,8 +28,7 @@ public:
         vx(width - 1, height), // staggered
         vy(width, height - 1), // grids
         p(width, height), f(width, height), flag(width, height),
-        r(width, height), ivx(2*width-1, 2*height-1),
-        ivy(2*width-1, 2*height-1),
+        r(width, height), ivx(width, height), ivy(width, height),
         mg(width, height), h(pwidth / (width - 1.0f)), disx(0.0f, 1.0f),
         disy(0.0f, (float)height / width) {}
 
@@ -55,8 +54,8 @@ public:
     f = {width, height};
     flag = {width, height};
     r = {width, height};
-    ivx = {2*width-1, 2*height-1};
-    ivy = {2*width-1, 2*height-1};
+    ivx = {width, height};
+    ivy = {width, height};
 
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
@@ -128,7 +127,7 @@ public:
 
   void step(float timestep);
 
-  void advectFloatingItems(entt::registry& registry);
+  void advectFloatingItems(entt::registry &registry);
 
   float pwidth;
   float mu;

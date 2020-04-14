@@ -12,12 +12,16 @@
 using glm::vec2;
 
 void Simulation::interpolateFields() {
-#pragma omp parallel for
+  // #pragma omp parallel for
   for (int y = 0; y < ivx.height; y++) {
+    for (int x = 1; x < ivx.width - 1; x++) {
+      ivx(x, y) = 0.5f * (vx.f(x, y) + vx.f(x + 1, y));
+    }
+  }
+
+  for (int y = 1; y < ivx.height - 1; y++) {
     for (int x = 0; x < ivx.width; x++) {
-      vec2 iv = bilinearVel(vec2(x * 0.5, y*0.5));
-      ivx(x, y) = iv.x;
-      ivy(x, y) = iv.y;
+      ivy(x, y) = 0.5f * (vx.f(x, y + 1) + vx.f(x, y));
     }
   }
   staleInterpolatedFields = false;
@@ -422,7 +426,7 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
           kin.force += dot(kin.force, surfaceNormal) * surfaceNormal;
       } else {
         kin.vel = vec2(0.0f);
-        //kin.force = vec2(0.0f);
+        // kin.force = vec2(0.0f);
       }
       kin.bumpCount++;
     }
