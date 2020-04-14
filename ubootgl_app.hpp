@@ -13,6 +13,7 @@
 #include "simulation.hpp"
 #include "swarm.hpp"
 #include "texture.hpp"
+#include "velocity_textures.hpp"
 #include <glm/vec2.hpp>
 #include <iostream>
 #include <map>
@@ -29,6 +30,7 @@ public:
     DrawTracers::init();
     DrawTracersCS::init();
     DrawFloatingItems::init();
+    VelocityTextures::init(sim.width, sim.height);
 
     scale = 3.0;
 
@@ -73,6 +75,7 @@ public:
       registry.assign<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                     0.0f);
     }
+
     // sim.step(0.003);
   }
 

@@ -307,8 +307,10 @@ void UbootGlApp::draw() {
             (sim.pwidth / (sim.width)));
             }*/
 
-  DrawTracers::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(), sim.width,
-                             sim.height, simTime, sim.pwidth);
+  VelocityTextures::updateFromStaggered(sim.vx.data(), sim.vy.data());
+  DrawTracersCS::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(),
+                               sim.ivx.width, sim.ivy.height, simTime,
+                               sim.pwidth);
 
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
     renderOriginX = renderWidth * (player.keySet % xsplits * 1.01);
@@ -350,12 +352,12 @@ void UbootGlApp::draw() {
     //                  glm::vec3(0.0f, 0.0f, -1.0f));
     PVM = glm::translate(PVM, glm::vec3(-item.pos, 0.0f));
 
-    Draw2DBuf::draw_mag(sim.getVX(), sim.getVY(), sim.width, sim.height, PVM,
-                        sim.pwidth);
+    Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), sim.ivx.width,
+                        sim.ivx.height, PVM, sim.pwidth);
     Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
                          PVM, sim.pwidth);
 
-    DrawTracers::draw(sim.width, sim.height, PVM, sim.pwidth);
+    DrawTracersCS::draw(sim.ivx.width, sim.ivx.height, PVM, sim.pwidth);
 
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_debris"_hs>>(),

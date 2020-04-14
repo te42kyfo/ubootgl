@@ -95,51 +95,10 @@ glm::mat4 transformationMatrix(int tex_width, int tex_height, float pwidth,
   return TM;
 }
 
-void draw_scalar(float *buf_scalar, int nx, int ny, glm::mat4 PVM,
-                 float pwidth) {
-  vector<float> vt(buf_scalar, buf_scalar + nx * ny);
-  auto upper_bound = vt.begin() + vt.size() - 1;
-  nth_element(vt.begin(), upper_bound, vt.end());
-  float vmax = *upper_bound;
-  //  auto lower_bound = vt.begin() + vt.size() * 0;
-  // nth_element(vt.begin(), lower_bound, vt.end());
-  float vmin = 0; //*lower_bound;
-
-  GL_CALL(glUseProgram(mag_shader));
-  GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
-
-  glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
-
-  GL_CALL(
-      glUniformMatrix4fv(mag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
-
-  GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
-
-  Draw2DBuf::draw(buf_scalar, nx, ny);
-  GL_CALL(glUseProgram(0));
-}
-
-void draw_mag(float *buf_vx, float *buf_vy, int nx, int ny, glm::mat4 PVM,
-              float pwidth) {
-  std::vector<float> V(nx * ny);
-  std::vector<float> vt(nx * ny);
-
-  for (int y = 0; y < ny; y++) {
-    for (int x = 0; x < nx; x++) {
-      int ind = y * nx + x;
-
-      // + small constant avoids numerical problems with fast sqrts
-      V[ind] = sqrt(buf_vx[ind] * buf_vx[ind] + buf_vy[ind] * buf_vy[ind] +
-                    0.00001f);
-      vt[ind] = V[ind];
-    }
-  }
-
-  auto upper_bound = vt.begin() + vt.size() * 0.99;
-  nth_element(vt.begin(), upper_bound, vt.end());
+void draw_mag(GLuint tex_id, int nx, int ny, glm::mat4 PVM, float pwidth) {
 
   float vmin = 0;
-  float vmax = *upper_bound;
+  float vmax = 1.0;
   GL_CALL(glUseProgram(mag_shader));
   GL_CALL(glUniform1i(mag_shader_tex_uloc, 0));
 
@@ -149,7 +108,20 @@ void draw_mag(float *buf_vx, float *buf_vy, int nx, int ny, glm::mat4 PVM,
 
   GL_CALL(glUniform2f(mag_shader_bounds_uloc, vmin, vmax));
 
-  Draw2DBuf::draw(V.data(), nx, ny);
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, tex_id));
+
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+  // Draw Quad with texture
+  GL_CALL(glBindVertexArray(vao));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+  GL_CALL(glEnableVertexAttribArray(0));
+  GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+
+  GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
   GL_CALL(glUseProgram(0));
 }
 
