@@ -294,48 +294,49 @@ void Simulation::advect() {
   float ih = 1.0f / h;
   const int steps = 2;
 
-  //#pragma omp parallel
-  //#pragma omp single
+#pragma omp parallel num_threads(8)
+#pragma omp single
   {
-//#pragma omp taskloop num_tasks(4)
-#pragma omp parallel for
-    for (int y = 1; y < vx.height - 1; y++) {
-      for (int x = 1; x < vx.width - 1; x++) {
-        if (flag(x, y) < 1.0)
-          continue;
-        vec2 pos = vec2(x + 0.5, y);
-        vec2 vel = bilinearVel(pos);
-        for (int step = 0; step < steps; step++) {
-          vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
-          vec2 tempVel = bilinearVel(tempPos);
-          pos -= dt * ih / steps * tempVel;
-          vel = bilinearVel(pos);
-        }
-        pos.x = glm::min(glm::max(0.0f, pos.x), (float)vx.width);
-        pos.y = glm::min(glm::max(0.0f, pos.y), (float)vx.height);
+#pragma omp taskgroup
+    {
+#pragma omp taskloop grainsize(4) nogroup
+      for (int y = 1; y < vx.height - 1; y++) {
+        for (int x = 1; x < vx.width - 1; x++) {
+          if (flag(x, y) < 1.0)
+            continue;
+          vec2 pos = vec2(x + 0.5, y);
+          vec2 vel = bilinearVel(pos);
+          for (int step = 0; step < steps; step++) {
+            vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
+            vec2 tempVel = bilinearVel(tempPos);
+            pos -= dt * ih / steps * tempVel;
+            vel = bilinearVel(pos);
+          }
+          pos.x = glm::min(glm::max(0.0f, pos.x), (float)vx.width);
+          pos.y = glm::min(glm::max(0.0f, pos.y), (float)vx.height);
 
-        vx.b(x, y) =
-            (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
+          vx.b(x, y) =
+              (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
+        }
       }
-    }
-//#pragma omp taskloop num_tasks(4)
-#pragma omp parallel for
-    for (int y = 1; y < vy.height - 1; y++) {
-      for (int x = 1; x < vy.width - 1; x++) {
-        vec2 pos = vec2(x, y + 0.5);
-        vec2 vel = bilinearVel(pos);
-        for (int step = 0; step < steps; step++) {
-          vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
-          vec2 tempVel = bilinearVel(tempPos);
-          pos -= dt * ih / steps * tempVel;
-          vel = bilinearVel(pos);
+#pragma omp taskloop grainsize(4) nogroup
+      for (int y = 1; y < vy.height - 1; y++) {
+        for (int x = 1; x < vy.width - 1; x++) {
+          vec2 pos = vec2(x, y + 0.5);
+          vec2 vel = bilinearVel(pos);
+          for (int step = 0; step < steps; step++) {
+            vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
+            vec2 tempVel = bilinearVel(tempPos);
+            pos -= dt * ih / steps * tempVel;
+            vel = bilinearVel(pos);
+          }
+
+          pos.x = glm::min(glm::max(0.0f, pos.x), (float)vy.width);
+          pos.y = glm::min(glm::max(0.0f, pos.y), (float)vy.height);
+
+          vy.b(x, y) =
+              (0.2f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.8f * vel.y);
         }
-
-        pos.x = glm::min(glm::max(0.0f, pos.x), (float)vy.width);
-        pos.y = glm::min(glm::max(0.0f, pos.y), (float)vy.height);
-
-        vy.b(x, y) =
-            (0.2f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.8f * vel.y);
       }
     }
   }
