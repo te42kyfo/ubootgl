@@ -308,6 +308,7 @@ void UbootGlApp::draw() {
             }*/
 
   VelocityTextures::updateFromStaggered(sim.vx.data(), sim.vy.data());
+  VelocityTextures::uploadFlag(sim.getFlag());
   DrawTracersCS::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(),
                                sim.ivx.width, sim.ivy.height, simTime,
                                sim.pwidth);
@@ -354,8 +355,8 @@ void UbootGlApp::draw() {
 
     Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), sim.ivx.width,
                         sim.ivx.height, PVM, sim.pwidth);
-    Draw2DBuf::draw_flag(rock_texture, sim.getFlag(), sim.width, sim.height,
-                         PVM, sim.pwidth);
+    Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
+                         sim.width, sim.height, PVM, sim.pwidth);
 
     DrawTracersCS::draw(sim.ivx.width, sim.ivx.height, PVM, sim.pwidth);
 
@@ -401,8 +402,8 @@ void UbootGlApp::draw() {
       PVM,
       glm::vec3(1.0f, 1.0f * (float)renderWidth / renderHeight, 1.0f) * 2.0f);
   PVM = glm::translate(PVM, glm::vec3(-0.5f, -0.5f, 0.0f));
-  Draw2DBuf::draw_flag(black_texture, sim.getFlag(), sim.width, sim.height, PVM,
-                       sim.pwidth);
+  Draw2DBuf::draw_flag(black_texture, VelocityTextures::getFlagTex(), sim.width,
+                       sim.height, PVM, sim.pwidth);
 
   DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
                           textures[registry.type<entt::tag<"tex_ship"_hs>>()],

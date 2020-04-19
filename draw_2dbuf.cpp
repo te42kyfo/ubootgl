@@ -125,8 +125,8 @@ void draw_mag(GLuint tex_id, int nx, int ny, glm::mat4 PVM, float pwidth) {
   GL_CALL(glUseProgram(0));
 }
 
-void draw_flag(Texture fill_tex, float *buf_flag, int nx, int ny, glm::mat4 PVM,
-               float pwidth) {
+void draw_flag(Texture fill_tex, GLuint flag_tex_id, int nx, int ny,
+               glm::mat4 PVM, float pwidth) {
   GL_CALL(glUseProgram(flag_shader));
   GL_CALL(glUniform1i(flag_shader_mask_tex_uloc, 0));
   GL_CALL(glUniform1i(flag_shader_fill_tex_uloc, 1));
@@ -137,12 +137,23 @@ void draw_flag(Texture fill_tex, float *buf_flag, int nx, int ny, glm::mat4 PVM,
 
   GL_CALL(glActiveTexture(GL_TEXTURE1));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
-
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
-  Draw2DBuf::draw(buf_flag, nx, ny);
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, flag_tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+  // Draw Quad with texture
+  GL_CALL(glBindVertexArray(vao));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+  GL_CALL(glEnableVertexAttribArray(0));
+  GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+
+  GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+
   GL_CALL(glUseProgram(0));
 }
 } // namespace Draw2DBuf
