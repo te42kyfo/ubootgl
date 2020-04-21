@@ -23,7 +23,7 @@
 class UbootGlApp {
 public:
   UbootGlApp()
-      : sim("resources/level2.png", 0.8, 0.01f),
+      : sim("resources/level2.png", 0.8, -0.0001f),
         rock_texture("resources/rock_texture2.png") {
     Draw2DBuf::init();
     DrawStreamlines::init();
@@ -63,7 +63,7 @@ public:
     static auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
     static std::default_random_engine gen(23);
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10; i++) {
       auto newDebris = registry.create();
       registry.assign<CoItem>(newDebris, glm::vec2{0.0003, 0.0003} * 3.0f,
                               glm::vec2(dist(gen), dist(gen)), 1.2f);

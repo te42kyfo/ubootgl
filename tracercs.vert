@@ -1,4 +1,4 @@
-#version 150
+#version 430
 
 in vec2 in_Position;
 
@@ -8,12 +8,26 @@ varying vec2 FragCoord;
 varying vec4 v_color;
 varying float v_side;
 
+layout( std430, binding=0 )  buffer PP {uint  pointers[];};
+layout( std430, binding=1 )  buffer AA {float  ages[];};
+
 vec3 playerColors[5] =
     vec3[](vec3(1.8, 0.0, -10.0), vec3(0.0, 1.0, -10.0), vec3(1.0, 1.0, -10.0),
            vec3(1.0, 0.2, -10.0), vec3(1.4, 0.0, 1.0));
 
 void main(void) {
-  v_color = vec4(1.0, 0.0, 0.0, 1.0);
+    float alpha = 0;
+    uint position = ((pointers[gl_VertexID/40/2] - ((gl_VertexID/2) % 40)) % 40);
+    if (position == 0)
+        alpha = 0.0;
+    else if (position == 1)
+        alpha = 0.5;
+    else if (position == 2)
+        alpha = 1.0;
+    else
+        alpha = 1.04 / ( position-2) - 0.03;
+
+  v_color = vec4(1.0, 1.0, 1.0, alpha * 0.5 * (1.0 - cos(ages[gl_VertexID/40/2]) ));
 
 
   FragCoord = in_Position.xy;

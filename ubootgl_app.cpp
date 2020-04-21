@@ -5,6 +5,7 @@
 #include "explosion.hpp"
 #include "gl_error.hpp"
 #include "torpedo.hpp"
+#include "velocity_textures.hpp"
 #include <GL/glew.h>
 
 #include <glm/gtx/transform.hpp>
@@ -309,9 +310,9 @@ void UbootGlApp::draw() {
 
   VelocityTextures::updateFromStaggered(sim.vx.data(), sim.vy.data());
   VelocityTextures::uploadFlag(sim.getFlag());
-  DrawTracersCS::updateTracers(sim.getVX(), sim.getVY(), sim.getFlag(),
-                               sim.ivx.width, sim.ivy.height, simTime,
-                               sim.pwidth);
+  DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
+                               VelocityTextures::getFlagTex(), sim.ivx.width,
+                               sim.ivy.height, simTime, sim.pwidth);
 
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
     renderOriginX = renderWidth * (player.keySet % xsplits * 1.01);

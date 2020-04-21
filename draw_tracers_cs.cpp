@@ -13,13 +13,15 @@ namespace DrawTracersCS {
 GLuint tracer_shader, compute_shader;
 GLuint vao;
 GLuint uloc_tracer_shader_TM, uloc_compute_shader_npoints,
-    uloc_compute_shader_ntracers;
+    uloc_compute_shader_ntracers, uloc_compute_shader_tex_vxy,
+    uloc_compute_shader_tex_flag, uloc_compute_shader_pdim,
+    uloc_compute_shader_dt, uloc_compute_shader_rand_seed;
 GLuint ssbo_points, ssbo_vertices, ssbo_pointers, ssbo_ages, ssbo_indices;
 
 vector<unsigned int> indices;
 
-const int npoints = 500;
-const int ntracers = 10;
+const int npoints = 40;
+const int ntracers = 10000;
 
 void init() {
 
@@ -32,6 +34,15 @@ void init() {
   uloc_compute_shader_ntracers =
       glGetUniformLocation(compute_shader, "ntracers");
 
+  uloc_compute_shader_tex_vxy = glGetUniformLocation(compute_shader, "tex_vxy");
+  uloc_compute_shader_tex_flag =
+      glGetUniformLocation(compute_shader, "tex_flag");
+
+  uloc_compute_shader_pdim = glGetUniformLocation(compute_shader, "pdim");
+  uloc_compute_shader_dt = glGetUniformLocation(compute_shader, "dt");
+  uloc_compute_shader_rand_seed =
+      glGetUniformLocation(compute_shader, "rand_seed");
+
   GL_CALL(glGenVertexArrays(1, &vao));
   glGenBuffers(1, &ssbo_points);
   glGenBuffers(1, &ssbo_vertices);
@@ -40,12 +51,8 @@ void init() {
   glGenBuffers(1, &ssbo_indices);
 
   // initialize points SSBO
-  vector<vec2> pointdata;
-  for (int t = 0; t < ntracers; t++) {
-    for (int p = 0; p < npoints; p++) {
-      pointdata.push_back(vec2(10 * t, 200));
-    }
-  }
+  vector<vec2> pointdata(ntracers * npoints, vec2(0, 0));
+
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_points);
   glBufferData(GL_SHADER_STORAGE_BUFFER, pointdata.size() * sizeof(vec2),
                pointdata.data(), GL_STATIC_DRAW);
@@ -64,6 +71,9 @@ void init() {
 
   // allocate pointers SSBO with zeros
   vector<float> ages(ntracers, 0.0);
+  for (int i = 0; i < ntracers; i++) {
+    ages[i] = (rand() % 10000) / 10000.0 * 2.0 * 3.141;
+  }
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_ages);
   glBufferData(GL_SHADER_STORAGE_BUFFER, ages.size() * sizeof(float),
                ages.data(), GL_STATIC_DRAW);
@@ -75,7 +85,7 @@ void init() {
                GL_STATIC_DRAW);
 };
 
-void updateTracers(float *vx, float *vy, float *flag, int nx, int ny, float dt,
+void updateTracers(GLuint tex_vxy, GLuint flag_tex, int nx, int ny, float dt,
                    float pwidth) {
 
   // compute vertices
@@ -85,16 +95,25 @@ void updateTracers(float *vx, float *vy, float *flag, int nx, int ny, float dt,
   GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo_pointers));
   GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo_ages));
   GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssbo_indices));
+
   GL_CALL(glUniform1i(uloc_compute_shader_npoints, npoints));
   GL_CALL(glUniform1i(uloc_compute_shader_ntracers, ntracers));
+  GL_CALL(glUniform2f(uloc_compute_shader_pdim, pwidth, pwidth * ny / nx));
+  GL_CALL(glUniform1f(uloc_compute_shader_dt, dt));
+  GL_CALL(glUniform1ui(uloc_compute_shader_rand_seed, rand()));
+
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, tex_vxy));
+  GL_CALL(glUniform1i(uloc_compute_shader_tex_vxy, 0));
+
+  GL_CALL(glActiveTexture(GL_TEXTURE1));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, flag_tex));
+  GL_CALL(glUniform1i(uloc_compute_shader_tex_flag, 1));
 
   GL_CALL(glDispatchCompute((ntracers - 1) / 256 + 1, 1, 1));
 };
 
 void draw(int nx, int ny, glm::mat4 PVM, float pwidth) {
-
-  // Model
-  glm::mat4 TM = glm::scale(PVM, glm::vec3(pwidth / nx, pwidth / nx, pwidth));
 
   GL_CALL(glBindVertexArray(vao));
 
@@ -105,8 +124,10 @@ void draw(int nx, int ny, glm::mat4 PVM, float pwidth) {
 
   GL_CALL(glUseProgram(tracer_shader));
   GL_CALL(glUniformMatrix4fv(uloc_tracer_shader_TM, 1, GL_FALSE,
-                             glm::value_ptr(TM)));
+                             glm::value_ptr(PVM)));
 
+  GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_pointers));
+  GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_ages));
   GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ssbo_indices));
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
