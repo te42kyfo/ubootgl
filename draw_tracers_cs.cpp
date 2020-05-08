@@ -20,7 +20,7 @@ GLuint ssbo_points, ssbo_vertices, ssbo_pointers, ssbo_ages, ssbo_indices;
 
 vector<unsigned int> indices;
 
-const int npoints = 40;
+const int npoints = 100;
 const int ntracers = 10000;
 
 void init() {
@@ -113,7 +113,7 @@ void updateTracers(GLuint tex_vxy, GLuint flag_tex, int nx, int ny, float dt,
   GL_CALL(glDispatchCompute((ntracers - 1) / 256 + 1, 1, 1));
 };
 
-void draw(int nx, int ny, glm::mat4 PVM, float pwidth) {
+void draw(glm::mat4 PVM, int renderWidth) {
 
   GL_CALL(glBindVertexArray(vao));
 

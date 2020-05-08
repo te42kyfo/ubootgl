@@ -8,5 +8,5 @@ void init();
 void updateTracers(GLuint vel_tex, GLuint flag_tex, int nx, int ny, float dt,
                    float pwidth);
 
-void draw(int nx, int ny, glm::mat4 PVM, float pwidth);
+void draw(glm::mat4 PVM, int renderWidth);
 } // namespace DrawTracersCS

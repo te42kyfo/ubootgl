@@ -17,7 +17,7 @@ vec3 playerColors[5] =
 
 void main(void) {
     float alpha = 0;
-    uint position = ((pointers[gl_VertexID/40/2] - ((gl_VertexID/2) % 40)) % 40);
+    uint position = ((pointers[gl_VertexID/100/2] - ((gl_VertexID/2) % 100)) % 100);
     if (position == 0)
         alpha = 0.0;
     else if (position == 1)
@@ -25,9 +25,9 @@ void main(void) {
     else if (position == 2)
         alpha = 1.0;
     else
-        alpha = 1.04 / ( position-2) - 0.03;
+        alpha = 3.4 / ( position-2) - 0.01;
 
-  v_color = vec4(1.0, 1.0, 1.0, alpha * 0.5 * (1.0 - cos(ages[gl_VertexID/40/2]) ));
+  v_color = vec4(1.0, 1.0, 1.0, alpha * 0.5 * (1.0 - cos(ages[gl_VertexID/100/2]) ));
 
 
   FragCoord = in_Position.xy;

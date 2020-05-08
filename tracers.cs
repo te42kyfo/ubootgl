@@ -45,7 +45,7 @@ void main() {
     uint gid = gl_GlobalInvocationID.x;
     rng_state = wang_hash(gid + rand_seed);
 
-    const float width = 0.0001;
+    float width = 0.001;
 
     if (gid >= ntracers) return;
 
@@ -71,10 +71,12 @@ void main() {
         // indices[ibase + ((pointers[gid])% (npoints-1))*6 +  5] = 0;
     }
 
-
-    
-    points[base + next] = currP +  texture(tex_vxy, currP / pdim).xy * dt;
-
+    // RK2/Midpoint rule integration
+    vec2 vel1 = texture(tex_vxy, currP / pdim).xy;
+    vec2 midPoint = currP + vel1*dt*0.5;
+    vec2 vel2 = texture(tex_vxy, midPoint / pdim).xy;
+    points[base + next] = currP +   vel2 * dt;
+    width = 0.0001 + length(vel2) * 0.0004;
 
     vec2 v1 = normalize(points[base + curr]- points[base + prev]);
     vec2 v2 =  normalize(points[base + next]- points[base + curr ]);

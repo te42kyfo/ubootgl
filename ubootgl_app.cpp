@@ -359,7 +359,7 @@ void UbootGlApp::draw() {
     Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
                          sim.width, sim.height, PVM, sim.pwidth);
 
-    DrawTracersCS::draw(sim.ivx.width, sim.ivx.height, PVM, sim.pwidth);
+    DrawTracersCS::draw(PVM, renderWidth);
 
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_debris"_hs>>(),
