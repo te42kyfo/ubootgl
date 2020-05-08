@@ -455,7 +455,7 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
                    glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
 
       centralForce +=
-          force * 1500.0f * (200.0f * sideLength[i] + 1.0f) * sideLength[i];
+          force * 2000.0f * (300.0f * sideLength[i] + 1.0f) * sideLength[i];
     }
     centralForce += (bilinearVel(item.pos / h) - kin.vel) * 6.0f;
 
@@ -473,7 +473,7 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
       float area = item.size.x * item.size.y / (h * h);
       auto deltaVel = bilinearVel(item.pos / h) - kin.vel;
 
-      auto deltaVec = deltaVel * area * 0.1f;
+      auto deltaVec = deltaVel * area * 0.06f;
 
       glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
       glm::ivec2 ic = cx;
