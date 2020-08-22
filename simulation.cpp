@@ -180,7 +180,7 @@ void Simulation::diffuse() {
 
 void Simulation::project() {
   float ih = 1.0f / h;
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 8)
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
       f(x, y) = -ih * (vx(x, y) - vx(x - 1, y) + vy(x, y) - vy(x, y - 1));
@@ -215,13 +215,13 @@ void Simulation::project() {
 
   // residual = calculateResidualField(p, f, flag, r, h);
   // diag << "PROJECT: res=" << residual << "\n";
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 8)
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 2; x++) {
       vx(x, y) -= flag(x, y) * flag(x + 1, y) * ih * (p(x + 1, y) - p(x, y));
     }
   }
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 8)
   for (int y = 1; y < height - 2; y++) {
     for (int x = 1; x < width - 1; x++) {
       vy(x, y) -= flag(x, y) * flag(x, y + 1) * ih * (p(x, y + 1) - p(x, y));
@@ -231,13 +231,13 @@ void Simulation::project() {
 
 void Simulation::centerP() {
   float avgP = 0;
-#pragma omp parallel for reduction(+ : avgP)
+#pragma omp parallel for reduction(+ : avgP) schedule(dynamic, 8)
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
       avgP += p(x, y);
     }
   }
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 8)
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
       p(x, y) -= avgP / width / height;
@@ -403,7 +403,7 @@ void Simulation::advectFloatingItems(entt::registry &registry) {
 
     // Position update
     item.pos += dt * kin.vel;
-    item.rotation += dt * kin.angVel;
+    item.rotation = fmod(item.rotation + dt * kin.angVel + 2 * M_PI, 2 * M_PI);
 
     glm::vec2 gridPos = item.pos / (pwidth / (flag.width));
 
