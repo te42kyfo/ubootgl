@@ -82,7 +82,7 @@ public:
   void loop();
   void draw();
   void handleKey(SDL_KeyboardEvent event);
-
+  void handleJoyAxis(SDL_JoyAxisEvent event);
   void processTorpedos();
   void newExplosion(glm::vec2 pos, float explosionDiam, entt::entity player,
                     int fragmentLevel = 0);
@@ -157,5 +157,6 @@ public:
   entt::registry registry;
   entt::registry &reg = registry;
   std::map<SDL_Keycode, bool> keysPressed;
+  std::map<int, int> joyAxis;
   std::map<entt::component, Texture> textures;
 };

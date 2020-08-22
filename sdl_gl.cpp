@@ -8,7 +8,8 @@ SdlGl::SdlGl() { initDisplay(); }
 SdlGl::~SdlGl() { deinitDisplay(); }
 
 void SdlGl::initDisplay() {
-  if (SDL_Init(SDL_INIT_VIDEO) == -1)
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) ==
+      -1)
     SDL_die("SDL_Init");
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);

@@ -30,6 +30,22 @@ void UbootGlApp::loop() {
                                                              const auto player,
                                                              const auto item,
                                                              const auto kin) {
+      float joyAngle =
+          fmod(atan2(-joyAxis[1], joyAxis[0]) + 2 * M_PI, 2 * M_PI);
+
+      float diffAngle = (joyAngle - item.rotation);
+      if (abs(diffAngle) > M_PI)
+        diffAngle -= glm::sign(diffAngle) * M_PI * 2;
+
+      float dir = glm::sign(diffAngle);
+
+      auto joyVec = glm::vec2(joyAxis[0] + 0.001, joyAxis[1]);
+      rot(pEnt) += timeDelta * dir * 0.00007 * length(joyVec) *
+                   (0.2 + min((float)M_PI * 0.5f, abs(diffAngle)));
+
+      force(pEnt) += (0.0002f * max(0, joyAxis[2])) *
+                     glm::vec2(cos(item.rotation), sin(item.rotation));
+
       if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
         rot(pEnt) -= 4.0 * timeDelta;
       if (keysPressed[key_map[{player.keySet,
@@ -45,7 +61,8 @@ void UbootGlApp::loop() {
         force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
         registry.get<CoAnimated>(pEnt).frame = 1.0;
       }
-      if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]]) {
+      if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
+          joyAxis[5] > 0) {
         if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
           auto newTorpedo = registry.create();
           registry.assign<CoTorpedo>(newTorpedo);
@@ -193,6 +210,10 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
   default:
     keysPressed[event.keysym.sym] = event.state;
   }
+}
+
+void UbootGlApp::handleJoyAxis(SDL_JoyAxisEvent event) {
+  joyAxis[event.axis] = event.value;
 }
 
 void UbootGlApp::shiftMap() {
