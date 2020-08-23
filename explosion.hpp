@@ -28,9 +28,9 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
       if (explosionDiam > 0.002)
         sim.sinks.push_back(glm::vec3(gridC * sim.h, 30.0f));
       if (sim.flag(gridC) < 1.0) {
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 3; i++) {
           float velangle = randRotationDist(gen);
-          float size = dist(gen) * 0.8 + 1.0;
+          float size = dist(gen) * 1.2 + 1.2;
           size *= size;
           int type = (int)(dist(gen) * 2.0f);
 
@@ -48,7 +48,7 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
                   glm::vec2{cos(velangle), sin(velangle)} * dist(gen) * 0.4f,
               dist(gen) - 0.5f);
           registry.assign<CoDeletedOoB>(newDebris);
-          registry.assign<CoDecays>(newDebris, 0.41f);
+          registry.assign<CoDecays>(newDebris, 0.71f);
         }
         sim.setGrids(gridC, 1.0);
       }
@@ -124,8 +124,8 @@ void UbootGlApp::processExplosions() {
         while (glm::length(v) > 1.0)
           v = glm::vec2(dist(gen), dist(gen));
 
-        newExplosion(pos(expEnt) + v * explosionDiam(expEnt) * 0.6f,
-                     explosionDiam(expEnt) * 0.8f, playerEnt,
+        newExplosion(pos(expEnt) + v * explosionDiam(expEnt) * 1.0f,
+                     explosionDiam(expEnt) * 0.6f, playerEnt,
                      fragmentLevel(expEnt) + 1);
       }
     }

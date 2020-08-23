@@ -47,7 +47,7 @@ public:
     textures.emplace(registry.type<entt::tag<"tex_torpedo"_hs>>(),
                      Texture("resources/torpedo.png"));
     textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
-                     Texture("resources/explosion.png", 4, 4));
+                     Texture("resources/explosion_fullalpha.png", 4, 4));
 
     for (int i = 0; i < 60; i++) {
       auto newAgent = registry.create();

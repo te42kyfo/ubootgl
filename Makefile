@@ -24,17 +24,18 @@ $(NAME): $(OBJ_FILES)
 mgtest: obj/mgtest/mgtest.o obj/pressure_solver.o
 	g++ -o mgtest/$@   $^ $(LD_FLAGS)
 
-obj/%.o: %.cpp obj_directory
+obj/%.o: %.cpp | obj_directory
 	g++ -MMD -MP $(CC_FLAGS) $(INCLUDE) -c $< -o $@
 
 
 obj_directory:
-	-mkdir obj
-	-mkdir obj/external
-	-mkdir obj/external/imgui
+	mkdir -p obj
+	mkdir -p obj/external
+	mkdir -p obj/external/imgui
 
 clean:
 	-rm obj/*.o $(BIN)$(NAME) obj/*.d
+	-rm -r obj
 
 -include $(DEPS)
 
