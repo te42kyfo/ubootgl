@@ -24,7 +24,8 @@ class UbootGlApp {
 public:
   UbootGlApp()
       : sim("resources/level2.png", 0.8, -0.0001f),
-        rock_texture("resources/rock_texture2.png") {
+        rock_texture("resources/rock_texture2.png"), joyAxis(4),
+        joyButtonPressed(4) {
     Draw2DBuf::init();
     DrawStreamlines::init();
     DrawTracers::init();
@@ -83,6 +84,7 @@ public:
   void draw();
   void handleKey(SDL_KeyboardEvent event);
   void handleJoyAxis(SDL_JoyAxisEvent event);
+  void handleJoyButton(SDL_JoyButtonEvent event);
   void processTorpedos();
   void newExplosion(glm::vec2 pos, float explosionDiam, entt::entity player,
                     int fragmentLevel = 0);
@@ -157,6 +159,7 @@ public:
   entt::registry registry;
   entt::registry &reg = registry;
   std::map<SDL_Keycode, bool> keysPressed;
-  std::map<int, int> joyAxis;
+  std::vector<std::map<int, int>> joyAxis;
+  std::vector<std::map<int, bool>> joyButtonPressed;
   std::map<entt::component, Texture> textures;
 };

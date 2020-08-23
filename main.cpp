@@ -22,7 +22,8 @@ int main(int, char **) {
 
   // Main loop
   bool done = false;
-  SDL_Joystick *joy = SDL_JoystickOpen(0);
+  SDL_JoystickOpen(0);
+  SDL_JoystickOpen(1);
   while (!done) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -37,6 +38,11 @@ int main(int, char **) {
         break;
       case SDL_JOYAXISMOTION:
         app.handleJoyAxis(event.jaxis);
+        break;
+
+      case SDL_JOYBUTTONDOWN:
+      case SDL_JOYBUTTONUP:
+        app.handleJoyButton(event.jbutton);
         break;
       }
     }

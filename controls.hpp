@@ -7,7 +7,8 @@ enum class CONTROLS {
   THRUST_BACKWARD,
   TURN_CLOCKWISE,
   TURN_COUNTERCLOCKWISE,
-  LAUNCH_TORPEDO
+  LAUNCH_TORPEDO,
+  JOY_ID
 };
 
 std::map<std::pair<int, CONTROLS>, SDL_Keycode> key_map = {

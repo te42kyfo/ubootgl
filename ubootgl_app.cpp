@@ -31,7 +31,9 @@ void UbootGlApp::loop() {
                                                              const auto item,
                                                              const auto kin) {
       float joyAngle =
-          fmod(atan2(-joyAxis[1], joyAxis[0]) + 2 * M_PI, 2 * M_PI);
+          fmod(atan2(-joyAxis[player.keySet][1], joyAxis[player.keySet][0]) +
+                   2 * M_PI,
+               2 * M_PI);
 
       float diffAngle = (joyAngle - item.rotation);
       if (abs(diffAngle) > M_PI)
@@ -39,12 +41,10 @@ void UbootGlApp::loop() {
 
       float dir = glm::sign(diffAngle);
 
-      auto joyVec = glm::vec2(joyAxis[0] + 0.001, joyAxis[1]);
+      auto joyVec = glm::vec2(joyAxis[player.keySet][0] + 0.001,
+                              joyAxis[player.keySet][1]);
       rot(pEnt) += timeDelta * dir * 0.00007 * length(joyVec) *
                    (0.2 + min((float)M_PI * 0.5f, abs(diffAngle)));
-
-      force(pEnt) += (0.0002f * max(0, joyAxis[2])) *
-                     glm::vec2(cos(item.rotation), sin(item.rotation));
 
       if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
         rot(pEnt) -= 4.0 * timeDelta;
@@ -53,7 +53,8 @@ void UbootGlApp::loop() {
         rot(pEnt) += 4.0 * timeDelta;
 
       registry.get<CoAnimated>(pEnt).frame = 0.0;
-      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]]) {
+      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
+          joyButtonPressed[player.keySet][4]) {
         force(pEnt) += 8.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
         registry.get<CoAnimated>(pEnt).frame = 1.0;
       }
@@ -62,7 +63,7 @@ void UbootGlApp::loop() {
         registry.get<CoAnimated>(pEnt).frame = 1.0;
       }
       if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
-          joyAxis[5] > 0) {
+          joyButtonPressed[player.keySet][5]) {
         if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
           auto newTorpedo = registry.create();
           registry.assign<CoTorpedo>(newTorpedo);
@@ -213,9 +214,12 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
 }
 
 void UbootGlApp::handleJoyAxis(SDL_JoyAxisEvent event) {
-  joyAxis[event.axis] = event.value;
+  joyAxis[event.which][event.axis] = event.value;
 }
 
+void UbootGlApp::handleJoyButton(SDL_JoyButtonEvent event) {
+  joyButtonPressed[event.which][event.button] = event.state;
+}
 void UbootGlApp::shiftMap() {
 
   for (int y = 0; y < sim.vx.height; y++) {
