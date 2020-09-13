@@ -12,6 +12,10 @@
 #include <glm/vec2.hpp>
 #include <vector>
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 using namespace std;
 
 void UbootGlApp::loop() {

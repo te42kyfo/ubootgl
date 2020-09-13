@@ -1,5 +1,7 @@
 #include "simulation.hpp"
 #include <algorithm>
+#define _USE_MATH_DEFINES
+#undef __STRICT_ANSI__
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -8,6 +10,10 @@
 #include <glm/gtx/vector_angle.hpp>
 #include <iostream>
 #include <vector>
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 using glm::vec2;
 

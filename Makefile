@@ -5,8 +5,8 @@ HEADERS= $(shell find . -iname "*.hpp")
 OBJ_FILES := $(addprefix obj/,$(CPP_FILES:.cpp=.o))
 DEPS := $(addprefix obj/,$(CPP_FILES:.cpp=.d))
 
-INCLUDE = -I/usr/include/SDL2 -I/usr/include/ -I./external/
-LD_FLAGS = -L./external/ `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp
+INCLUDE = -I/mingw64/include/SDL2 -I/mingw64/include/ -I./external/
+LD_FLAGS = -L /mingw64/lib -L./external/ `sdl2-config --libs` -lSDL2_ttf   -fopenmp -lglew32 -lopengl32
 LD_FLAGS_DEBUG = $(LD_FLAGS) -g -pg
 CC_FLAGS = -std=c++17 -Wall -Wextra -fopenmp -Wno-strict-overflow -Ofast -g -march=native  -DNDEBUG -DGLM_ENABLE_EXPERIMENTAL
 CC_FLAGS_DEBUG = -std=c++17 -Wall -Wextra -Wno-strict-overflow -g -pg -O2 -fopenmp -fno-omit-frame-pointer -DENABLE_GLM_EXPERIMENTAL
