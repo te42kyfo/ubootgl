@@ -41,12 +41,12 @@ void UbootGlApp::processTorpedos() {
         });
 
         if (torpedo.age < 0.03f) {
-          kin.force = glm::vec2(cos(item.rotation), sin(item.rotation)) * 3.0f;
+          kin.force = glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
         } else if (torpedo.age < 0.4f) {
           kin.angVel = glm::sign(bestAngle) * 7.0;
           if (bestTarget != entt::null)
             kin.force =
-                glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 6.0f;
           else
             kin.force =
                 glm::vec2(cos(item.rotation), sin(item.rotation)) * 1.0f;

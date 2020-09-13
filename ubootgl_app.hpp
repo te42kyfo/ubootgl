@@ -50,7 +50,7 @@ public:
     textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
                      Texture("resources/explosion_fullalpha.png", 4, 4));
 
-    for (int i = 0; i < 60; i++) {
+    for (int i = 0; i < 6; i++) {
       auto newAgent = registry.create();
       registry.assign<CoItem>(newAgent, glm::vec2{0.005f, 0.002f},
                               glm::vec2(-1, -1), 0.0f);

@@ -55,7 +55,8 @@ void UbootGlApp::loop() {
       registry.get<CoAnimated>(pEnt).frame = 0.0;
       if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
           joyButtonPressed[player.keySet][4]) {
-        force(pEnt) += 8.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
+        force(pEnt) +=
+            12.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
         registry.get<CoAnimated>(pEnt).frame = 1.0;
       }
       if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]]) {
@@ -67,7 +68,7 @@ void UbootGlApp::loop() {
         if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
           auto newTorpedo = registry.create();
           registry.assign<CoTorpedo>(newTorpedo);
-          registry.assign<CoItem>(newTorpedo, glm::vec2{0.002, 0.0004},
+          registry.assign<CoItem>(newTorpedo, glm::vec2{0.003, 0.0006},
                                   item.pos, item.rotation);
           registry.assign<CoKinematics>(
               newTorpedo, 0.15,
@@ -109,7 +110,7 @@ void UbootGlApp::loop() {
 
       for (int p = 0; p < playerCount; p++) {
         auto newPlayer = registry.create();
-        registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.002},
+        registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.0024},
                                 glm::vec2(0.2, 0.2), 0.0f);
         registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
         registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
@@ -442,7 +443,7 @@ void UbootGlApp::draw() {
       textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false);
 
   ImGui::SetNextWindowPos(ImVec2(200, 10));
-  ImGui::SetNextWindowSize(ImVec2(300, 300));
+  ImGui::SetNextWindowSize(ImVec2(300, 150));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -453,9 +454,9 @@ void UbootGlApp::draw() {
                      gfxTimes.high1pct(), gfxTimes.largest());
 
   ImGui::PlotLines("", frameTimes.data().data(), frameTimes.data().size(), 0,
-                   NULL, 0, frameTimes.largest(), ImVec2(300, 80));
+                   NULL, 0, frameTimes.largest(), ImVec2(300, 40));
   ImGui::PlotLines("", gfxTimes.data().data(), gfxTimes.data().size(), 0, NULL,
-                   0, gfxTimes.largest(), ImVec2(300, 80));
+                   0, gfxTimes.largest(), ImVec2(300, 40));
 
   ImGui::End();
 

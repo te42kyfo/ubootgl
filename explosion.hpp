@@ -89,7 +89,9 @@ void UbootGlApp::processExplosions() {
           if (targetPlayer.deathtimer > 0)
             continue;
 
-          newExplosion(pos(targetEnt), 0.015f, targetEnt);
+          if (registry.has<CoPlayerAligned>(expEnt))
+            newExplosion(pos(targetEnt), 0.005f,
+                         registry.get<CoPlayerAligned>(expEnt).player);
 
           targetPlayer.deathtimer = 0.2f;
           targetPlayer.deaths++;
