@@ -4,9 +4,9 @@ in vec2 in_Position;
 
 uniform mat4 TM;
 
-varying vec2 FragCoord;
-varying vec4 v_color;
-varying float v_side;
+out vec2 FragCoord;
+out vec4 v_color;
+out float v_side;
 
 layout( std430, binding=0 )  buffer PP {uint  pointers[];};
 layout( std430, binding=1 )  buffer AA {float  ages[];};
@@ -25,7 +25,7 @@ void main(void) {
     else if (position == 2)
         alpha = 1.0;
     else
-        alpha = 3.4 / ( position-2) - 0.01;
+        alpha = 3.4 / float( position-2) - 0.01;
 
   v_color = vec4(1.0, 1.0, 1.0, alpha * 0.5 * (1.0 - cos(ages[gl_VertexID/100/2]) ));
 

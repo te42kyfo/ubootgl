@@ -6,9 +6,9 @@ in int in_Player;
 
 uniform mat4 TM;
 
-varying vec2 FragCoord;
-varying vec4 v_color;
-varying float v_side;
+out vec2 FragCoord;
+out vec4 v_color;
+out float v_side;
 
 vec3 playerColors[5] =
     vec3[](vec3(1.8, 0.0, -10.0), vec3(0.0, 1.0, -10.0), vec3(1.0, 1.0, -10.0),

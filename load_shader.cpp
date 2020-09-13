@@ -7,8 +7,10 @@ using namespace std;
 string readShaderFile(const string fileName) {
   try {
     std::ifstream t(fileName.c_str());
-    return std::string((std::istreambuf_iterator<char>(t)),
-                       std::istreambuf_iterator<char>());
+    std::string shaderSource =  std::string((std::istreambuf_iterator<char>(t)),
+					    std::istreambuf_iterator<char>());
+    return "// " + fileName + "\n" + shaderSource;
+
   } catch (std::exception &e) {
     std::cout << fileName << " - "
               << "readShaderFile: " << e.what() << "\n";
@@ -35,12 +37,17 @@ GLuint loadShader(string vshader, string fshader,
   glCompileShader(vertex);
   glCompileShader(fragment);
   glGetShaderInfoLog(vertex, 5000, &length, log);
-  if (length > 0)
+  if (length > 0) {
+    std::cout << vshader.substr(0, 100) << "\n";
     std::cout << "Vertex Shader: " << log << "\n";
-  glGetShaderInfoLog(fragment, 5000, &length, log);
-  if (length > 0)
-    std::cout << "Fragment Shader: " << log << "\n";
+  }
 
+  glGetShaderInfoLog(fragment, 5000, &length, log);
+  if (length > 0) {
+    std::cout << fshader.substr(0, 100) << "\n";
+    std::cout << "Fragment Shader: " << log << "\n";
+  }
+  
   glAttachShader(program, vertex);
   glAttachShader(program, fragment);
 
@@ -50,9 +57,10 @@ GLuint loadShader(string vshader, string fshader,
   glLinkProgram(program);
 
   glGetProgramInfoLog(program, 5000, &length, log);
-  if (length > 0)
-    std::cout << "Program: " << log << "\n";
-
+  if (length > 0) {
+    std::cout << fshader.substr(0, 100) << "\n" << vshader.substr(0, 100) << "\n";
+    std::cout << "Program: " << log << "\n\n";
+  }
   return program;
 }
 
@@ -69,15 +77,16 @@ GLuint loadComputeShader(string cshader) {
   glShaderSource(compute_shader, 1, &shader_source, NULL);
   glCompileShader(compute_shader);
   glGetShaderInfoLog(compute_shader, 5000, &length, log);
-  if (length > 0)
-    std::cout << "Compute Shader: " << log << "\n";
-
+  if (length > 0) {
+    std::cout << cshader.substr(0, 100) << "\n";
+    std::cout << "\nCompute Shader: " << log << "\n";
+  }
   glAttachShader(program, compute_shader);
   glLinkProgram(program);
 
   glGetProgramInfoLog(program, 5000, &length, log);
   if (length > 0)
-    std::cout << "Program: " << log << "\n";
+    std::cout << "Program: " << log << "\n\n";
 
   return program;
 }

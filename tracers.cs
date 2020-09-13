@@ -37,7 +37,7 @@ uint rand_lcg() {
 
 
 float randf() {
-    return (rand_lcg() % 100000) / 100000.0;
+  return float(rand_lcg() % 100000) / 100000.0;
 }
 
 

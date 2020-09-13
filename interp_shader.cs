@@ -15,11 +15,11 @@ layout( local_size_x = 32, local_size_y = 8) in;
 void main() {
     //if (gl_GlobalInvocationId.x >= nx*2-1 || gl_GlobalInvocationID.y > ny*2-1)
     //return;
-    vec2 vx_coords = vec2((gl_GlobalInvocationID.x) / (2.0*nx-2),
-                          (gl_GlobalInvocationID.y+1) / (2.0*ny));
+    vec2 vx_coords = vec2((gl_GlobalInvocationID.x) / float(2*nx-2),
+                          (gl_GlobalInvocationID.y+1) / float(2*ny));
 
-    vec2 vy_coords = vec2((gl_GlobalInvocationID.x+1) / (2.0*nx),
-                          (gl_GlobalInvocationID.y) / (2.0*ny-2 ));
+    vec2 vy_coords = vec2((gl_GlobalInvocationID.x+1) / float(2*nx),
+                          (gl_GlobalInvocationID.y) / float(2*ny-2 ));
 
     float vx_val = texture(tex_vx_staggered, vx_coords).r;
     float vy_val = texture(tex_vy_staggered, vy_coords).r;

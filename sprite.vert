@@ -23,6 +23,7 @@ void main(void) {
     out_UV = vec2(1.0, 1.0);
     break;
   case 3:
+  default:
     out_UV = vec2(1.0, 0.0);
     break;
   }
