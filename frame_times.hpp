@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 class FrameTimes {
 public:
@@ -9,11 +10,10 @@ public:
     if (t > 10000)
       return;
 
-    if (pointer >= (int)values.size()) {
-      pointer = 0;
-    }
-    values[pointer] = t;
-    pointer++;
+    std::rotate(begin(values), begin(values) + 1, end(values));
+
+    values.back() = t;
+    /// pointer++;
   }
 
   float avg() {
