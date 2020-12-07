@@ -6,6 +6,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 
@@ -250,7 +251,7 @@ float Simulation::getDT() {
   return rDT;
 }
 
-vec2 inline Simulation::bilinearVel(vec2 c) {
+template <typename T> vec2 inline bilinearGrid(vec2 c, T &vx, T &vy) {
 
   vec2 result;
   vec2 cx = c - vec2(0.5, 0.0);
@@ -280,6 +281,8 @@ vec2 inline Simulation::bilinearVel(vec2 c) {
 
   return result;
 }
+
+vec2 inline Simulation::bilinearVel(vec2 c) { return bilinearGrid(c, vx, vy); }
 
 void Simulation::advect() {
   float ih = 1.0f / h;
@@ -414,115 +417,126 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
     auto &item = floatingItemView.get<CoItem>(entity);
     auto &kin = floatingItemView.get<CoKinematics>(entity);
 
-    glm::vec2 posBefore = item.pos;
+    int iterationSteps =
+        fmin(5.0f, fmax(1.0f, glm::max(abs(kin.vel.x), abs(kin.vel.y)) *
+                                  gameDT / h * 2.5));
 
-    // Position update
-    item.pos += dt * kin.vel;
-    item.rotation = fmod(item.rotation + dt * kin.angVel + 2 * M_PI, 2 * M_PI);
+    float subDT = gameDT / iterationSteps;
 
-    glm::vec2 gridPos = item.pos / (pwidth / (flag.width));
+    for (int step = 0; step < iterationSteps; step++) {
+      glm::vec2 posBefore = item.pos;
 
-    // Skip out of Bounds objects
-    if (gridPos.x >= width - 2 || gridPos.x <= 1.0 || gridPos.y >= height - 2 ||
-        gridPos.y <= 1.0)
-      // return;
-      continue;
+      // Position update
+      item.pos += subDT * kin.vel;
 
-    // Check terrain collision
-    if (psampleFlagLinear(item.pos) < 0.5f) {
-      glm::vec2 surfaceNormal =
-          normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
-      if (psampleFlagLinear(posBefore) > 0.5f)
-        item.pos = posBefore;
-      if (length(surfaceNormal) > 0.0f) {
-        if (dot(kin.vel, surfaceNormal) < 0.0)
-          kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
-        kin.vel += surfaceNormal * 0.001f;
-        if (dot(kin.force, surfaceNormal) < 0.0f)
-          kin.force += dot(kin.force, surfaceNormal) * surfaceNormal;
-      } else {
-        kin.vel = vec2(0.0f);
-        // kin.force = vec2(0.0f);
+      item.rotation =
+          fmod(item.rotation + subDT * kin.angVel + 2 * M_PI, 2 * M_PI);
+
+      glm::vec2 gridPos = item.pos / (pwidth / (flag.width));
+
+      // Skip out of Bounds objects
+      if (gridPos.x >= width - 2 || gridPos.x <= 1.0 ||
+          gridPos.y >= height - 2 || gridPos.y <= 1.0)
+        // return;
+        continue;
+
+      // Check terrain collision
+      if (psampleFlagLinear(item.pos) < 0.5f) {
+        glm::vec2 surfaceNormal =
+            normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
+        if (psampleFlagLinear(posBefore) > 0.5f)
+          item.pos = posBefore;
+        if (length(surfaceNormal) > 0.0f) {
+          if (dot(kin.vel, surfaceNormal) < 0.0)
+            kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
+          kin.vel += surfaceNormal * 0.001f;
+          if (dot(kin.force, surfaceNormal) < 0.0f)
+            kin.force += dot(kin.force, surfaceNormal) * surfaceNormal;
+        } else {
+          kin.vel = vec2(0.0f);
+          // kin.force = vec2(0.0f);
+        }
+        kin.bumpCount++;
       }
-      kin.bumpCount++;
+
+      glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
+      glm::vec2 centralForce = glm::vec2(0.0, 0.0);
+      float angForce = kin.angForce;
+
+      glm::vec2 surfacePoints[] = {
+          {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};
+
+      float sideLength[] = {item.size.y, item.size.y, item.size.x, item.size.x};
+
+      for (int i = 0; i < 4; i++) {
+        auto sp = surfacePoints[i];
+
+        auto tSP = sp * item.size;
+        tSP = rotate(tSP, item.rotation);
+        tSP = tSP + item.pos;
+        auto sampleVel = bilinearVel(tSP / h);
+        auto deltaVel = sampleVel - kin.vel;
+        auto force = rotate(sp, item.rotation) *
+                     glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
+
+        centralForce +=
+            force * 2000.0f * (300.0f * sideLength[i] + 1.0f) * sideLength[i];
+      }
+      centralForce += (bilinearVel(item.pos / h) - kin.vel) * 6.0f;
+
+      // Calculate new velocity
+      kin.vel += subDT * (externalForce + centralForce) / kin.mass;
+
+      float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
+      kin.angVel += subDT * angForce / angMass;
+
+      gridPos = item.pos / (pwidth / (flag.width));
+      if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
+          gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
+        float area = item.size.x * item.size.y / (h * h);
+        auto deltaVel = bilinearVel(item.pos / h) +
+                        bilinearGrid(item.pos / h, vx_accum, vy_accum) -
+                        kin.vel;
+
+        auto deltaVec = deltaVel * area * subDT * 20.0f;
+
+        glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
+        glm::ivec2 ic = cx;
+        vec2 st = fract(cx);
+        vx_accum(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x *
+                                           flag(ic + glm::ivec2{1, 1}) *
+                                           flag(ic + glm::ivec2{2, 1});
+        vx_accum(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.x *
+                                           flag(ic + glm::ivec2{0, 1}) *
+                                           flag(ic + glm::ivec2{1, 1});
+        vx_accum(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.x *
+                                           flag(ic + glm::ivec2{1, 0}) *
+                                           flag(ic + glm::ivec2{2, 0});
+        vx_accum(ic + glm::ivec2{0, 0}) -=
+            (1.0f - st.x) * (1.0f - st.y) * deltaVec.x *
+            flag(ic + glm::ivec2{0, 0}) * flag(ic + glm::ivec2{1, 0});
+        assert(!std::isnan(vx_accum(ic)));
+
+        glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
+        ic = cy;
+        st = fract(cy);
+        vy_accum(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.y *
+                                           flag(ic + glm::ivec2{1, 1}) *
+                                           flag(ic + glm::ivec2{1, 2});
+        vy_accum(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.y *
+                                           flag(ic + glm::ivec2{0, 1}) *
+                                           flag(ic + glm::ivec2{0, 2});
+        vy_accum(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y *
+                                           flag(ic + glm::ivec2{1, 0}) *
+                                           flag(ic + glm::ivec2{1, 1});
+        vy_accum(ic + glm::ivec2{0, 0}) -=
+            (1.0f - st.x) * (1.0f - st.y) * deltaVec.y *
+            flag(ic + glm::ivec2{0, 1}) * flag(ic + glm::ivec2{0, 2});
+        assert(!std::isnan(vy_accum(ic)));
+      }
     }
 
-    glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
-    glm::vec2 centralForce = glm::vec2(0.0, 0.0);
-    float angForce = kin.angForce;
     kin.angForce = 0;
     kin.force = {0, 0};
-
-    glm::vec2 surfacePoints[] = {
-        {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};
-
-    float sideLength[] = {item.size.y, item.size.y, item.size.x, item.size.x};
-
-    for (int i = 0; i < 4; i++) {
-      auto sp = surfacePoints[i];
-
-      auto tSP = sp * item.size;
-      tSP = rotate(tSP, item.rotation);
-      tSP = tSP + item.pos;
-      auto sampleVel = bilinearVel(tSP / h);
-      auto deltaVel = sampleVel - kin.vel;
-      auto force = rotate(sp, item.rotation) *
-                   glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
-
-      centralForce +=
-          force * 2000.0f * (300.0f * sideLength[i] + 1.0f) * sideLength[i];
-    }
-    centralForce += (bilinearVel(item.pos / h) - kin.vel) * 6.0f;
-
-    // Calculate new velocity
-    kin.vel += dt * (externalForce + centralForce) / kin.mass;
-
-    float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
-    kin.angVel += dt * angForce / angMass;
   }
-
-  floatingItemView.each([&](auto &item, auto &kin) {
-    glm::ivec2 gridPos = item.pos / h + 0.5f;
-    if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
-        gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
-      float area = item.size.x * item.size.y / (h * h);
-      auto deltaVel = bilinearVel(item.pos / h) - kin.vel;
-
-      auto deltaVec = deltaVel * area * 0.06f;
-
-      glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
-      glm::ivec2 ic = cx;
-      vec2 st = fract(cx);
-      vx(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x *
-                                   flag(ic + glm::ivec2{1, 1}) *
-                                   flag(ic + glm::ivec2{2, 1});
-      vx(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.x *
-                                   flag(ic + glm::ivec2{0, 1}) *
-                                   flag(ic + glm::ivec2{1, 1});
-      vx(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.x *
-                                   flag(ic + glm::ivec2{1, 0}) *
-                                   flag(ic + glm::ivec2{2, 0});
-      vx(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.x *
-                                   flag(ic + glm::ivec2{0, 0}) *
-                                   flag(ic + glm::ivec2{1, 0});
-      assert(!std::isnan(vx(ic)));
-
-      glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
-      ic = cy;
-      st = fract(cy);
-      vy(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.y *
-                                   flag(ic + glm::ivec2{1, 1}) *
-                                   flag(ic + glm::ivec2{1, 2});
-      vy(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.y *
-                                   flag(ic + glm::ivec2{0, 1}) *
-                                   flag(ic + glm::ivec2{0, 2});
-      vy(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y *
-                                   flag(ic + glm::ivec2{1, 0}) *
-                                   flag(ic + glm::ivec2{1, 1});
-      vy(ic + glm::ivec2{0, 0}) -= (1.0f - st.x) * (1.0f - st.y) * deltaVec.y *
-                                   flag(ic + glm::ivec2{0, 1}) *
-                                   flag(ic + glm::ivec2{0, 2});
-      assert(!std::isnan(vy(ic)));
-    }
-  });
 }
