@@ -143,7 +143,7 @@ public:
   double smoothedFrameRate = 0;
   FrameTimes frameTimes;
   FrameTimes gfxTimes;
-
+  FrameTimes simTimes;
   double lastSimulationTime = 1.0;
   float scale;
   float simTime = 0.0;
