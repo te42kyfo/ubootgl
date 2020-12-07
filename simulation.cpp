@@ -340,7 +340,9 @@ void Simulation::step(float timestep) {
   diag.str("SIM\n");
 
   diag << "Time Step: dt=" << timestep << "\n";
-  getDT();
+  // getDT();
+
+  applyAccumulatedVelocity();
 
   diffuse();
 
@@ -383,9 +385,31 @@ float Simulation::psampleFlagNearest(glm::vec2 pc) {
   return flag(gridPos);
 }
 
-void Simulation::advectFloatingItems(entt::registry &registry) {
-  auto floatingItemView = registry.view<CoItem, CoKinematics>();
+void Simulation::applyAccumulatedVelocity() {
+  std::scoped_lock lock(accum_mutex);
+#pragma omp parallel
+  {
+#pragma omp for
+    for (int y = 1; y < vx.height - 1; y++) {
+      for (int x = 1; x < vx.width - 1; x++) {
+        vx(x, y) += vx_accum(x, y);
+        vx_accum(x, y) = 0;
+      }
+    }
 
+#pragma omp for
+    for (int y = 1; y < vy.height - 1; y++) {
+      for (int x = 1; x < vy.width - 1; x++) {
+        vy(x, y) += vy_accum(x, y);
+        vy_accum(x, y) = 0;
+      }
+    }
+  }
+}
+
+void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
+  auto floatingItemView = registry.view<CoItem, CoKinematics>();
+  std::scoped_lock lock(accum_mutex);
   for (auto entity : floatingItemView) {
     auto &item = floatingItemView.get<CoItem>(entity);
     auto &kin = floatingItemView.get<CoKinematics>(entity);

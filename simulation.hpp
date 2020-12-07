@@ -9,6 +9,7 @@
 #include <glm/vec2.hpp>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <random>
 #include <sstream>
 #include <string>
@@ -50,6 +51,8 @@ public:
 
     vx = {width - 1, height}; // staggered
     vy = {width, height - 1}; // grids
+    vx_accum = {width - 1, height};
+    vy_accum = {width, height - 1};
     p = {width, height};
     f = {width, height};
     flag = {width, height};
@@ -124,6 +127,7 @@ public:
   void centerP();
   float getDT();
   void advect();
+  void applyAccumulatedVelocity();
 
   void step(float timestep);
 
@@ -139,6 +143,8 @@ public:
   std::stringstream diag;
 
   DoubleBuffered2DGrid vx, vy;
+  Single2DGrid vx_accum, vy_accum;
+  std::mutex accum_mutex;
   Single2DGrid p, f, flag, r;
   Single2DGrid ivx, ivy;
   MG mg;
