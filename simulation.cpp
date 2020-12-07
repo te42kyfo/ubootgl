@@ -13,13 +13,13 @@
 using glm::vec2;
 
 void Simulation::interpolateFields() {
-  // #pragma omp parallel for
+#pragma omp parallel for
   for (int y = 0; y < ivx.height; y++) {
     for (int x = 1; x < ivx.width - 1; x++) {
       ivx(x, y) = 0.5f * (vx.f(x, y) + vx.f(x + 1, y));
     }
   }
-
+#pragma omp parallel for
   for (int y = 1; y < ivx.height - 1; y++) {
     for (int x = 0; x < ivx.width; x++) {
       ivy(x, y) = 0.5f * (vx.f(x, y + 1) + vx.f(x, y));

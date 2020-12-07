@@ -192,7 +192,7 @@ void *simulationLoop(void *arg) {
 #pragma omp parallel
   { threadCount = omp_get_num_threads(); }
   cout << threadCount << "\n";
-  omp_set_num_threads(threadCount / 2);
+  omp_set_num_threads(threadCount / 2 - 1);
   double tprev = dtime();
   double smoothedSimTime = 0.0;
   while (true) {
