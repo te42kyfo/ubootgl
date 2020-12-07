@@ -79,7 +79,7 @@ void UbootGlApp::processExplosions() {
         }
 
         if (registry.has<CoAgent>(targetEnt)) {
-          newExplosion(pos(targetEnt), 0.005f, entt::null);
+          newExplosion(pos(targetEnt), 0.008f, entt::null);
           pos(targetEnt) = glm::vec2(-1, -1);
 
         } else if (registry.has<CoTorpedo>(targetEnt)) {
@@ -90,8 +90,10 @@ void UbootGlApp::processExplosions() {
             continue;
 
           if (registry.has<CoPlayerAligned>(expEnt))
-            newExplosion(pos(targetEnt), 0.005f,
+            newExplosion(pos(targetEnt), 0.02f,
                          registry.get<CoPlayerAligned>(expEnt).player);
+          else
+            newExplosion(pos(targetEnt), 0.02f, entt::null);
 
           targetPlayer.deathtimer = 0.2f;
           targetPlayer.deaths++;
