@@ -28,7 +28,7 @@ void UbootGlApp::processTorpedos() {
           float score = angle / distance / distance *
                         (target_item.size.x + target_item.size.y) * 20000.0f;
 
-          if (distance < (target_item.size.x + target_item.size.y) * 0.5f)
+          if (distance < (target_item.size.x + target_item.size.y) * 1.0f)
             explodes = true;
 
           if (score > bestScore) {
