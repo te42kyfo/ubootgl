@@ -54,7 +54,6 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
       }
     }
   }
-  sim.mg.updateFields(sim.flag);
 }
 
 void UbootGlApp::processExplosions() {
@@ -137,4 +136,7 @@ void UbootGlApp::processExplosions() {
     if (age(expEnt) > 0.08) // 10.0f * explosionDiam(expEnt))
       registry.destroy(expEnt);
   });
+
+  sim.mg.updateFields(sim.flag);
+  VelocityTextures::uploadFlag(sim.getFlag());
 }

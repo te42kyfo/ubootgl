@@ -335,7 +335,6 @@ void UbootGlApp::draw() {
             }*/
 
   VelocityTextures::updateFromStaggered(sim.vx.data(), sim.vy.data());
-  VelocityTextures::uploadFlag(sim.getFlag());
   DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
                                VelocityTextures::getFlagTex(), sim.ivx.width,
                                sim.ivy.height, simTime, sim.pwidth);
