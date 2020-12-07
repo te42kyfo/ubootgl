@@ -286,56 +286,53 @@ vec2 inline Simulation::bilinearVel(vec2 c) { return bilinearGrid(c, vx, vy); }
 
 void Simulation::advect() {
   float ih = 1.0f / h;
-  const int steps = 2;
 
-#pragma omp parallel num_threads(8)
-#pragma omp single
+#pragma omp parallel
   {
-#pragma omp taskgroup
-    {
-#pragma omp taskloop grainsize(4) nogroup
-      for (int y = 1; y < vx.height - 1; y++) {
-        for (int x = 1; x < vx.width - 1; x++) {
-          if (flag(x, y) < 1.0)
-            continue;
-          vec2 pos = vec2(x + 0.5, y);
-          vec2 vel = bilinearVel(pos);
-          for (int step = 0; step < steps; step++) {
-            vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
-            vec2 tempVel = bilinearVel(tempPos);
-            pos -= dt * ih / steps * tempVel;
-            vel = bilinearVel(pos);
-          }
-          pos.x = glm::min(glm::max(0.0f, pos.x), (float)vx.width);
-          pos.y = glm::min(glm::max(0.0f, pos.y), (float)vx.height);
+#pragma omp for
+    for (int y = 1; y < vx.height - 1; y++) {
+      for (int x = 1; x < vx.width - 1; x++) {
+        vec2 pos = vec2(x + 0.5, y);
 
-          vx.b(x, y) =
-              (0.2f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.8f * vel.x);
-        }
-      }
-#pragma omp taskloop grainsize(4) nogroup
-      for (int y = 1; y < vy.height - 1; y++) {
-        for (int x = 1; x < vy.width - 1; x++) {
-          vec2 pos = vec2(x, y + 0.5);
-          vec2 vel = bilinearVel(pos);
-          for (int step = 0; step < steps; step++) {
-            vec2 tempPos = pos - 0.5f * dt * ih / steps * vel;
-            vec2 tempVel = bilinearVel(tempPos);
-            pos -= dt * ih / steps * tempVel;
-            vel = bilinearVel(pos);
-          }
+        vec2 vel = vec2(vx(x, y), 0.25f * (vy(x, y) + vy(x, y - 1) +
+                                           vy(x + 1, y) + vy(x + 1, y - 1)));
 
-          pos.x = glm::min(glm::max(0.0f, pos.x), (float)vy.width);
-          pos.y = glm::min(glm::max(0.0f, pos.y), (float)vy.height);
+        pos -= dt * ih * bilinearVel(pos - 0.5f * dt * ih * vel);
+        vel = bilinearVel(pos);
 
-          vy.b(x, y) =
-              (0.2f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.8f * vel.y);
-        }
+        // pos.x = glm::min(glm::max(0.0f, pos.x), (float)vx.width);
+        // pos.y = glm::min(glm::max(0.0f, pos.y), (float)vx.height);
+
+        vx.b(x, y) = flag(x, y) * flag(x + 1, y) * vel.x;
+        //(0.5f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.5f * vel.x);
       }
     }
+#pragma omp for
+    for (int y = 1; y < vy.height - 1; y++) {
+      for (int x = 1; x < vy.width - 1; x++) {
+        vec2 pos = vec2(x, y + 0.5);
+        vec2 vel = vec2(
+            0.25f * (vx(x, y) + vx(x, y + 1) + vx(x - 1, y) + vx(x - 1, y + 1)),
+            vy(x, y));
+
+        pos -= dt * ih * bilinearVel(pos - 0.5f * dt * ih * vel);
+        vel = bilinearVel(pos);
+
+        pos.x = glm::min(glm::max(0.0f, pos.x), (float)vy.width);
+        pos.y = glm::min(glm::max(0.0f, pos.y), (float)vy.height);
+
+        vy.b(x, y) =
+            flag(x, y) * flag(x, y + 1) *
+            (0.5f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.5f * vel.y);
+      }
+    }
+
+#pragma omp single
+    {
+      vx.swap();
+      vy.swap();
+    }
   }
-  vx.swap();
-  vy.swap();
 }
 
 void Simulation::step(float timestep) {
