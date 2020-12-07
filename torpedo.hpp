@@ -6,7 +6,7 @@ void UbootGlApp::processTorpedos() {
   registry.view<CoTorpedo, CoItem, CoKinematics, CoPlayerAligned>().each(
       [&](auto entity, auto &torpedo, auto &item, auto &kin,
           auto &playerAligned) {
-        torpedo.age += simTime;
+        torpedo.age += gameTimeStep;
         entt::entity bestTarget = entt::null;
         float bestScore = 5.0;
         float bestAngle = 0.0;

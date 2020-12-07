@@ -127,7 +127,7 @@ public:
 
   void step(float timestep);
 
-  void advectFloatingItems(entt::registry &registry);
+  void advectFloatingItems(entt::registry &registry, float gameDT);
 
   float pwidth;
   float mu;
@@ -141,7 +141,6 @@ public:
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid p, f, flag, r;
   Single2DGrid ivx, ivy;
-  bool staleInterpolatedFields = true;
   MG mg;
   float h;
 

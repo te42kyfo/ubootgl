@@ -107,7 +107,7 @@ void UbootGlApp::processExplosions() {
     }
   }
   registry.view<CoExplosion>().each([&](auto expEnt, auto &exp) {
-    exp.age += simTime;
+    exp.age += gameTimeStep;
     frame(expEnt) = exp.age * 210.1f + 2; // / exp.explosionDiam * 1.5 + 0.5;
 
     auto playerEnt = registry.has<CoPlayerAligned>(expEnt)

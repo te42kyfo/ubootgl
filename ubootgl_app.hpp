@@ -20,6 +20,8 @@
 #include <random>
 #include <vector>
 
+void *simulationLoop(void *arg);
+
 class UbootGlApp {
 public:
   UbootGlApp()
@@ -76,8 +78,9 @@ public:
       registry.assign<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                     0.0f);
     }
-
-    // sim.step(0.003);
+    pthread_t threadId;
+    pthread_create(&threadId, NULL, simulationLoop,
+                   reinterpret_cast<void *>(this));
   }
 
   void loop();
@@ -146,8 +149,9 @@ public:
   FrameTimes simTimes;
   double lastSimulationTime = 1.0;
   float scale;
-  float simTime = 0.0;
-  int simulationSteps = 0;
+  float gameTimeStep = 0;
+  float simTimeStep = 0;
+
   SdlGl vis;
   Simulation sim;
   Texture rock_texture;

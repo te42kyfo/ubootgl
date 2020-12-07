@@ -24,19 +24,10 @@ void Simulation::interpolateFields() {
       ivy(x, y) = 0.5f * (vx.f(x, y + 1) + vx.f(x, y));
     }
   }
-  staleInterpolatedFields = false;
 }
 
-float *Simulation::getVX() {
-  if (staleInterpolatedFields)
-    interpolateFields();
-  return ivx.data();
-}
-float *Simulation::getVY() {
-  if (staleInterpolatedFields)
-    interpolateFields();
-  return ivy.data();
-}
+float *Simulation::getVX() { return ivx.data(); }
+float *Simulation::getVY() { return ivy.data(); }
 
 // Fluid cells like this: a | b |
 float Simulation::singlePBC(BC bc, float a) {
@@ -360,7 +351,7 @@ void Simulation::step(float timestep) {
   setVBCs();
 
   diag << "\n";
-  staleInterpolatedFields = true;
+  interpolateFields();
 }
 
 glm::vec2 Simulation::psampleFlagNormal(glm::vec2 pc) {

@@ -10,186 +10,171 @@
 
 #include <glm/gtx/transform.hpp>
 #include <glm/vec2.hpp>
+#include <omp.h>
 #include <vector>
 
 using namespace std;
 
 void UbootGlApp::loop() {
 
-  simulationSteps = 1; // min(100.0, max(1.0, 0.02 / lastSimulationTime));
-
-  float timestep = 0.1f / max(5.0, smoothedFrameRate * simulationSteps);
+  gameTimeStep = 0.1f / max(5.0, smoothedFrameRate);
 
   double updateTime = dtime();
-  double timeDelta = (updateTime - lastKeyUpdate) / simulationSteps;
+  double timeDelta = (updateTime - lastKeyUpdate);
 
-  double sim_t1 = dtime();
-  for (int simStep = 0; simStep < simulationSteps; simStep++) {
+  registry.view<CoPlayer, CoItem, CoKinematics>().each([&](const auto pEnt,
+                                                           const auto player,
+                                                           const auto item,
+                                                           const auto kin) {
+    float joyAngle = fmod(
+        atan2(-joyAxis[player.keySet][1], joyAxis[player.keySet][0]) + 2 * M_PI,
+        2 * M_PI);
 
-    registry.view<CoPlayer, CoItem, CoKinematics>().each([&](const auto pEnt,
-                                                             const auto player,
-                                                             const auto item,
-                                                             const auto kin) {
-      float joyAngle =
-          fmod(atan2(-joyAxis[player.keySet][1], joyAxis[player.keySet][0]) +
-                   2 * M_PI,
-               2 * M_PI);
+    float diffAngle = (joyAngle - item.rotation);
+    if (abs(diffAngle) > M_PI)
+      diffAngle -= glm::sign(diffAngle) * M_PI * 2;
 
-      float diffAngle = (joyAngle - item.rotation);
-      if (abs(diffAngle) > M_PI)
-        diffAngle -= glm::sign(diffAngle) * M_PI * 2;
+    float dir = glm::sign(diffAngle);
 
-      float dir = glm::sign(diffAngle);
+    auto joyVec =
+        glm::vec2(joyAxis[player.keySet][0] + 0.001, joyAxis[player.keySet][1]);
+    rot(pEnt) += timeDelta * dir * 0.00007 * length(joyVec) *
+                 (0.2 + min((float)M_PI * 0.5f, abs(diffAngle)));
 
-      auto joyVec = glm::vec2(joyAxis[player.keySet][0] + 0.001,
-                              joyAxis[player.keySet][1]);
-      rot(pEnt) += timeDelta * dir * 0.00007 * length(joyVec) *
-                   (0.2 + min((float)M_PI * 0.5f, abs(diffAngle)));
+    if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
+      rot(pEnt) -= 4.0 * timeDelta;
+    if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_COUNTERCLOCKWISE}]])
+      rot(pEnt) += 4.0 * timeDelta;
 
-      if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
-        rot(pEnt) -= 4.0 * timeDelta;
-      if (keysPressed[key_map[{player.keySet,
-                               CONTROLS::TURN_COUNTERCLOCKWISE}]])
-        rot(pEnt) += 4.0 * timeDelta;
-
-      registry.get<CoAnimated>(pEnt).frame = 0.0;
-      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
-          joyButtonPressed[player.keySet][4]) {
-        force(pEnt) +=
-            12.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-        registry.get<CoAnimated>(pEnt).frame = 1.0;
-      }
-      if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]]) {
-        force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-        registry.get<CoAnimated>(pEnt).frame = 1.0;
-      }
-      if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
-          joyButtonPressed[player.keySet][5]) {
-        if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
-          auto newTorpedo = registry.create();
-          registry.assign<CoTorpedo>(newTorpedo);
-          registry.assign<CoItem>(newTorpedo, glm::vec2{0.003, 0.0006},
-                                  item.pos, item.rotation);
-          registry.assign<CoKinematics>(
-              newTorpedo, 0.15,
-              kin.vel +
-                  glm::vec2{cos(item.rotation), sin(item.rotation)} * 0.8f,
-              kin.angVel);
-          registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
-          registry.assign<CoDeletedOoB>(newTorpedo);
-          registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
-          registry.assign<CoTarget>(newTorpedo);
-          torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
-          torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
-          torpedosFired(pEnt)++;
-        }
-      }
-      torpedoCooldown(pEnt) = max(0.0f, torpedoCooldown(pEnt) - timestep);
-      torpedosLoaded(pEnt) = min(8.0f, torpedosLoaded(pEnt) + 10.0f * timestep);
-    });
-
-    if (keysPressed[SDLK_PAGEUP])
-      scale *= pow(2, timeDelta);
-    if (keysPressed[SDLK_PAGEDOWN])
-      scale *= pow(0.5, timeDelta);
-
-    int playerCount = registry.size<CoPlayer>();
-    if (keysPressed[SDLK_1])
-      playerCount = 1;
-    if (keysPressed[SDLK_2])
-      playerCount = 2;
-    if (keysPressed[SDLK_3])
-      playerCount = 3;
-    if (keysPressed[SDLK_4])
-      playerCount = 4;
-    playerCount = max(1, playerCount);
-
-    if (playerCount != (int)registry.size<CoPlayer>()) {
-      auto playerView = registry.view<CoPlayer>();
-      registry.destroy(begin(playerView), end(playerView));
-
-      for (int p = 0; p < playerCount; p++) {
-        auto newPlayer = registry.create();
-        registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.0024},
-                                glm::vec2(0.2, 0.2), 0.0f);
-        registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
-        registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
-        registry.assign<CoPlayer>(newPlayer, p);
-        registry.assign<CoRespawnsOoB>(newPlayer);
-        registry.assign<CoTarget>(newPlayer);
-        registry.assign<CoAnimated>(newPlayer, 0.0f);
-        registry.assign<CoPlayerAligned>(newPlayer, newPlayer);
+    registry.get<CoAnimated>(pEnt).frame = 0.0;
+    if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
+        joyButtonPressed[player.keySet][4]) {
+      force(pEnt) += 12.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
+      registry.get<CoAnimated>(pEnt).frame = 1.0;
+    }
+    if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]]) {
+      force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
+      registry.get<CoAnimated>(pEnt).frame = 1.0;
+    }
+    if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
+        joyButtonPressed[player.keySet][5]) {
+      if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
+        auto newTorpedo = registry.create();
+        registry.assign<CoTorpedo>(newTorpedo);
+        registry.assign<CoItem>(newTorpedo, glm::vec2{0.003, 0.0006}, item.pos,
+                                item.rotation);
+        registry.assign<CoKinematics>(
+            newTorpedo, 0.15,
+            kin.vel + glm::vec2{cos(item.rotation), sin(item.rotation)} * 0.8f,
+            kin.angVel);
+        registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
+        registry.assign<CoDeletedOoB>(newTorpedo);
+        registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
+        registry.assign<CoTarget>(newTorpedo);
+        torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
+        torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
+        torpedosFired(pEnt)++;
       }
     }
+    torpedoCooldown(pEnt) = max(0.0f, torpedoCooldown(pEnt) - gameTimeStep);
+    torpedosLoaded(pEnt) =
+        min(8.0f, torpedosLoaded(pEnt) + 10.0f * gameTimeStep);
+  });
 
-    lastKeyUpdate = updateTime;
+  if (keysPressed[SDLK_PAGEUP])
+    scale *= pow(2, timeDelta);
+  if (keysPressed[SDLK_PAGEDOWN])
+    scale *= pow(0.5, timeDelta);
 
-    simTime = 0;
+  int playerCount = registry.size<CoPlayer>();
+  if (keysPressed[SDLK_1])
+    playerCount = 1;
+  if (keysPressed[SDLK_2])
+    playerCount = 2;
+  if (keysPressed[SDLK_3])
+    playerCount = 3;
+  if (keysPressed[SDLK_4])
+    playerCount = 4;
+  playerCount = max(1, playerCount);
 
-    sim.step(timestep);
-    sim.advectFloatingItems(registry);
+  if (playerCount != (int)registry.size<CoPlayer>()) {
+    auto playerView = registry.view<CoPlayer>();
+    registry.destroy(begin(playerView), end(playerView));
 
-    simTime += sim.dt;
-
-    processTorpedos();
-    processExplosions();
-
-    registry.view<CoRespawnsOoB, CoItem, CoKinematics>().less([&](auto &item,
-                                                                  auto &kin) {
-      static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
-      static auto disy =
-          std::uniform_real_distribution<float>(0.0f, sim.height);
-      static std::default_random_engine gen(std::random_device{}());
-
-      glm::vec2 gridPos = item.pos / sim.h + 0.5f;
-      while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
-             gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
-             sim.psampleFlagLinear(item.pos) < 0.01) {
-
-        gridPos = glm::vec2(disx(gen), disy(gen));
-        item.pos = gridPos * sim.h;
-        kin.vel = {0.0f, 0.0f};
-        kin.angVel = 0;
-        kin.force = {0.0f, 0.0f};
-      }
-    });
-
-    registry.view<CoDeletedOoB, CoItem>().less([&](auto entity, auto &item) {
-      glm::vec2 gridPos = item.pos / sim.h + 0.5f;
-      if (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
-          gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
-          sim.psampleFlagLinear(item.pos) < 0.01)
-        registry.destroy(entity);
-    });
-
-    registry.view<CoPlayer, CoItem, CoKinematics>().each(
-        [&](auto pEnt, auto &player, auto &item, auto &kin) {
-          if (player.deathtimer > 0.0f) {
-            kin.vel = glm::vec2(0.0f, 0.0f);
-            player.deathtimer -= simTime;
-            if (player.deathtimer < 0.0f) {
-              registry.assign<entt::tag<"tex_ship"_hs>>(pEnt);
-              item.pos = glm::vec2(-1.0f, -1.0f);
-              player.deathtimer = 0.0f;
-            }
-          }
-        });
-
-    registry.view<CoDecays>().each([&](auto entity, auto &decay) {
-      static auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
-      static std::default_random_engine gen(std::random_device{}());
-      if (pow(2.0f, -simTime / decay.halflife) < dist(gen))
-        registry.destroy(entity);
-    });
-
-    classicSwarmAI(registry, sim.flag, sim.getVX(), sim.getVY(), sim.vx.width,
-                   sim.h);
+    for (int p = 0; p < playerCount; p++) {
+      auto newPlayer = registry.create();
+      registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.0024},
+                              glm::vec2(0.2, 0.2), 0.0f);
+      registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
+      registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
+      registry.assign<CoPlayer>(newPlayer, p);
+      registry.assign<CoRespawnsOoB>(newPlayer);
+      registry.assign<CoTarget>(newPlayer);
+      registry.assign<CoAnimated>(newPlayer, 0.0f);
+      registry.assign<CoPlayerAligned>(newPlayer, newPlayer);
+    }
   }
+
+  lastKeyUpdate = updateTime;
+
+  sim.advectFloatingItems(registry, gameTimeStep);
+
+  processTorpedos();
+  processExplosions();
+
+  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().less([&](auto &item,
+                                                                auto &kin) {
+    static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
+    static auto disy = std::uniform_real_distribution<float>(0.0f, sim.height);
+    static std::default_random_engine gen(std::random_device{}());
+
+    glm::vec2 gridPos = item.pos / sim.h + 0.5f;
+    while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
+           gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
+           sim.psampleFlagLinear(item.pos) < 0.01) {
+
+      gridPos = glm::vec2(disx(gen), disy(gen));
+      item.pos = gridPos * sim.h;
+      kin.vel = {0.0f, 0.0f};
+      kin.angVel = 0;
+      kin.force = {0.0f, 0.0f};
+    }
+  });
+
+  registry.view<CoDeletedOoB, CoItem>().less([&](auto entity, auto &item) {
+    glm::vec2 gridPos = item.pos / sim.h + 0.5f;
+    if (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
+        gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
+        sim.psampleFlagLinear(item.pos) < 0.01)
+      registry.destroy(entity);
+  });
+
+  registry.view<CoPlayer, CoItem, CoKinematics>().each(
+      [&](auto pEnt, auto &player, auto &item, auto &kin) {
+        if (player.deathtimer > 0.0f) {
+          kin.vel = glm::vec2(0.0f, 0.0f);
+          player.deathtimer -= gameTimeStep;
+          if (player.deathtimer < 0.0f) {
+            registry.assign<entt::tag<"tex_ship"_hs>>(pEnt);
+            item.pos = glm::vec2(-1.0f, -1.0f);
+            player.deathtimer = 0.0f;
+          }
+        }
+      });
+
+  registry.view<CoDecays>().each([&](auto entity, auto &decay) {
+    static auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    static std::default_random_engine gen(std::random_device{}());
+    if (pow(2.0f, -gameTimeStep / decay.halflife) < dist(gen))
+      registry.destroy(entity);
+  });
+
+  classicSwarmAI(registry, sim.flag, sim.getVX(), sim.getVY(), sim.vx.width,
+                 sim.h);
+
   // if (rand() % 200 == 0)
   //  shiftMap();
 
-  double sim_t2 = dtime();
-  lastSimulationTime = (sim_t2 - sim_t1) / simulationSteps;
   double thisFrameTime = dtime();
   smoothedFrameRate =
       0.95 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
@@ -197,6 +182,31 @@ void UbootGlApp::loop() {
   frameTimes.add(1000.0f * (thisFrameTime - lastFrameTime));
 
   lastFrameTime = thisFrameTime;
+}
+
+void *simulationLoop(void *arg) {
+
+  UbootGlApp *app = reinterpret_cast<UbootGlApp *>(arg);
+
+  int threadCount = 0;
+#pragma omp parallel
+  { threadCount = omp_get_num_threads(); }
+  cout << threadCount << "\n";
+  omp_set_num_threads(threadCount / 2);
+  double tprev = dtime();
+  double smoothedSimTime = 0.0;
+  while (true) {
+
+    app->simTimeStep = 0.1f * min(0.2, smoothedSimTime);
+    app->sim.step(app->simTimeStep);
+
+    double tnow = dtime();
+    double dt = tnow - tprev;
+    app->simTimes.add(dt * 1000.f);
+    tprev = tnow;
+    smoothedSimTime = smoothedSimTime * 0.95 + 0.05 * dt;
+  }
+  return nullptr;
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
@@ -337,7 +347,7 @@ void UbootGlApp::draw() {
   VelocityTextures::updateFromStaggered(sim.vx.data(), sim.vy.data());
   DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
                                VelocityTextures::getFlagTex(), sim.ivx.width,
-                               sim.ivy.height, simTime, sim.pwidth);
+                               sim.ivy.height, gameTimeStep, sim.pwidth);
 
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
     renderOriginX = renderWidth * (player.keySet % xsplits * 1.01);
