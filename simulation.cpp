@@ -123,64 +123,64 @@ void Simulation::setVBCs() {
 void Simulation::diffuse() {
   float a = dt * mu * (width - 1.0f) / pwidth;
 
-#pragma omp parallel sections
+#pragma omp parallel
   {
-#pragma omp section
-    {
-      // x-velocity diffusion
-      // use this timestep as initial guess
-      vx.copyFrontToBack();
-      for (int i = 1; i < 3; i++) {
-        for (int y = 1; y < vx.height - 1; y++) {
-          for (int x = 1; x < vx.width - 1; x++) {
-            float val = 0;
-            val += vx.b(x + 1, y) * flag(x + 1, y) * flag(x + 2, y);
-            val += vx.b(x - 1, y) * flag(x, y) * flag(x - 1, y);
+    // x-velocity diffusion
+    // use this timestep as initial guess
+    vx.copyFrontToBack();
+    for (int i = 1; i < 3; i++) {
+#pragma omp for
+      for (int y = 1; y < vx.height - 1; y++) {
+        for (int x = 1; x < vx.width - 1; x++) {
+          float val = 0;
+          val += vx.f(x + 1, y) * flag(x + 1, y) * flag(x + 2, y);
+          val += vx.f(x - 1, y) * flag(x, y) * flag(x - 1, y);
 
-            float fvn = flag(x, y + 1) * flag(x - 1, y + 1);
-            val += vx.b(x, y + 1) * fvn + (1.0f - fvn) * -vx.b(x, y);
-            float fvs = flag(x, y - 1) * flag(x - 1, y - 1);
-            val += vx.b(x, y - 1) * fvs + (1.0f - fvs) * -vx.b(x, y);
+          float fvn = flag(x, y + 1) * flag(x - 1, y + 1);
+          val += vx.f(x, y + 1) * fvn + (1.0f - fvn) * -vx.f(x, y);
+          float fvs = flag(x, y - 1) * flag(x - 1, y - 1);
+          val += vx.f(x, y - 1) * fvs + (1.0f - fvs) * -vx.f(x, y);
 
-            vx.b(x, y) = flag(x, y) * flag(x + 1, y) * (vx.f(x, y) + a * val) /
-                         (1.0f + 4.0f * a);
-          }
+          vx.b(x, y) = flag(x, y) * flag(x + 1, y) * (vx.f(x, y) + a * val) /
+                       (1.0f + 4.0f * a);
         }
-        setVBCs();
       }
+#pragma omp single
       vx.swap();
+      setVBCs();
+#pragma omp barrier
     }
-#pragma omp section
-    {
-      // y-velocity diffusion
-      vy.copyFrontToBack();
 
-      for (int i = 1; i < 3; i++) {
-        for (int y = 1; y < vy.height - 1; y++) {
-          for (int x = 1; x < vy.width - 1; x++) {
-            float val = 0;
-            val += vy.b(x, y - 1) * flag(x, y) * flag(x, y - 1);
-            val += vy.b(x, y + 1) * flag(x, y + 1) * flag(x, y + 2);
+    // y-velocity diffusion
+    vy.copyFrontToBack();
+    for (int i = 1; i < 3; i++) {
+#pragma omp for
+      for (int y = 1; y < vy.height - 1; y++) {
+        for (int x = 1; x < vy.width - 1; x++) {
+          float val = 0;
+          val += vy.f(x, y - 1) * flag(x, y) * flag(x, y - 1);
+          val += vy.f(x, y + 1) * flag(x, y + 1) * flag(x, y + 2);
 
-            float fve = flag(x + 1, y) * flag(x + 1, y + 1);
-            val += vy.b(x + 1, y) * fve + (1.0 - fve) * -vy.b(x, y);
-            float fvw = flag(x - 1, y) * flag(x - 1, y + 1);
-            val += vy.b(x - 1, y) * fvw + (1.0 - fvw) * -vy.b(x, y);
+          float fve = flag(x + 1, y) * flag(x + 1, y + 1);
+          val += vy.f(x + 1, y) * fve + (1.0 - fve) * -vy.f(x, y);
+          float fvw = flag(x - 1, y) * flag(x - 1, y + 1);
+          val += vy.f(x - 1, y) * fvw + (1.0 - fvw) * -vy.f(x, y);
 
-            vy.b(x, y) = flag(x, y) * flag(x, y + 1) * (vy.f(x, y) + a * val) /
-                         (1.0f + 4.0f * a);
-          }
+          vy.b(x, y) = flag(x, y) * flag(x, y + 1) * (vy.f(x, y) + a * val) /
+                       (1.0f + 4.0f * a);
         }
-        setVBCs();
       }
+#pragma omp single
       vy.swap();
+      setVBCs();
+#pragma omp barrier
     }
   }
 }
 
 void Simulation::project() {
   float ih = 1.0f / h;
-#pragma omp parallel for schedule(dynamic, 8)
+#pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
       f(x, y) = -ih * (vx(x, y) - vx(x - 1, y) + vy(x, y) - vy(x, y - 1));
@@ -215,13 +215,13 @@ void Simulation::project() {
 
   // residual = calculateResidualField(p, f, flag, r, h);
   // diag << "PROJECT: res=" << residual << "\n";
-#pragma omp parallel for schedule(dynamic, 8)
+#pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 2; x++) {
       vx(x, y) -= flag(x, y) * flag(x + 1, y) * ih * (p(x + 1, y) - p(x, y));
     }
   }
-#pragma omp parallel for schedule(dynamic, 8)
+#pragma omp parallel for
   for (int y = 1; y < height - 2; y++) {
     for (int x = 1; x < width - 1; x++) {
       vy(x, y) -= flag(x, y) * flag(x, y + 1) * ih * (p(x, y + 1) - p(x, y));
@@ -231,13 +231,13 @@ void Simulation::project() {
 
 void Simulation::centerP() {
   float avgP = 0;
-#pragma omp parallel for reduction(+ : avgP) schedule(dynamic, 8)
+#pragma omp parallel for reduction(+ : avgP)
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
       avgP += p(x, y);
     }
   }
-#pragma omp parallel for schedule(dynamic, 8)
+#pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
       p(x, y) -= avgP / width / height;

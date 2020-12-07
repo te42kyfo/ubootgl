@@ -84,6 +84,7 @@ public:
 
   float *data() { return v[front].data(); }
   void copyFrontToBack() {
+#pragma omp for
     for (int i = 0; i < width * height; i++) {
       v[back][i] = v[front][i];
     }

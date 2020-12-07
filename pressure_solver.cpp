@@ -95,30 +95,29 @@ void prolongate(Single2DGrid &r, Single2DGrid &rc, Single2DGrid &flagc,
                 Single2DGrid &flag) {
   r = 0.0;
 
-#pragma omp parallel
-#pragma omp single
+#pragma omp parallel if (r.height > 5)
   {
-#pragma omp taskloop grainsize(5) if (r.height > 5)
+#pragma omp for nowait
     for (int y = 2; y < r.height - 1; y += 2) {
       for (int x = 2; x < r.width - 1; x += 2) {
         r(x, y) = rc(x / 2, y / 2) * flag(x, y);
       }
     }
-#pragma omp taskloop grainsize(5) if (r.height > 5)
+#pragma omp for nowait
     for (int y = 2; y < r.height - 1; y += 2) {
       for (int x = 1; x < r.width - 2; x += 2) {
         float sum = flagc(x / 2, y / 2) + flagc(x / 2 + 1, y / 2) + 0.0001;
         r(x, y) = flag(x, y) * (rc(x / 2, y / 2) + rc(x / 2 + 1, y / 2)) / sum;
       }
     }
-#pragma omp taskloop grainsize(5) if (r.height > 5)
+#pragma omp for nowait
     for (int y = 1; y < r.height - 2; y += 2) {
       for (int x = 2; x < r.width - 1; x += 2) {
         float sum = flagc(x / 2, y / 2) + flagc(x / 2, y / 2 + 1) + 0.0001;
         r(x, y) = flag(x, y) * (rc(x / 2, y / 2) + rc(x / 2, y / 2 + 1)) / sum;
       }
     }
-#pragma omp taskloop grainsize(5) if (r.height > 5)
+#pragma omp for nowait
     for (int y = 1; y < r.height - 2; y += 2) {
       for (int x = 1; x < r.width - 2; x += 2) {
         float sum = flagc(x / 2, y / 2) + flagc(x / 2 + 1, y / 2 + 1) +
