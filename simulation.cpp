@@ -27,6 +27,11 @@ void Simulation::interpolateFields() {
   }
 }
 
+void Simulation::saveCurrentVelocityFields() {
+  memcpy(vx_current.data(), vx.data(), vx.width * vx.height * sizeof(float));
+  memcpy(vy_current.data(), vy.data(), vy.width * vy.height * sizeof(float));
+}
+
 float *Simulation::getVX() { return ivx.data(); }
 float *Simulation::getVY() { return ivy.data(); }
 
@@ -346,6 +351,7 @@ void Simulation::step(float timestep) {
   setVBCs();
 
   diag << "\n";
+  saveCurrentVelocityFields();
   interpolateFields();
 }
 

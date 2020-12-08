@@ -344,7 +344,8 @@ void UbootGlApp::draw() {
             (sim.pwidth / (sim.width)));
             }*/
 
-  VelocityTextures::updateFromStaggered(sim.vx.data(), sim.vy.data());
+  VelocityTextures::updateFromStaggered(sim.vx_current.data(),
+                                        sim.vy_current.data());
   DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
                                VelocityTextures::getFlagTex(), sim.ivx.width,
                                sim.ivy.height, gameTimeStep, sim.pwidth);

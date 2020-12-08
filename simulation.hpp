@@ -26,8 +26,12 @@ class Simulation {
 public:
   Simulation(float pwidth, float mu, int width, int height)
       : pwidth(pwidth), mu(mu), width(width), height(height),
-        vx(width - 1, height), // staggered
-        vy(width, height - 1), // grids
+        vx(width - 1, height),         // staggered
+        vy(width, height - 1),         // grids
+        vx_accum(width - 1, height),   // grids
+        vy_accum(width, height - 1),   // grids
+        vx_current(width - 1, height), // grids
+        vy_current(width, height - 1), // grids
         p(width, height), f(width, height), flag(width, height),
         r(width, height), ivx(width, height), ivy(width, height),
         mg(width, height), h(pwidth / (width - 1.0f)), disx(0.0f, 1.0f),
@@ -53,6 +57,8 @@ public:
     vy = {width, height - 1}; // grids
     vx_accum = {width - 1, height};
     vy_accum = {width, height - 1};
+    vx_current = {width - 1, height};
+    vy_current = {width, height - 1};
     p = {width, height};
     f = {width, height};
     flag = {width, height};
@@ -128,6 +134,7 @@ public:
   float getDT();
   void advect();
   void applyAccumulatedVelocity();
+  void saveCurrentVelocityFields();
 
   void step(float timestep);
 
@@ -144,6 +151,7 @@ public:
 
   DoubleBuffered2DGrid vx, vy;
   Single2DGrid vx_accum, vy_accum;
+  Single2DGrid vx_current, vy_current;
   std::mutex accum_mutex;
   Single2DGrid p, f, flag, r;
   Single2DGrid ivx, ivy;
