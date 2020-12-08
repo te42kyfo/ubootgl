@@ -195,18 +195,12 @@ void Simulation::project() {
       remove_if(begin(sinks), end(sinks), [=](auto &t) { return t.z < 0.05f; }),
       end(sinks));
 
-  // float residual = calculateResidualField(p, f, flag, r, h);
-  // diag << "PROJECT: res=" << residual << "\n";
-
   mg.solve(p, f, flag, h, true);
-  // rbgs(p, f, flag, h, 1.6);
 
   centerP();
 
   setPBC();
 
-  // residual = calculateResidualField(p, f, flag, r, h);
-  // diag << "PROJECT: res=" << residual << "\n";
 #pragma omp parallel for
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 2; x++) {
@@ -340,7 +334,6 @@ void Simulation::step(float timestep) {
   diag.str("SIM\n");
 
   diag << "Time Step: dt=" << timestep << "\n";
-  // getDT();
 
   applyAccumulatedVelocity();
 
@@ -468,7 +461,7 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       for (int i = 0; i < 4; i++) {
         auto sp = surfacePoints[i];
 
-        auto tSP = sp * item.size;
+        auto tSP = sp * item.size * 0.5f;
         tSP = rotate(tSP, item.rotation);
         tSP = tSP + item.pos;
         auto sampleVel = bilinearVel(tSP / h);
