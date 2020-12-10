@@ -10,6 +10,8 @@
 #include <iostream>
 #include <vector>
 
+#include <immintrin.h>
+
 using glm::vec2;
 
 void Simulation::interpolateFields() {
@@ -274,33 +276,76 @@ void Simulation::advect() {
   {
 #pragma omp for
     for (int y = 1; y < vx.height - 1; y++) {
-      for (int x = 1; x < vx.width - 1; x++) {
-        vec2 pos = vec2(x + 0.5f, y);
-        vec2 v1 = vec2(vx(x, y), 0.25f * (vy(x, y) + vy(x, y - 1) +
-                                          vy(x + 1, y) + vy(x + 1, y - 1)));
+      for (int x = 1; x < vx.width - 8; x += 8) {
+        __m256i mmx = _mm256_add_epi32(
+            _mm256_set1_epi32(x), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
+        __m256i mmy = _mm256_set1_epi32(y);
 
-        vec2 midPos = pos - 0.5f * dt * ih * v1;
-        vec2 v2 = bilinearVel(midPos);
+        __m256 posx =
+            _mm256_add_ps(_mm256_cvtepi32_ps(mmx), _mm256_set1_ps(0.5f));
+        __m256 posy = _mm256_cvtepi32_ps(mmy);
 
-        vec2 endPos = pos - dt * ih * v2;
-        float xvel = bilinearSample(vx, endPos - vec2(0.5f, 0.0f));
+        __m256 vx1 = _mm256_loadu_ps(vx.data() + x + y * vx.width);
+        __m256 vy1 = _mm256_mul_ps(
+            _mm256_add_ps(
+                _mm256_add_ps(
+                    _mm256_loadu_ps(vy.data() + x + y * vy.width),
+                    _mm256_loadu_ps(vy.data() + x + (y - 1) * vy.width)),
+                _mm256_add_ps(
+                    _mm256_loadu_ps(vy.data() + x + 1 + y * vy.width),
+                    _mm256_loadu_ps(vy.data() + x + 1 + (y - 1) * vy.width))),
+            _mm256_set1_ps(0.25f));
 
-        vx.b(x, y) = flag(x, y) * flag(x + 1, y) * xvel;
+        __m256 endPosx =
+            _mm256_sub_ps(posx, _mm256_mul_ps(vx1, _mm256_set1_ps(dt * ih)));
+        __m256 endPosy =
+            _mm256_sub_ps(posy, _mm256_mul_ps(vy1, _mm256_set1_ps(dt * ih)));
+
+        __m256 xvel = bilinearSample(
+            vx, _mm256_sub_ps(endPosx, _mm256_set1_ps(0.5f)), endPosy);
+
+        xvel = _mm256_mul_ps(
+            _mm256_mul_ps(xvel,
+                          _mm256_loadu_ps(flag.data() + y * flag.width + x)),
+            _mm256_loadu_ps(flag.data() + y * flag.width + x + 1));
+
+        _mm256_storeu_ps(vx.back_data() + vx.width * y + x, xvel);
       }
 
-      for (int x = 1; x < vy.width - 1; x++) {
-        vec2 pos = vec2(x, y + 0.5);
-        vec2 v1 = vec2(
-            0.25f * (vx(x, y) + vx(x, y + 1) + vx(x - 1, y) + vx(x - 1, y + 1)),
-            vy(x, y));
+      for (int x = 1; x < vy.width - 8; x += 8) {
+        __m256i mmx = _mm256_add_epi32(
+            _mm256_set1_epi32(x), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
+        __m256i mmy = _mm256_set1_epi32(y);
 
-        vec2 midPos = pos - 0.5f * dt * ih * v1;
-        vec2 v2 = bilinearVel(midPos);
+        __m256 posy =
+            _mm256_add_ps(_mm256_cvtepi32_ps(mmy), _mm256_set1_ps(0.5f));
+        __m256 posx = _mm256_cvtepi32_ps(mmx);
 
-        vec2 endPos = pos - dt * ih * v2;
-        float yvel = bilinearSample(vy, endPos - vec2(0.0f, 0.5f));
+        __m256 vy1 = _mm256_loadu_ps(vy.data() + x + y * vy.width);
+        __m256 vx1 = _mm256_mul_ps(
+            _mm256_add_ps(
+                _mm256_add_ps(
+                    _mm256_loadu_ps(vx.data() + x + y * vx.width),
+                    _mm256_loadu_ps(vx.data() + x + (y - 1) * vx.width)),
+                _mm256_add_ps(
+                    _mm256_loadu_ps(vx.data() + x + 1 + y * vx.width),
+                    _mm256_loadu_ps(vx.data() + x + 1 + (y - 1) * vx.width))),
+            _mm256_set1_ps(0.25f));
 
-        vy.b(x, y) = flag(x, y) * flag(x, y + 1) * yvel;
+        __m256 endPosx =
+            _mm256_sub_ps(posx, _mm256_mul_ps(vx1, _mm256_set1_ps(dt * ih)));
+        __m256 endPosy =
+            _mm256_sub_ps(posy, _mm256_mul_ps(vy1, _mm256_set1_ps(dt * ih)));
+
+        __m256 yvel = bilinearSample(
+            vy, endPosx, _mm256_sub_ps(endPosy, _mm256_set1_ps(0.5f)));
+
+        yvel = _mm256_mul_ps(
+            _mm256_mul_ps(yvel,
+                          _mm256_loadu_ps(flag.data() + y * flag.width + x)),
+            _mm256_loadu_ps(flag.data() + (y + 1) * flag.width + x));
+
+        _mm256_storeu_ps(vy.back_data() + vy.width * y + x, yvel);
       }
     }
 

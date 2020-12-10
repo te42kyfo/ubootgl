@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <glm/glm.hpp>
+#include <immintrin.h>
 #include <iomanip>
 #include <iostream>
 #include <vector>
@@ -62,10 +63,45 @@ inline float bilinearSample(const GridType &grid, glm::vec2 c) {
   float v2 = grid(ic.x + 1, ic.y);
   float v3 = grid(ic.x, ic.y + 1);
   float v4 = grid(ic.x + 1, ic.y + 1);
-
   float vm1 = v1 + (v2 - v1) * st.x;
   float vm2 = v3 + (v4 - v3) * st.x;
   return vm1 + (vm2 - vm1) * st.y;
+}
+
+template <typename GridType>
+inline __m256 gridGather(const GridType &grid, __m256i x, __m256i y) {
+  __m256i idx =
+      _mm256_add_epi32(x, _mm256_mullo_epi32(y, _mm256_set1_epi32(grid.width)));
+
+  auto result = _mm256_i32gather_ps(grid.data(), idx, 4);
+  return result;
+}
+
+template <typename GridType>
+inline __m256 bilinearSample(const GridType &grid, __m256 cx, __m256 cy) {
+  cx = _mm256_max_ps(_mm256_min_ps(cx, _mm256_set1_ps(grid.width - 1.0f)),
+                     _mm256_set1_ps(1.0f));
+  cy = _mm256_max_ps(_mm256_min_ps(cy, _mm256_set1_ps(grid.height - 1.0f)),
+                     _mm256_set1_ps(1.0f));
+
+  __m256i icx = _mm256_cvttps_epi32(cx);
+  __m256i icy = _mm256_cvttps_epi32(cy);
+
+  __m256 stx = _mm256_sub_ps(cx, _mm256_round_ps(cx, _MM_FROUND_TRUNC));
+  __m256 sty = _mm256_sub_ps(cy, _mm256_round_ps(cy, _MM_FROUND_TRUNC));
+
+  __m256 v1 = gridGather(grid, icx, icy);
+  __m256 v2 =
+      gridGather(grid, _mm256_add_epi32(icx, _mm256_set1_epi32(1)), icy);
+  __m256 v3 =
+      gridGather(grid, icx, _mm256_add_epi32(icy, _mm256_set1_epi32(1)));
+  __m256 v4 = gridGather(grid, _mm256_add_epi32(icx, _mm256_set1_epi32(1)),
+                         _mm256_add_epi32(icy, _mm256_set1_epi32(1)));
+
+  __m256 vm1 = _mm256_fmadd_ps(_mm256_sub_ps(v2, v1), stx, v1);
+  __m256 vm2 = _mm256_fmadd_ps(_mm256_sub_ps(v4, v3), stx, v3);
+
+  return _mm256_fmadd_ps(_mm256_sub_ps(vm2, vm1), sty, vm1);
 }
 
 class DoubleBuffered2DGrid {
@@ -116,6 +152,8 @@ public:
   }
 
   float *data() { return v[front].data(); }
+  float const *data() const { return v[front].data(); }
+  float *back_data() { return v[back].data(); }
   int width, height;
 
 private:
