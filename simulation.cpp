@@ -250,38 +250,22 @@ float Simulation::getDT() {
   return rDT;
 }
 
-template <typename T> vec2 inline bilinearGrid(vec2 c, T &vx, T &vy) {
+// coordinates are in staggered grid space
+template <typename T> float inline bilinearGrid(vec2 c, T &v) {
 
-  vec2 result;
-  vec2 cx = c - vec2(0.5, 0.0);
+  glm::ivec2 ic = c;
+  vec2 st = fract(c);
 
-  cx.x = glm::min(glm::max(cx.x, 0.0f), vx.width - 1.01f);
-  cx.y = glm::min(glm::max(cx.y, 0.0f), vx.height - 1.01f);
-
-  glm::ivec2 ic = cx;
-
-  vec2 st = fract(cx);
-
-  result.x = glm::mix(
-      glm::mix(vx(ic.x, ic.y), vx(ic.x + 1, ic.y), st.x),
-      glm::mix(vx(ic.x, ic.y + 1), vx(ic.x + 1, ic.y + 1), st.x), st.y);
-
-  vec2 cy = c - vec2(0.0, 0.5);
-  cy.x = glm::min(glm::max(cy.x, 0.0f), vy.width - 1.01f);
-  cy.y = glm::min(glm::max(cy.y, 0.0f), vy.height - 1.01f);
-
-  ic = cy;
-
-  st = fract(cy);
-
-  result.y = glm::mix(
-      glm::mix(vy(ic.x, ic.y), vy(ic.x + 1, ic.y), st.x),
-      glm::mix(vy(ic.x, ic.y + 1), vy(ic.x + 1, ic.y + 1), st.x), st.y);
-
-  return result;
+  return glm::mix(glm::mix(v(ic.x, ic.y), v(ic.x + 1, ic.y), st.x),
+                  glm::mix(v(ic.x, ic.y + 1), v(ic.x + 1, ic.y + 1), st.x),
+                  st.y);
 }
 
-vec2 inline Simulation::bilinearVel(vec2 c) { return bilinearGrid(c, vx, vy); }
+// input in standard grid space
+vec2 inline Simulation::bilinearVel(vec2 c) {
+  return vec2(bilinearSample(vx, c - vec2(0.5f, 0.0f)),
+              bilinearSample(vy, c - vec2(0.0f, 0.5f)));
+}
 
 void Simulation::advect() {
   float ih = 1.0f / h;
@@ -291,38 +275,32 @@ void Simulation::advect() {
 #pragma omp for
     for (int y = 1; y < vx.height - 1; y++) {
       for (int x = 1; x < vx.width - 1; x++) {
-        vec2 pos = vec2(x + 0.5, y);
+        vec2 pos = vec2(x + 0.5f, y);
+        vec2 v1 = vec2(vx(x, y), 0.25f * (vy(x, y) + vy(x, y - 1) +
+                                          vy(x + 1, y) + vy(x + 1, y - 1)));
 
-        vec2 vel = vec2(vx(x, y), 0.25f * (vy(x, y) + vy(x, y - 1) +
-                                           vy(x + 1, y) + vy(x + 1, y - 1)));
+        vec2 midPos = pos - 0.5f * dt * ih * v1;
+        vec2 v2 = bilinearVel(midPos);
 
-        pos -= dt * ih * bilinearVel(pos - 0.5f * dt * ih * vel);
-        vel = bilinearVel(pos);
+        vec2 endPos = pos - dt * ih * v2;
+        float xvel = bilinearSample(vx, endPos - vec2(0.5f, 0.0f));
 
-        // pos.x = glm::min(glm::max(0.0f, pos.x), (float)vx.width);
-        // pos.y = glm::min(glm::max(0.0f, pos.y), (float)vx.height);
-
-        vx.b(x, y) = flag(x, y) * flag(x + 1, y) * vel.x;
-        //(0.5f * vx((int)(pos.x), (int)(pos.y + 0.5f)) + 0.5f * vel.x);
+        vx.b(x, y) = flag(x, y) * flag(x + 1, y) * xvel;
       }
-    }
-#pragma omp for
-    for (int y = 1; y < vy.height - 1; y++) {
+
       for (int x = 1; x < vy.width - 1; x++) {
         vec2 pos = vec2(x, y + 0.5);
-        vec2 vel = vec2(
+        vec2 v1 = vec2(
             0.25f * (vx(x, y) + vx(x, y + 1) + vx(x - 1, y) + vx(x - 1, y + 1)),
             vy(x, y));
 
-        pos -= dt * ih * bilinearVel(pos - 0.5f * dt * ih * vel);
-        vel = bilinearVel(pos);
+        vec2 midPos = pos - 0.5f * dt * ih * v1;
+        vec2 v2 = bilinearVel(midPos);
 
-        pos.x = glm::min(glm::max(0.0f, pos.x), (float)vy.width);
-        pos.y = glm::min(glm::max(0.0f, pos.y), (float)vy.height);
+        vec2 endPos = pos - dt * ih * v2;
+        float yvel = bilinearSample(vy, endPos - vec2(0.0f, 0.5f));
 
-        vy.b(x, y) =
-            flag(x, y) * flag(x, y + 1) *
-            (0.5f * vy((int)(pos.x + 0.5f), (int)(pos.y)) + 0.5f * vel.y);
+        vy.b(x, y) = flag(x, y) * flag(x, y + 1) * yvel;
       }
     }
 
@@ -490,9 +468,11 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
           gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
         float area = item.size.x * item.size.y / (h * h);
-        auto deltaVel = bilinearVel(item.pos / h) +
-                        bilinearGrid(item.pos / h, vx_accum, vy_accum) -
-                        kin.vel;
+        auto deltaVel =
+            bilinearVel(item.pos / h) +
+            vec2(bilinearGrid(item.pos / h - vec2(0.5f, 0.0f), vx_accum),
+                 bilinearGrid(item.pos / h - vec2(0.0f, 0.5f), vy_accum)) -
+            kin.vel;
 
         auto deltaVec = deltaVel * area * subDT * 20.0f;
 
