@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <sys/time.h>
 static double dtime() {
   double tseconds = 0;

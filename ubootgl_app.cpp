@@ -22,6 +22,8 @@ void UbootGlApp::loop() {
   double updateTime = dtime();
   double timeDelta = (updateTime - lastKeyUpdate);
 
+  double gameLogicT1 = dtime();
+
   registry.view<CoPlayer, CoItem, CoKinematics>().each([&](const auto pEnt,
                                                            const auto player,
                                                            const auto item,
@@ -172,41 +174,15 @@ void UbootGlApp::loop() {
   classicSwarmAI(registry, sim.flag, sim.getVX(), sim.getVY(), sim.vx.width,
                  sim.h);
 
-  // if (rand() % 200 == 0)
-  //  shiftMap();
+  double gameLogicT2 = dtime();
+
+  gameLogicTimes.add(gameLogicT2 - gameLogicT1);
 
   double thisFrameTime = dtime();
   smoothedFrameRate =
       0.95 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
 
-  frameTimes.add(1000.0f * (thisFrameTime - lastFrameTime));
-
   lastFrameTime = thisFrameTime;
-}
-
-void *simulationLoop(void *arg) {
-
-  UbootGlApp *app = reinterpret_cast<UbootGlApp *>(arg);
-
-  int threadCount = 0;
-#pragma omp parallel
-  { threadCount = omp_get_num_threads(); }
-  cout << threadCount << "\n";
-  omp_set_num_threads(max(1, threadCount / 2 - 1));
-  double tprev = dtime();
-  double smoothedSimTime = 0.0;
-  while (true) {
-
-    app->simTimeStep = 0.1f * min(0.2, smoothedSimTime);
-    app->sim.step(app->simTimeStep);
-
-    double tnow = dtime();
-    double dt = tnow - tprev;
-    app->simTimes.add(dt * 1000.f);
-    tprev = tnow;
-    smoothedSimTime = smoothedSimTime * 0.95 + 0.05 * dt;
-  }
-  return nullptr;
 }
 
 void UbootGlApp::handleKey(SDL_KeyboardEvent event) {

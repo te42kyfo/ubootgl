@@ -20,12 +20,10 @@
 #include <random>
 #include <vector>
 
-void *simulationLoop(void *arg);
-
 class UbootGlApp {
 public:
   UbootGlApp()
-      : sim("resources/level2.png", 0.8, -0.0001f),
+      : sim("resources/level2.png", 0.8, 0.0001f),
         rock_texture("resources/rock_texture2.png"), joyAxis(4),
         joyButtonPressed(4) {
     Draw2DBuf::init();
@@ -78,9 +76,6 @@ public:
       registry.assign<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                     0.0f);
     }
-    pthread_t threadId;
-    pthread_create(&threadId, NULL, simulationLoop,
-                   reinterpret_cast<void *>(this));
   }
 
   void loop();
@@ -147,6 +142,7 @@ public:
   FrameTimes frameTimes;
   FrameTimes gfxTimes;
   FrameTimes simTimes;
+  FrameTimes gameLogicTimes;
   double lastSimulationTime = 1.0;
   float scale;
   float gameTimeStep = 0;
