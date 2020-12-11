@@ -126,10 +126,11 @@ void Simulation::diffuse() {
   {
     // x-velocity diffusion
     // use this timestep as initial guess
-    vx.copyFrontToBack();
+    // vx.copyFrontToBack();
     for (int i = 1; i < 3; i++) {
 #pragma omp for
       for (int y = 1; y < vx.height - 1; y++) {
+#pragma omp simd
         for (int x = 1; x < vx.width - 1; x++) {
           float val = 0;
           val += vx.f(x + 1, y) * flag(x + 1, y) * flag(x + 2, y);
@@ -151,19 +152,20 @@ void Simulation::diffuse() {
     }
 
     // y-velocity diffusion
-    vy.copyFrontToBack();
+    // vy.copyFrontToBack();
     for (int i = 1; i < 3; i++) {
 #pragma omp for
       for (int y = 1; y < vy.height - 1; y++) {
+#pragma omp simd
         for (int x = 1; x < vy.width - 1; x++) {
           float val = 0;
           val += vy.f(x, y - 1) * flag(x, y) * flag(x, y - 1);
           val += vy.f(x, y + 1) * flag(x, y + 1) * flag(x, y + 2);
 
           float fve = flag(x + 1, y) * flag(x + 1, y + 1);
-          val += vy.f(x + 1, y) * fve + (1.0 - fve) * -vy.f(x, y);
+          val += vy.f(x + 1, y) * fve + (1.0f - fve) * -vy.f(x, y);
           float fvw = flag(x - 1, y) * flag(x - 1, y + 1);
-          val += vy.f(x - 1, y) * fvw + (1.0 - fvw) * -vy.f(x, y);
+          val += vy.f(x - 1, y) * fvw + (1.0f - fvw) * -vy.f(x, y);
 
           vy.b(x, y) = flag(x, y) * flag(x, y + 1) * (vy.f(x, y) + a * val) /
                        (1.0f + 4.0f * a);
