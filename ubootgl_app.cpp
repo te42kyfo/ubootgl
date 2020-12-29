@@ -153,13 +153,32 @@ void UbootGlApp::loop() {
 
   registry.view<CoPlayer, CoItem, CoKinematics>().each(
       [&](auto pEnt, auto &player, auto &item, auto &kin) {
-        if (player.deathtimer > 0.0f) {
+        player.timer = max(0.0f, player.timer - gameTimeStep);
+
+        if (player.state == PLAYER_STATE::ALIVE)
+          return;
+        if (player.state == PLAYER_STATE::KILLED) {
+          player.timer = 0.2f;
+          player.deaths++;
+          registry.remove<entt::tag<"tex_ship"_hs>>(pEnt);
+          registry.remove<CoTarget>(pEnt);
+          player.state = PLAYER_STATE::RESPAWNING;
+          return;
+        }
+        if (player.state == PLAYER_STATE::RESPAWNING) {
           kin.vel = glm::vec2(0.0f, 0.0f);
-          player.deathtimer -= gameTimeStep;
-          if (player.deathtimer < 0.0f) {
+          if (player.timer <= 0.0f) {
             registry.assign<entt::tag<"tex_ship"_hs>>(pEnt);
+            registry.assign<CoTarget>(pEnt);
             item.pos = glm::vec2(-1.0f, -1.0f);
-            player.deathtimer = 0.0f;
+            player.state = PLAYER_STATE::ALIVE_PROTECTED;
+            player.timer = 0.4f;
+          }
+          return;
+        }
+        if (player.state == PLAYER_STATE::ALIVE_PROTECTED) {
+          if (player.timer <= 0.0f) {
+            player.state = PLAYER_STATE::ALIVE;
           }
         }
       });
@@ -344,6 +363,11 @@ void UbootGlApp::draw() {
     ImGui::Separator();
     ImGui::Text("Kills: %d, Deaths: %d", player.kills, player.deaths);
     ImGui::Text("Torpedos: %.0f", player.torpedosLoaded);
+    if (player.state == PLAYER_STATE::ALIVE_PROTECTED) {
+      ImGui::Text("PROTECTED %.2f", player.timer);
+    } else if (player.state == PLAYER_STATE::RESPAWNING) {
+      ImGui::Text("RESPAWNING %.2f", player.timer);
+    }
     ImGui::End();
 
     GL_CALL(

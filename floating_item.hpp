@@ -47,11 +47,14 @@ struct CoExplosion {
   int fragmentLevel = 0;
 };
 
+enum class PLAYER_STATE { ALIVE, ALIVE_PROTECTED, RESPAWNING, KILLED };
+
 struct CoPlayer {
   CoPlayer(int keySet) : keySet(keySet){};
   float torpedoCooldown = 0.0;
   float torpedosLoaded = 10.0;
-  float deathtimer = 0.0f;
+  float timer = 0.5f;
+  PLAYER_STATE state = PLAYER_STATE::ALIVE_PROTECTED;
   int deaths = 0;
   int kills = 0;
   int torpedosFired = 0;

@@ -85,7 +85,7 @@ void UbootGlApp::processExplosions() {
           bumpCount(targetEnt) += 1;
         } else if (registry.has<CoPlayer>(targetEnt)) {
           auto &targetPlayer = registry.get<CoPlayer>(targetEnt);
-          if (targetPlayer.deathtimer > 0)
+          if (targetPlayer.state != PLAYER_STATE::ALIVE)
             continue;
 
           if (registry.has<CoPlayerAligned>(expEnt))
@@ -94,10 +94,7 @@ void UbootGlApp::processExplosions() {
           else
             newExplosion(pos(targetEnt), 0.01f, entt::null);
 
-          targetPlayer.deathtimer = 0.2f;
-          targetPlayer.deaths++;
-
-          registry.remove<entt::tag<"tex_ship"_hs>>(targetEnt);
+          targetPlayer.state = PLAYER_STATE::KILLED;
 
           if (registry.has<CoPlayerAligned>(expEnt))
             registry.get<CoPlayer>(registry.get<CoPlayerAligned>(expEnt).player)
