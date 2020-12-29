@@ -33,7 +33,7 @@ void SdlGl::initDisplay() {
   gl_context = SDL_GL_CreateContext(window);
   if (gl_context == nullptr)
     SDL_die("SDL_GL_CreateContext");
-  SDL_GL_SetSwapInterval(0);
+  SDL_GL_SetSwapInterval(-1);
 
   glewExperimental = GL_TRUE;
   glewInit();
