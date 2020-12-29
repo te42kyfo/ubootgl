@@ -298,13 +298,22 @@ void Simulation::advect() {
                     _mm256_loadu_ps(vy.data() + x + 1 + (y - 1) * vy.width))),
             _mm256_set1_ps(0.25f));
 
-        __m256 endPosx =
-            _mm256_sub_ps(posx, _mm256_mul_ps(vx1, _mm256_set1_ps(dt * ih)));
-        __m256 endPosy =
-            _mm256_sub_ps(posy, _mm256_mul_ps(vy1, _mm256_set1_ps(dt * ih)));
+        __m256 midPosx = _mm256_sub_ps(
+            posx, _mm256_mul_ps(vx1, _mm256_set1_ps(0.5f * dt * ih)));
+        __m256 midPosy = _mm256_sub_ps(
+            posy, _mm256_mul_ps(vy1, _mm256_set1_ps(0.5f * dt * ih)));
 
-        __m256 xvel = bilinearSample(
-            vx, _mm256_sub_ps(endPosx, _mm256_set1_ps(0.5f)), endPosy);
+        __m256 vx2 = bicubicSample(
+            vx, _mm256_sub_ps(midPosx, _mm256_set1_ps(0.5f)), midPosy);
+        __m256 vy2 = bicubicSample(
+            vy, midPosx, _mm256_sub_ps(midPosy, _mm256_set1_ps(0.5f)));
+
+        __m256 endPosx =
+            _mm256_sub_ps(posx, _mm256_mul_ps(vx2, _mm256_set1_ps(dt * ih)));
+        __m256 endPosy =
+            _mm256_sub_ps(posy, _mm256_mul_ps(vy2, _mm256_set1_ps(dt * ih)));
+
+        __m256 xvel = bicubicSample(vx, endPosx - 0.5f, endPosy);
 
         xvel = _mm256_mul_ps(
             _mm256_mul_ps(xvel,
@@ -334,13 +343,22 @@ void Simulation::advect() {
                     _mm256_loadu_ps(vx.data() + x + 1 + (y - 1) * vx.width))),
             _mm256_set1_ps(0.25f));
 
-        __m256 endPosx =
-            _mm256_sub_ps(posx, _mm256_mul_ps(vx1, _mm256_set1_ps(dt * ih)));
-        __m256 endPosy =
-            _mm256_sub_ps(posy, _mm256_mul_ps(vy1, _mm256_set1_ps(dt * ih)));
+        __m256 midPosx = _mm256_sub_ps(
+            posx, _mm256_mul_ps(vx1, _mm256_set1_ps(0.5f * dt * ih)));
+        __m256 midPosy = _mm256_sub_ps(
+            posy, _mm256_mul_ps(vy1, _mm256_set1_ps(0.5f * dt * ih)));
 
-        __m256 yvel = bilinearSample(
-            vy, endPosx, _mm256_sub_ps(endPosy, _mm256_set1_ps(0.5f)));
+        __m256 vx2 = bicubicSample(
+            vx, _mm256_sub_ps(midPosx, _mm256_set1_ps(0.5f)), midPosy);
+        __m256 vy2 = bicubicSample(
+            vy, midPosx, _mm256_sub_ps(midPosy, _mm256_set1_ps(0.5f)));
+
+        __m256 endPosx =
+            _mm256_sub_ps(posx, _mm256_mul_ps(vx2, _mm256_set1_ps(dt * ih)));
+        __m256 endPosy =
+            _mm256_sub_ps(posy, _mm256_mul_ps(vy2, _mm256_set1_ps(dt * ih)));
+
+        __m256 yvel = bicubicSample(vy, endPosx, endPosy - 0.5f);
 
         yvel = _mm256_mul_ps(
             _mm256_mul_ps(yvel,
