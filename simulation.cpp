@@ -197,7 +197,7 @@ void Simulation::project() {
         f(gC.x + x, gC.y + y) = sink.z;
       }
     }
-    sink.z *= pow(0.000001, dt * 20);
+    sink.z *= pow(0.000001, dt * 50);
   }
 
   sinks.erase(
@@ -500,7 +500,7 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
 
       glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
       glm::vec2 centralForce = glm::vec2(0.0, 0.0);
-      float angForce = kin.angForce;
+      float angForce = kin.angForce - kin.angVel * 0.000001f;
 
       glm::vec2 surfacePoints[] = {
           {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};

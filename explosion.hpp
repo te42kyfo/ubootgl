@@ -26,11 +26,11 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           gridC.y > sim.flag.height - 3)
         continue;
       if (explosionDiam > 0.002)
-        sim.sinks.push_back(glm::vec3(gridC * sim.h, 30.0f));
+        sim.sinks.push_back(glm::vec3(gridC * sim.h, 40.0f));
       if (sim.flag(gridC) < 1.0) {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 10; i++) {
           float velangle = randRotationDist(gen);
-          float size = dist(gen) * 1.2 + 1.2;
+          float size = dist(gen) * 1.2 + 1.5f;
           size *= size;
           int type = (int)(dist(gen) * 2.0f);
 
@@ -43,12 +43,12 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
           registry.assign<CoAnimated>(newDebris, static_cast<float>(type));
           registry.assign<CoKinematics>(
-              newDebris, size * (0.2f * type + 0.1f),
-              glm::normalize(glm::vec2(x, y)) * 1.0f +
+              newDebris, 0.8 * size * (0.2f * type + 0.1f),
+              glm::normalize(glm::vec2(x, y)) * 3.0f +
                   glm::vec2{cos(velangle), sin(velangle)} * dist(gen) * 0.4f,
-              dist(gen) - 0.5f);
+              (randRotationDist(gen) - randRotationDist(gen)) * 10.0f);
           registry.assign<CoDeletedOoB>(newDebris);
-          registry.assign<CoDecays>(newDebris, 0.71f);
+          registry.assign<CoDecays>(newDebris, 0.41f);
         }
         sim.setGrids(gridC, 1.0);
       }
@@ -89,10 +89,10 @@ void UbootGlApp::processExplosions() {
             continue;
 
           if (registry.has<CoPlayerAligned>(expEnt))
-            newExplosion(pos(targetEnt), 0.02f,
+            newExplosion(pos(targetEnt), 0.01f,
                          registry.get<CoPlayerAligned>(expEnt).player);
           else
-            newExplosion(pos(targetEnt), 0.02f, entt::null);
+            newExplosion(pos(targetEnt), 0.01f, entt::null);
 
           targetPlayer.deathtimer = 0.2f;
           targetPlayer.deaths++;
