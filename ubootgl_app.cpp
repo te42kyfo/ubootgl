@@ -358,12 +358,25 @@ void UbootGlApp::draw() {
                                    ((displayHeight - 5) / ysplits)));
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, colors[player.keySet]);
-    ImGui::SetNextWindowSize(ImVec2(200, 100));
+    ImGui::SetNextWindowSize(ImVec2(200, 120));
     ImGui::Begin(("Player" + to_string(player.keySet)).c_str(), &p_open,
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoSavedSettings);
-    ImGui::Text("Player %d", player.keySet);
+
+    stringstream controlString;
+    controlString
+        << SDL_GetKeyName(key_map[{player.keySet, CONTROLS::THRUST_FORWARD}])
+        << " "
+        << SDL_GetKeyName(
+               key_map[{player.keySet, CONTROLS::TURN_COUNTERCLOCKWISE}])
+        << " "
+        << SDL_GetKeyName(key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}])
+        << " "
+        << SDL_GetKeyName(key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}])
+        << " "
+        << SDL_GetKeyName(key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]);
+    ImGui::Text("Player %d \n %s", player.keySet, controlString.str().c_str());
     ImGui::Separator();
     ImGui::Text("Kills: %d, Deaths: %d", player.kills, player.deaths);
     ImGui::Text("Torpedos: %.0f", player.torpedosLoaded);
