@@ -321,8 +321,8 @@ void UbootGlApp::draw() {
 
   int displayWidth = ImGui::GetIO().DisplaySize.x;
   int displayHeight = ImGui::GetIO().DisplaySize.y;
-  int renderWidth = displayWidth / xsplits * 0.99;
-  int renderHeight = (displayHeight - 50) / ysplits;
+  int renderWidth = displayWidth / xsplits;
+  int renderHeight = (displayHeight) / ysplits;
   int renderOriginX = renderWidth;
   int renderOriginY = 0;
 
@@ -345,15 +345,19 @@ void UbootGlApp::draw() {
                                VelocityTextures::getFlagTex(), sim.ivx.width,
                                sim.ivy.height, gameTimeStep, sim.pwidth);
 
+  ImColor colors[] = {ImColor(100, 0, 0, 155), ImColor(0, 100, 0, 155),
+                      ImColor(100, 100, 0, 155), ImColor(100, 0, 100, 155)};
+
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
-    renderOriginX = renderWidth * (player.keySet % xsplits * 1.01);
-    renderOriginY = renderHeight * (player.keySet / xsplits) * 1.01;
+    renderOriginX = (renderWidth + 5) * (player.keySet % xsplits);
+    renderOriginY = (renderHeight + 5) * (player.keySet / xsplits);
 
     ImGui::SetNextWindowPos(
         ImVec2(renderOriginX + 2,
                displayHeight - (player.keySet / xsplits + 1) *
-                                   ((displayHeight - 55) / ysplits)));
+                                   ((displayHeight - 5) / ysplits)));
 
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, colors[player.keySet]);
     ImGui::SetNextWindowSize(ImVec2(200, 100));
     ImGui::Begin(("Player" + to_string(player.keySet)).c_str(), &p_open,
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -369,6 +373,7 @@ void UbootGlApp::draw() {
       ImGui::Text("RESPAWNING %.2f", player.timer);
     }
     ImGui::End();
+    ImGui::PopStyleColor();
 
     GL_CALL(
         glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
@@ -465,23 +470,26 @@ void UbootGlApp::draw() {
       textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false,
       true);
 
-  ImGui::SetNextWindowPos(ImVec2(200, 10));
-  ImGui::SetNextWindowSize(ImVec2(300, 400));
+  ImGui::SetNextWindowPos(ImVec2(displayWidth / 2 - 550, 0));
+  ImGui::SetNextWindowSize(ImVec2(1100, 90));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 
-  ImGui::TextWrapped("Total: %.1f, %.1f, %.1f ", frameTimes.avg(),
-                     frameTimes.high1pct(), frameTimes.largest());
-  ImGui::TextWrapped("GFX: %.1f, %.1f, %.1f ", gfxTimes.avg(),
-                     gfxTimes.high1pct(), gfxTimes.largest());
-  ImGui::TextWrapped("SIM: %.1f, %.1f, %.1f ", simTimes.avg(),
-                     simTimes.high1pct(), simTimes.largest());
+  ImGui::TextWrapped(
+      "Total: %5.1f, %5.1f, %5.1f \n  GFX: %5.1f, %5.1f, %5.1f\n  SIM: "
+      "%5.1f, %5.1f, %5.1f",
+      frameTimes.avg(), frameTimes.high1pct(), frameTimes.largest(),
+      gfxTimes.avg(), gfxTimes.high1pct(), gfxTimes.largest(), simTimes.avg(),
+      simTimes.high1pct(), simTimes.largest());
 
+  ImGui::SameLine();
   ImGui::PlotLines("", frameTimes.data().data(), frameTimes.data().size(), 0,
                    NULL, 0, frameTimes.largest(), ImVec2(300, 80));
+  ImGui::SameLine();
   ImGui::PlotLines("", gfxTimes.data().data(), gfxTimes.data().size(), 0, NULL,
                    0, gfxTimes.largest(), ImVec2(300, 80));
+  ImGui::SameLine();
   ImGui::PlotLines("", simTimes.data().data(), simTimes.data().size(), 0, NULL,
                    0, simTimes.largest(), ImVec2(300, 80));
 
