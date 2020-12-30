@@ -48,10 +48,9 @@ void main(void) {
         mix(texture(tex, nowTexCoord), texture(tex, nextTexCoord), blendFactor);
   } else {
     vec4 texColor =
-        mix(texture(tex, nowTexCoord), texture(tex, nextTexCoord), blendFactor);
+        mix(textureLod(tex, nowTexCoord, 1), texture(tex, nextTexCoord, 1), blendFactor);
 
-    outColor = vec4(texColor.r * playerColors[out_PlayerColor] +
-                        texColor.g * vec3(1.0, 1.0, 1.0),
-                    texColor.a);
+    outColor = vec4(playerColors[out_PlayerColor],
+                    smoothstep(0.0, 0.2, texColor.a)) ;
   }
 }

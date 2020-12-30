@@ -63,7 +63,7 @@ void UbootGlApp::loop() {
       if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
         auto newTorpedo = registry.create();
         registry.assign<CoTorpedo>(newTorpedo);
-        registry.assign<CoItem>(newTorpedo, glm::vec2{0.003, 0.0006}, item.pos,
+        registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, item.pos,
                                 item.rotation);
         registry.assign<CoKinematics>(
             newTorpedo, 0.15,
@@ -105,7 +105,7 @@ void UbootGlApp::loop() {
 
     for (int p = 0; p < playerCount; p++) {
       auto newPlayer = registry.create();
-      registry.assign<CoItem>(newPlayer, glm::vec2{0.008, 0.0024},
+      registry.assign<CoItem>(newPlayer, glm::vec2{0.009, 0.0022},
                               glm::vec2(0.2, 0.2), 0.0f);
       registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
       registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
@@ -405,19 +405,31 @@ void UbootGlApp::draw() {
         registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
         textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f,
         true);
-    DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
-        false);
 
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_agent"_hs>>(),
         textures[registry.type<entt::tag<"tex_agent"_hs>>()], PVM, 1.0f, false);
 
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
+        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
+        false, true);
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
+        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
+        false);
     DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
                             textures[registry.type<entt::tag<"tex_ship"_hs>>()],
-                            PVM, 1.0f);
+                            PVM, 1.0f, false, true);
 
+    DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
+                            textures[registry.type<entt::tag<"tex_ship"_hs>>()],
+                            PVM, 1.0f, false);
+
+    DrawFloatingItems::draw(
+        registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
+        textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
+        true, true);
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
         textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
@@ -444,13 +456,14 @@ void UbootGlApp::draw() {
 
   DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
                           textures[registry.type<entt::tag<"tex_ship"_hs>>()],
-                          PVM, 5.0f, false);
+                          PVM, 5.0f, false, true);
   DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_agent"_hs>>(),
                           textures[registry.type<entt::tag<"tex_agent"_hs>>()],
-                          PVM, 3.0f, false);
+                          PVM, 3.0f, false, true);
   DrawFloatingItems::draw(
       registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-      textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false);
+      textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false,
+      true);
 
   ImGui::SetNextWindowPos(ImVec2(200, 10));
   ImGui::SetNextWindowSize(ImVec2(300, 400));

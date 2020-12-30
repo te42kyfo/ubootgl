@@ -43,7 +43,7 @@ void init() {
 }
 
 void draw(entt::registry &registry, entt::component component, Texture texture,
-          glm::mat4 PVM, float magnification, bool blendSum) {
+          glm::mat4 PVM, float magnification, bool blendSum, bool highlight) {
 
   entt::component components[] = {component, registry.type<CoItem>()};
   auto spriteView = registry.runtime_view(begin(components), end(components));
@@ -56,8 +56,6 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
   vector<float> rot_buf;
   vector<int> player_buf;
 
-
-
   auto inversePVM = glm::inverse(PVM);
   auto screenP1 = inversePVM * glm::vec4(-1.0, -1.0, 0.0, 1.0);
   auto screenP2 = inversePVM * glm::vec4(1.0, 1.0, 0.0, 1.0);
@@ -68,6 +66,10 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
     if (item.pos.x > screenP1.x && item.pos.x < screenP2.x &&
         item.pos.y > screenP1.y && item.pos.y < screenP2.y) {
       pos_buf.push_back(item.pos);
+
+      if (highlight)
+        item.size += min(item.size[0], item.size[1]) * 0.3f;
+
       size_buf.push_back(item.size * magnification);
       rot_buf.push_back(item.rotation);
 
@@ -78,7 +80,7 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
 
       frame_buf.push_back(f);
       int p = -1;
-      if (registry.has<CoPlayerAligned>(entity)) {
+      if (registry.has<CoPlayerAligned>(entity) && highlight) {
         p = registry.get<CoPlayer>(registry.get<CoPlayerAligned>(entity).player)
                 .keySet;
       }
@@ -134,7 +136,11 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
   } else {
     GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   }
-  GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.2));
+  if (highlight) {
+    GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, 1.5));
+  } else {
+    GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.2));
+  }
 
   GL_CALL(glBindVertexArray(vao));
 
