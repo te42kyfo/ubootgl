@@ -1,8 +1,6 @@
 #pragma once
 #include "draw_2dbuf.hpp"
 #include "draw_floating_items.hpp"
-#include "draw_streamlines.hpp"
-#include "draw_tracers.hpp"
 #include "draw_tracers_cs.hpp"
 #include "entt/entity/helper.hpp"
 #include "entt/entity/registry.hpp"
@@ -27,7 +25,6 @@ public:
         rock_texture("resources/rock_texture2.png"), joyAxis(4),
         joyButtonPressed(4) {
     Draw2DBuf::init();
-    DrawStreamlines::init();
     DrawTracersCS::init();
     DrawFloatingItems::init();
     VelocityTextures::init(sim.width, sim.height);
