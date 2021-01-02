@@ -154,10 +154,9 @@ void updatePlayerTracers(entt::registry &registry) {
   //       });
 }
 
-void drawPlayerTracers(entt::registry &registry, glm::mat4 PVM,
-                       int renderWidth) {}
+void drawPlayerTracers(entt::registry &registry, glm::mat4 PVM) {}
 
-void draw(glm::mat4 PVM, int renderWidth) {
+void draw(glm::mat4 PVM) {
 
   GL_CALL(glBindVertexArray(vao));
 
