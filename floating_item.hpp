@@ -71,6 +71,8 @@ struct CoDecays {
 
 struct CoTarget {};
 
+struct CoHasTracer {};
+
 struct CoAnimated {
   float frame;
 };

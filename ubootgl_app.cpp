@@ -114,6 +114,7 @@ void UbootGlApp::loop() {
       registry.assign<CoTarget>(newPlayer);
       registry.assign<CoAnimated>(newPlayer, 0.0f);
       registry.assign<CoPlayerAligned>(newPlayer, newPlayer);
+      registry.assign<CoHasTracer>(newPlayer);
     }
   }
 
@@ -339,8 +340,10 @@ void UbootGlApp::draw() {
             (sim.pwidth / (sim.width)));
             }*/
 
+  DrawTracersCS::updatePlayerTracers(registry);
   VelocityTextures::updateFromStaggered(sim.vx_current.data(),
                                         sim.vy_current.data());
+
   DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
                                VelocityTextures::getFlagTex(), sim.ivx.width,
                                sim.ivy.height, gameTimeStep, sim.pwidth);
@@ -414,6 +417,7 @@ void UbootGlApp::draw() {
                          sim.width, sim.height, PVM, sim.pwidth);
 
     DrawTracersCS::draw(PVM, renderWidth);
+    DrawTracersCS::drawPlayerTracers(registry, PVM, renderWidth);
 
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_debris"_hs>>(),
@@ -444,10 +448,10 @@ void UbootGlApp::draw() {
                             textures[registry.type<entt::tag<"tex_ship"_hs>>()],
                             PVM, 1.0f, false);
 
-    DrawFloatingItems::draw(
+    /*DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
         textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
-        true, true);
+        true, true);*/
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
         textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
