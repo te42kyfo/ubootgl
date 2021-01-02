@@ -28,7 +28,6 @@ public:
         joyButtonPressed(4) {
     Draw2DBuf::init();
     DrawStreamlines::init();
-    DrawTracers::init();
     DrawTracersCS::init();
     DrawFloatingItems::init();
     VelocityTextures::init(sim.width, sim.height);
