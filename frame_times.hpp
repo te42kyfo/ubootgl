@@ -55,6 +55,5 @@ public:
   std::vector<float> &data() { return values; }
 
 private:
-  int pointer = 0;
   std::vector<float> values = std::vector<float>(300);
 };

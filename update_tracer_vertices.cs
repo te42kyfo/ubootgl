@@ -32,7 +32,7 @@ void main() {
     vec2 v1 = normalize(points[base + curr]- points[base + prev]);
     vec2 v2 =  normalize(points[base + next]- points[base + curr ]);
 
-    float width = 0.0002 + length(points[base + next] - points[base + curr]) * 0.1;
+    float width = 0.0006 + length(points[base + next] - points[base + curr]) * 0.4;
     
     
     vec2 dir;
@@ -41,8 +41,8 @@ void main() {
 
     // set the foremost front vertices perp to first line segment with half width
     perp = vec2(v2.y, -v2.x);
-    vertices[(base + next)*2 ] = points[base + next] + perp* width * 0.5;
-    vertices[(base + next)*2 + 1]  = points[base + next] - perp* width * 0.5;
+    vertices[(base + next)*2 ] = points[base + next];
+    vertices[(base + next)*2 + 1]  = points[base + next];
 
 
     // set vertices one behind to nicely connect first two line segments and full width

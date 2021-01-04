@@ -95,8 +95,8 @@ public:
       ssbo_indices, ssbo_end_pointers, ssbo_players;
 
   GLuint vao;
-  int npoints = 30;
-  int ntracers = 1000;
+  int npoints = 40;
+  int ntracers = 2000;
 };
 const int nPlayerPoints = 100;
 
@@ -188,9 +188,9 @@ void updatePlayerTracers(entt::registry &registry) {
             item.size[0] * vec2(cos(item.rotation), sin(item.rotation)) * 0.5f;
         tracer.age = 3.141;
         if (registry.has<CoPlayer>(ent))
-          tracer.width = 1.0;
+          tracer.width = 3.0;
         else
-          tracer.width = 0.2;
+          tracer.width = 0.8;
       });
 
   for (auto it = begin(playerPoints); it != end(playerPoints);) {

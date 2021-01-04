@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all clean cleanall
 
 CPP_FILES := $(wildcard *.cpp) $(wildcard external/imgui/*.cpp) $(wildcard external/*.cpp)
 HEADERS= $(shell find . -iname "*.hpp")
@@ -33,7 +33,11 @@ obj_directory:
 	mkdir -p obj/external
 	mkdir -p obj/external/imgui
 
+
 clean:
+	-rm obj/*.o $(BIN)$(NAME) obj/*.d
+
+cleanall:
 	-rm obj/*.o $(BIN)$(NAME) obj/*.d
 	-rm -r obj
 
