@@ -60,7 +60,8 @@ void UbootGlApp::loop() {
     }
     if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
         joyButtonPressed[player.keySet][5]) {
-      if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0) {
+      if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0 &&
+          player.state == PLAYER_STATE::ALIVE) {
         auto newTorpedo = registry.create();
         registry.assign<CoTorpedo>(newTorpedo);
         registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, item.pos,
