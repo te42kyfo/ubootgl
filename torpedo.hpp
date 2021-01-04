@@ -3,6 +3,7 @@
 
 void UbootGlApp::processTorpedos() {
 
+  float explosionDiam = 0.007;
   registry.view<CoTorpedo, CoItem, CoKinematics, CoPlayerAligned>().each(
       [&](auto entity, auto &torpedo, auto &item, auto &kin,
           auto &playerAligned) {
@@ -28,7 +29,12 @@ void UbootGlApp::processTorpedos() {
           float score = angle / distance / distance *
                         (target_item.size.x + target_item.size.y) * 20000.0f;
 
-          if (distance < (target_item.size.x + target_item.size.y) * 1.0f)
+          float explosionRadiusModifier =
+              registry.has<CoPlayer>(target) ? 0.5f : 1.5f;
+
+          if (distance <
+              (explosionDiam * 0.5 + (size(target).x + size(target).y) * 0.5) *
+                  explosionRadiusModifier)
             explodes = true;
 
           if (score > bestScore) {
@@ -57,7 +63,7 @@ void UbootGlApp::processTorpedos() {
           explodes = true;
 
         if (explodes) {
-          newExplosion(item.pos, 0.007, playerAligned.player);
+          newExplosion(item.pos, explosionDiam, playerAligned.player);
           registry.destroy(entity);
         }
       });

@@ -67,9 +67,13 @@ void UbootGlApp::processExplosions() {
          expIter != std::end(explosionView); expIter++) {
       auto expEnt = *expIter;
 
+      float explosionRadiusModifier =
+          registry.has<CoPlayer>(targetEnt) ? 0.5f : 1.5f;
+
       if (glm::length(pos(expEnt) - pos(targetEnt)) <
-          explosionDiam(expEnt) * 0.5 +
-              (size(targetEnt).x + size(targetEnt).y) * 0.5) {
+          (explosionDiam(expEnt) * 0.5 +
+           (size(targetEnt).x + size(targetEnt).y) * 0.5) *
+              explosionRadiusModifier) {
         if (registry.has<CoPlayerAligned>(targetEnt) &&
             registry.has<CoPlayerAligned>(expEnt) &&
             registry.get<CoPlayerAligned>(targetEnt).player ==
