@@ -13,7 +13,7 @@ using namespace std;
 using vec2 = glm::vec2;
 namespace DrawTracersCS {
 
-class Tracers {
+class GLTracers {
 public:
   void init(int _npoints, int _ntracers) {
 
@@ -26,6 +26,7 @@ public:
     glGenBuffers(1, &ssbo_end_pointers);
     glGenBuffers(1, &ssbo_ages);
     glGenBuffers(1, &ssbo_indices);
+    glGenBuffers(1, &ssbo_players);
 
     // initialize points SSBO
     vector<vec2> pointdata(ntracers * npoints, vec2(0, 0));
@@ -48,6 +49,11 @@ public:
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_end_pointers);
     glBufferData(GL_SHADER_STORAGE_BUFFER, pointers.size() * sizeof(int),
                  pointers.data(), GL_STATIC_DRAW);
+
+    vector<int> players(ntracers, -1);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_players);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, players.size() * sizeof(int),
+                 players.data(), GL_STATIC_DRAW);
 
     // allocate age SSBO with random values
     vector<float> ages(ntracers, 0.0);
@@ -86,16 +92,29 @@ public:
   }
 
   GLuint ssbo_points, ssbo_vertices, ssbo_start_pointers, ssbo_ages,
-      ssbo_indices, ssbo_end_pointers;
+      ssbo_indices, ssbo_end_pointers, ssbo_players;
 
   GLuint vao;
   int npoints = 30;
   int ntracers = 1000;
 };
+const int nPlayerPoints = 100;
+
+struct Tracer {
+  Tracer() : points(nPlayerPoints), end_pointer(0), start_pointer(0) {}
+  std::vector<vec2> points;
+  int end_pointer;
+  int start_pointer;
+  float age = 3.141;
+  float width = 1.0f;
+  int player = -1;
+};
+
+std::map<entt ::entity, Tracer> playerPoints;
 
 Shader advect_points_cs, update_vertices_cs, draw_tracers_sh;
 
-Tracers fluid_tracers, player_tracers;
+GLTracers fluid_tracers, player_tracers;
 
 void init() {
 
@@ -105,7 +124,7 @@ void init() {
       loadShader("./tracercs.vert", "./color.frag", {{0, "in_Position"}}));
 
   fluid_tracers.init(30, 1000);
-  player_tracers.init(100, 100);
+  player_tracers.init(nPlayerPoints, 100);
 };
 
 void updateTracers(GLuint tex_vxy, GLuint flag_tex, int nx, int ny, float dt,
@@ -142,34 +161,133 @@ void updateTracers(GLuint tex_vxy, GLuint flag_tex, int nx, int ny, float dt,
       glUniform1i(update_vertices_cs.uloc("npoints"), fluid_tracers.npoints));
   GL_CALL(
       glUniform1i(update_vertices_cs.uloc("ntracers"), fluid_tracers.ntracers));
-  GL_CALL(glUniform1f(update_vertices_cs.uloc("dt"), dt));
   GL_CALL(
       glUniform2f(update_vertices_cs.uloc("pdim"), pwidth, pwidth * ny / nx));
 
   GL_CALL(glDispatchCompute((fluid_tracers.ntracers - 1) / 256 + 1, 1, 1));
 };
 
-void updatePlayerTracers(entt::registry &registry) {
+void updatePlayerTracers(entt::registry &registry, float pwidth, int nx,
+                         int ny) {
 
-  //   registry.view<CoHasTracer, CoItem, CoPlayerAligned>().less(
-  //       [&](auto &tracer, auto &item, auto &player) {
-  //         rotate(begin(tracer.points), end(tracer.points),
-  //                end(tracer.points) - 1);
-  //         tracer.points[0] = item.pos;
+  // update new item positions into tracer point arrays
+  registry.view<CoItem, CoPlayerAligned, CoHasTracer>().each(
+      [&](auto ent, auto &item, auto &player, auto tag_ent) {
+        if (playerPoints.count(ent) == 0) {
+          playerPoints[ent] = Tracer();
+          playerPoints[ent].points[0] = item.pos;
+          playerPoints[ent].player =
+              registry.get<CoPlayer>(player.player).keySet;
+        }
+        Tracer &tracer = playerPoints[ent];
+        tracer.end_pointer = (tracer.end_pointer + 1) % nPlayerPoints;
+        if (tracer.start_pointer == tracer.end_pointer)
+          tracer.start_pointer = (tracer.start_pointer + 1) % nPlayerPoints;
 
-  //         rotate(begin(tracer.vertices), end(tracer.vertices),
-  //                end(tracer.vertices) - 2);
-  //         vec2 v1 = tracer.points[1] - tracer.points[0];
-  //         vec2 perp = vec2(v1.y, -v1.x);
+        tracer.points[tracer.end_pointer] =
+            item.pos -
+            item.size[0] * vec2(cos(item.rotation), sin(item.rotation)) * 0.5f;
+        tracer.age = 3.141;
+        if (registry.has<CoPlayer>(ent))
+          tracer.width = 1.0;
+        else
+          tracer.width = 0.2;
+      });
 
-  //         tracer.vertices[0] = item.pos - perp * 2.1f;
-  //         tracer.vertices[1] = item.pos + perp * 2.1f;
-  //       });
+  for (auto it = begin(playerPoints); it != end(playerPoints);) {
+    it->second.age -= 0.02;
+    if (it->second.age < 0.0) {
+      it = playerPoints.erase(it);
+    } else {
+      it++;
+    }
+  }
+
+  // build buffers for GPU upload
+  std::vector<vec2> points_buf;
+  std::vector<int> start_pointers_buf;
+  std::vector<int> end_pointers_buf;
+  std::vector<float> ages_buf;
+  std::vector<vec2> vertices_buf;
+  std::vector<int> players_buf;
+  for (auto tracer : playerPoints) {
+    int start_pointer = tracer.second.start_pointer;
+    int end_pointer = tracer.second.end_pointer;
+    int npoints = player_tracers.npoints;
+    std::vector<vec2> this_vertices(npoints * 2, vec2(0, 0));
+    for (auto point : tracer.second.points) {
+      points_buf.push_back(point);
+    }
+
+    int tracer_length = (end_pointer - start_pointer + npoints) % npoints;
+    int base = points_buf.size() - npoints;
+    if (tracer_length > 0) {
+      vec2 perp = normalize(points_buf[base + start_pointer] -
+                            points_buf[base + (start_pointer + 1) % npoints]);
+      this_vertices[start_pointer * 2 + 0] = points_buf[base + start_pointer];
+      this_vertices[start_pointer * 2 + 1] = points_buf[base + start_pointer];
+
+      for (int i = 1; i < tracer_length; i++) {
+        int curr = (start_pointer + i) % npoints;
+        int next = (curr + 1) % npoints;
+        int prev = (curr - 1 + npoints) % npoints;
+
+        vec2 v1 = points_buf[base + curr] - points_buf[base + prev];
+        vec2 v2 = points_buf[base + next] - points_buf[base + curr];
+
+        float width =
+            tracer.second.width * (0.00001f + (length(v1) + length(v2)) * 0.4f);
+        if (width > 0.1)
+          width = 0.0;
+        perp = normalize(vec2(v1.y, -v1.x) + vec2(v2.y, -v2.x) * 0.5f);
+
+        this_vertices[curr * 2 + 0] = points_buf[base + curr] + perp * width;
+        this_vertices[curr * 2 + 1] = points_buf[base + curr] - perp * width;
+      }
+      perp =
+          normalize(points_buf[base + end_pointer] -
+                    points_buf[base + (end_pointer + npoints - 1) % npoints]);
+      this_vertices[end_pointer * 2 + 0] = points_buf[base + end_pointer];
+      this_vertices[end_pointer * 2 + 1] = points_buf[base + end_pointer];
+    }
+    vertices_buf.insert(end(vertices_buf), begin(this_vertices),
+                        end(this_vertices));
+
+    start_pointers_buf.push_back(tracer.second.start_pointer);
+    end_pointers_buf.push_back(tracer.second.end_pointer);
+    ages_buf.push_back(tracer.second.age);
+    players_buf.push_back(tracer.second.player);
+  }
+
+  player_tracers.ntracers = start_pointers_buf.size();
+
+  // upload buffers
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_points);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, points_buf.size() * sizeof(vec2),
+               points_buf.data(), GL_STATIC_DRAW);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_start_pointers);
+  glBufferData(GL_SHADER_STORAGE_BUFFER,
+               start_pointers_buf.size() * sizeof(vec2),
+               start_pointers_buf.data(), GL_STATIC_DRAW);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_end_pointers);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, end_pointers_buf.size() * sizeof(vec2),
+               end_pointers_buf.data(), GL_STATIC_DRAW);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_ages);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, ages_buf.size() * sizeof(vec2),
+               ages_buf.data(), GL_STATIC_DRAW);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_players);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, players_buf.size() * sizeof(int),
+               players_buf.data(), GL_STATIC_DRAW);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_vertices);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, vertices_buf.size() * sizeof(vec2),
+               vertices_buf.data(), GL_STATIC_DRAW);
 }
 
-void drawPlayerTracers(entt::registry &registry, glm::mat4 PVM) {}
-
-void draw(Tracers &tracers, glm::mat4 PVM) {
+void draw(GLTracers &tracers, glm::mat4 PVM) {
   GL_CALL(glBindVertexArray(tracers.vao));
 
   GL_CALL(glUseProgram(draw_tracers_sh.id));
@@ -182,6 +300,7 @@ void draw(Tracers &tracers, glm::mat4 PVM) {
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, tracers.ssbo_end_pointers));
   GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, tracers.ssbo_ages));
   GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, tracers.ssbo_vertices));
+  GL_CALL(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, tracers.ssbo_players));
   GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tracers.ssbo_indices));
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -192,6 +311,9 @@ void draw(Tracers &tracers, glm::mat4 PVM) {
   GL_CALL(glDisableVertexAttribArray(0));
 };
 
+void drawPlayerTracers(entt::registry &registry, glm::mat4 PVM) {
+  draw(player_tracers, PVM);
+}
 void draw(glm::mat4 PVM) { draw(fluid_tracers, PVM); }
 
 } // namespace DrawTracersCS

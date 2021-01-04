@@ -10,6 +10,7 @@ layout( std430, binding=0 )  buffer SP {uint  start_pointers[];};
 layout( std430, binding=1 )  buffer EP {uint  end_pointers[];};
 layout( std430, binding=2 )  buffer AA {float  ages[];};
 layout( std430, binding=3 )  buffer V {vec2  vertices[];};
+layout( std430, binding=4 )  buffer C {int  colors[];};
 
 vec3 playerColors[5] =
     vec3[](vec3(1.8, 0.0, -10.0), vec3(0.0, 1.0, -10.0), vec3(1.0, 1.0, -10.0),
@@ -37,12 +38,16 @@ void main(void) {
         alpha = npoints / (pointID*2.0) - npoints / (npoints*2.0 - 2.0 );
 
   alpha *= 0.1;
-  
-  v_color = vec4(1.0, 1.0, 1.0, alpha * 0.5 * (1.0 - cos(ages[tracerID]) ));
 
+  if(colors[tracerID] >= 0)
+      v_color = vec4(playerColors[colors[tracerID]], alpha * 0.5 * (1.0 - cos(ages[tracerID]) ));
+  else  
+      v_color = vec4(1.0, 1.0, 1.0, alpha * 0.5 * (1.0 - cos(ages[tracerID]) ));
+  
   vec2 in_Position = vertices[tracerID * npoints * 2 + vertexID];
   
   v_side = gl_VertexID % 2;
+  if (pointID < 1) v_side = 0.5;
   FragCoord = in_Position.xy;
   gl_Position = TM * vec4(in_Position, 0, 1.0);
 }

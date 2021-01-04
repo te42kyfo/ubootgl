@@ -73,6 +73,8 @@ void UbootGlApp::loop() {
         registry.assign<CoDeletedOoB>(newTorpedo);
         registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
         registry.assign<CoTarget>(newTorpedo);
+        registry.assign<CoHasTracer>(newTorpedo);
+
         torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
         torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
         torpedosFired(pEnt)++;
@@ -201,6 +203,11 @@ void UbootGlApp::loop() {
   double thisFrameTime = dtime();
   smoothedFrameRate =
       0.95 * smoothedFrameRate + 0.05 / (thisFrameTime - lastFrameTime);
+
+  static int frame = 0;
+  frame++;
+  // if (frame % 1000 == 0)
+  //  shiftMap();
 
   lastFrameTime = thisFrameTime;
 }
@@ -340,7 +347,8 @@ void UbootGlApp::draw() {
             (sim.pwidth / (sim.width)));
             }*/
 
-  DrawTracersCS::updatePlayerTracers(registry);
+  DrawTracersCS::updatePlayerTracers(registry, sim.pwidth, sim.ivx.width,
+                                     sim.ivy.height);
   VelocityTextures::updateFromStaggered(sim.vx_current.data(),
                                         sim.vy_current.data());
 

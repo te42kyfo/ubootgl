@@ -3,7 +3,6 @@
 
 uniform int npoints;
 uniform int ntracers;
-uniform float dt;
 uniform vec2 pdim;
 
 layout( std430, binding=0 )  buffer P {vec2  points[];};

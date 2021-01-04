@@ -6,7 +6,7 @@ namespace DrawTracersCS {
 void init();
 // void playerTracersAdd(int pid, glm::vec2 pos);
 
-void updatePlayerTracers(entt::registry &registry);
+void updatePlayerTracers(entt::registry &registry, float pdim, int nx, int ny);
 void drawPlayerTracers(entt::registry &registry, glm::mat4 PVM);
 
 void updateTracers(GLuint vel_tex, GLuint flag_tex, int nx, int ny, float dt,
