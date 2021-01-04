@@ -67,8 +67,8 @@ void UbootGlApp::loop() {
         registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, item.pos,
                                 item.rotation);
         registry.assign<CoKinematics>(
-            newTorpedo, 0.15,
-            kin.vel + glm::vec2{cos(item.rotation), sin(item.rotation)} * 0.8f,
+            newTorpedo, 0.8,
+            kin.vel + glm::vec2{cos(item.rotation), sin(item.rotation)} * 1.0f,
             kin.angVel);
         registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
         registry.assign<CoDeletedOoB>(newTorpedo);

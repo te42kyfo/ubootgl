@@ -46,10 +46,10 @@ void UbootGlApp::processTorpedos() {
           kin.angVel = glm::sign(bestAngle) * 7.0;
           if (bestTarget != entt::null)
             kin.force =
-                glm::vec2(cos(item.rotation), sin(item.rotation)) * 6.0f;
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 7.0f;
           else
             kin.force =
-                glm::vec2(cos(item.rotation), sin(item.rotation)) * 1.0f;
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
         } else {
           explodes = true;
         }
