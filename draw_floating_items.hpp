@@ -1,6 +1,6 @@
 #pragma once
+#include "components.hpp"
 #include "entt/entity/registry.hpp"
-#include "floating_item.hpp"
 #include <glm/glm.hpp>
 #include <vector>
 

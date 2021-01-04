@@ -1,5 +1,30 @@
-#include "floating_item.hpp"
+#include "components.hpp"
+#include "ubootgl_app.hpp"
 #include <glm/gtx/vector_angle.hpp>
+
+void UbootGlApp::launchTorpedo(entt::entity pEnt) {
+
+  auto playerItem = registry.get<CoItem>(pEnt);
+  auto playerKin = registry.get<CoKinematics>(pEnt);
+  auto newTorpedo = registry.create();
+  registry.assign<CoTorpedo>(newTorpedo);
+  registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, playerItem.pos,
+                          playerItem.rotation);
+  registry.assign<CoKinematics>(
+      newTorpedo, 0.8,
+      playerKin.vel +
+          glm::vec2{cos(playerItem.rotation), sin(playerItem.rotation)} * 1.0f,
+      playerKin.angVel);
+  registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
+  registry.assign<CoDeletedOoB>(newTorpedo);
+  registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
+  registry.assign<CoTarget>(newTorpedo);
+  registry.assign<CoHasTracer>(newTorpedo);
+
+  torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
+  torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
+  torpedosFired(pEnt)++;
+}
 
 void UbootGlApp::processTorpedos() {
 

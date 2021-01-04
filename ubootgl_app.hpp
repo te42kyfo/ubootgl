@@ -1,10 +1,10 @@
 #pragma once
+#include "components.hpp"
 #include "draw_2dbuf.hpp"
 #include "draw_floating_items.hpp"
 #include "draw_tracers_cs.hpp"
 #include "entt/entity/helper.hpp"
 #include "entt/entity/registry.hpp"
-#include "floating_item.hpp"
 #include "frame_times.hpp"
 #include "imgui/imgui.h"
 #include "sdl_gl.hpp"
@@ -84,6 +84,7 @@ public:
                     int fragmentLevel = 0);
   void newExplosion(float explosionDiam, entt::entity player);
   void processExplosions();
+  void launchTorpedo(entt::entity player);
 
   void shiftMap();
 

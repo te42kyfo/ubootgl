@@ -1,6 +1,6 @@
 #include "draw_tracers_cs.hpp"
 #include "GL/glew.h"
-#include "floating_item.hpp"
+#include "components.hpp"
 #include "gl_error.hpp"
 #include "load_shader.hpp"
 #include <glm/glm.hpp>
@@ -167,12 +167,11 @@ void updateTracers(GLuint tex_vxy, GLuint flag_tex, int nx, int ny, float dt,
   GL_CALL(glDispatchCompute((fluid_tracers.ntracers - 1) / 256 + 1, 1, 1));
 };
 
-void updatePlayerTracers(entt::registry &registry, float pwidth, int nx,
-                         int ny) {
+void updatePlayerTracers(entt::registry &registry) {
 
   // update new item positions into tracer point arrays
-  registry.view<CoItem, CoPlayerAligned, CoHasTracer>().each(
-      [&](auto ent, auto &item, auto &player, auto tag_ent) {
+  registry.view<CoItem, CoPlayerAligned, CoHasTracer>().less(
+      [&](auto ent, auto &item, auto &player) {
         if (playerPoints.count(ent) == 0) {
           playerPoints[ent] = Tracer();
           playerPoints[ent].points[0] = item.pos;
@@ -311,9 +310,7 @@ void draw(GLTracers &tracers, glm::mat4 PVM) {
   GL_CALL(glDisableVertexAttribArray(0));
 };
 
-void drawPlayerTracers(entt::registry &registry, glm::mat4 PVM) {
-  draw(player_tracers, PVM);
-}
+void drawPlayerTracers(glm::mat4 PVM) { draw(player_tracers, PVM); }
 void draw(glm::mat4 PVM) { draw(fluid_tracers, PVM); }
 
 } // namespace DrawTracersCS

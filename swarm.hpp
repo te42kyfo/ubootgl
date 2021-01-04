@@ -1,6 +1,6 @@
 #pragma once
+#include "components.hpp"
 #include "db2dgrid.hpp"
-#include "floating_item.hpp"
 #include "entt/entity/registry.hpp"
 #include <functional>
 #include <iomanip>
@@ -123,7 +123,5 @@ template <int neuronCount, int inputCount> class NeuronLayer {
   std::vector<Matrix2D<float, 7, 1>> lastOutputs;
 };
 
-
-void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* vx, float* vy, int vwidth,
-                    float h);
-
+void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
+                    float *vx, float *vy, int vwidth, float h);

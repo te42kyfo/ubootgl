@@ -4,7 +4,6 @@
 
 #include "explosion.hpp"
 #include "gl_error.hpp"
-#include "torpedo.hpp"
 #include "velocity_textures.hpp"
 #include <GL/glew.h>
 
@@ -24,10 +23,8 @@ void UbootGlApp::loop() {
 
   double gameLogicT1 = dtime();
 
-  registry.view<CoPlayer, CoItem, CoKinematics>().each([&](const auto pEnt,
-                                                           const auto player,
-                                                           const auto item,
-                                                           const auto kin) {
+  registry.view<CoPlayer, CoItem>().each([&](const auto pEnt, const auto player,
+                                             const auto item) {
     float joyAngle = fmod(
         atan2(-joyAxis[player.keySet][1], joyAxis[player.keySet][0]) + 2 * M_PI,
         2 * M_PI);
@@ -62,23 +59,7 @@ void UbootGlApp::loop() {
         joyButtonPressed[player.keySet][5]) {
       if (player.torpedoCooldown < 0.0001 && player.torpedosLoaded > 1.0 &&
           player.state == PLAYER_STATE::ALIVE) {
-        auto newTorpedo = registry.create();
-        registry.assign<CoTorpedo>(newTorpedo);
-        registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, item.pos,
-                                item.rotation);
-        registry.assign<CoKinematics>(
-            newTorpedo, 0.8,
-            kin.vel + glm::vec2{cos(item.rotation), sin(item.rotation)} * 1.0f,
-            kin.angVel);
-        registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
-        registry.assign<CoDeletedOoB>(newTorpedo);
-        registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
-        registry.assign<CoTarget>(newTorpedo);
-        registry.assign<CoHasTracer>(newTorpedo);
-
-        torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
-        torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
-        torpedosFired(pEnt)++;
+        launchTorpedo(pEnt);
       }
     }
     torpedoCooldown(pEnt) = max(0.0f, torpedoCooldown(pEnt) - gameTimeStep);
@@ -339,17 +320,8 @@ void UbootGlApp::draw() {
 
   double graphicsT1 = dtime();
 
-  /*  for (int pid = 0; pid < players.size(); pid++) {
-    DrawTracers::playerTracersAdd(
-        pid,
-        ((playerShips[pid].pos - glm::vec2{cos(playerShips[pid].rotation),
-                                           sin(playerShips[pid].rotation)} *
-                                     playerShips[pid].size.x * 0.2f)) /
-            (sim.pwidth / (sim.width)));
-            }*/
+  DrawTracersCS::updatePlayerTracers(registry);
 
-  DrawTracersCS::updatePlayerTracers(registry, sim.pwidth, sim.ivx.width,
-                                     sim.ivy.height);
   VelocityTextures::updateFromStaggered(sim.vx_current.data(),
                                         sim.vy_current.data());
 
@@ -426,7 +398,7 @@ void UbootGlApp::draw() {
                          sim.width, sim.height, PVM, sim.pwidth);
 
     DrawTracersCS::draw(PVM);
-    DrawTracersCS::drawPlayerTracers(registry, PVM);
+    DrawTracersCS::drawPlayerTracers(PVM);
 
     DrawFloatingItems::draw(
         registry, registry.type<entt::tag<"tex_debris"_hs>>(),
