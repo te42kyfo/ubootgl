@@ -1,4 +1,5 @@
 #include "simulation.hpp"
+#include "interpolators.hpp"
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
@@ -6,11 +7,10 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
+#include <immintrin.h>
 #include <iomanip>
 #include <iostream>
 #include <vector>
-
-#include <immintrin.h>
 
 using glm::vec2;
 
@@ -254,17 +254,6 @@ float Simulation::getDT() {
   return rDT;
 }
 
-// coordinates are in staggered grid space
-template <typename T> float inline bilinearGrid(vec2 c, T &v) {
-
-  glm::ivec2 ic = c;
-  vec2 st = fract(c);
-
-  return glm::mix(glm::mix(v(ic.x, ic.y), v(ic.x + 1, ic.y), st.x),
-                  glm::mix(v(ic.x, ic.y + 1), v(ic.x + 1, ic.y + 1), st.x),
-                  st.y);
-}
-
 // input in standard grid space
 vec2 inline Simulation::bilinearVel(vec2 c) {
   return vec2(bilinearSample(vx, c - vec2(0.5f, 0.0f)),
@@ -398,35 +387,6 @@ void Simulation::step(float timestep) {
   interpolateFields();
 }
 
-glm::vec2 Simulation::psampleFlagNormal(glm::vec2 pc) {
-  float p01 = psampleFlagLinear(glm::vec2(pc.x - h, pc.y + h));
-  float p11 = psampleFlagLinear(glm::vec2(pc.x + h, pc.y + h));
-  float p00 = psampleFlagLinear(glm::vec2(pc.x - h, pc.y - h));
-  float p10 = psampleFlagLinear(glm::vec2(pc.x + h, pc.y - h));
-
-  return glm::vec2(p11 + p10 - p01 - p00, p01 + p11 - p00 - p10);
-}
-
-float Simulation::psampleFlagLinear(glm::vec2 pc) {
-
-  glm::vec2 c = pc / (pwidth / (flag.width)) - 0.5f;
-  glm::ivec2 ic = c;
-  ic = glm::max({0, 0}, glm::min({flag.width - 1, flag.height - 1}, ic));
-  glm::vec2 st = fract(c);
-
-  float p01 = flag(ic + glm::ivec2{0, 1});
-  float p11 = flag(ic + glm::ivec2{1, 1});
-  float p00 = flag(ic + glm::ivec2{0, 0});
-  float p10 = flag(ic + glm::ivec2{1, 0});
-
-  return glm::mix(glm::mix(p00, p10, st.x), glm::mix(p01, p11, st.x), st.y);
-}
-
-float Simulation::psampleFlagNearest(glm::vec2 pc) {
-  glm::vec2 gridPos = pc / (pwidth / (flag.width));
-  return flag(gridPos);
-}
-
 void Simulation::applyAccumulatedVelocity() {
   std::scoped_lock lock(accum_mutex);
 #pragma omp parallel
@@ -447,6 +407,35 @@ void Simulation::applyAccumulatedVelocity() {
       }
     }
   }
+}
+
+float Simulation::psampleFlagLinear(glm::vec2 pc) {
+
+  glm::vec2 c = pc / (pwidth / (flag.width)) - 0.5f;
+  glm::ivec2 ic = c;
+  ic = glm::max({0, 0}, glm::min({flag.width - 1, flag.height - 1}, ic));
+  glm::vec2 st = fract(c);
+
+  float p01 = flag(ic + glm::ivec2{0, 1});
+  float p11 = flag(ic + glm::ivec2{1, 1});
+  float p00 = flag(ic + glm::ivec2{0, 0});
+  float p10 = flag(ic + glm::ivec2{1, 0});
+
+  return glm::mix(glm::mix(p00, p10, st.x), glm::mix(p01, p11, st.x), st.y);
+}
+
+glm::vec2 Simulation::psampleFlagNormal(glm::vec2 pc) {
+  float p01 = psampleFlagLinear(glm::vec2(pc.x - h, pc.y + h));
+  float p11 = psampleFlagLinear(glm::vec2(pc.x + h, pc.y + h));
+  float p00 = psampleFlagLinear(glm::vec2(pc.x - h, pc.y - h));
+  float p10 = psampleFlagLinear(glm::vec2(pc.x + h, pc.y - h));
+
+  return glm::vec2(p11 + p10 - p01 - p00, p01 + p11 - p00 - p10);
+}
+
+float Simulation::psampleFlagNearest(glm::vec2 pc) {
+  glm::vec2 gridPos = pc / (pwidth / (flag.width));
+  return flag(gridPos);
 }
 
 void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
@@ -529,52 +518,25 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
       kin.angVel += subDT * angForce / angMass;
 
+      // Compute forces on fluid
       gridPos = item.pos / (pwidth / (flag.width));
-      if (gridPos.x > 0 && gridPos.x < width - 1 && gridPos.y > 0 &&
-          gridPos.y < height - 1 && flag(gridPos) > 0.0f) {
-        float area = item.size.x * item.size.y / (h * h);
-        auto deltaVel =
-            bilinearVel(item.pos / h) +
-            vec2(bilinearGrid(item.pos / h - vec2(0.5f, 0.0f), vx_accum),
-                 bilinearGrid(item.pos / h - vec2(0.0f, 0.5f), vy_accum)) -
-            kin.vel;
+      if (gridPos.x < 1 || gridPos.x > flag.width - 1 || gridPos.y < 2 ||
+          gridPos.y > flag.height - 2)
+        continue;
+      float area = item.size.x * item.size.y / (h * h);
+      auto deltaVel =
+          bilinearVel(item.pos / h) +
+          vec2(bilinearSample(vx_accum, item.pos / h - vec2(0.5f, 0.0f)),
+               bilinearSample(vy_accum, item.pos / h - vec2(0.0f, 0.5f))) -
+          kin.vel;
 
-        auto deltaVec = deltaVel * area * subDT * 20.0f;
+      auto deltaVec = deltaVel * area * subDT * 20.0f;
 
-        glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
-        glm::ivec2 ic = cx;
-        vec2 st = fract(cx);
-        vx_accum(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.x *
-                                           flag(ic + glm::ivec2{1, 1}) *
-                                           flag(ic + glm::ivec2{2, 1});
-        vx_accum(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.x *
-                                           flag(ic + glm::ivec2{0, 1}) *
-                                           flag(ic + glm::ivec2{1, 1});
-        vx_accum(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.x *
-                                           flag(ic + glm::ivec2{1, 0}) *
-                                           flag(ic + glm::ivec2{2, 0});
-        vx_accum(ic + glm::ivec2{0, 0}) -=
-            (1.0f - st.x) * (1.0f - st.y) * deltaVec.x *
-            flag(ic + glm::ivec2{0, 0}) * flag(ic + glm::ivec2{1, 0});
-        assert(!std::isnan(vx_accum(ic)));
+      glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
+      bilinearScatter(vx_accum, cx, -deltaVec.x);
 
-        glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
-        ic = cy;
-        st = fract(cy);
-        vy_accum(ic + glm::ivec2{1, 1}) -= st.x * st.y * deltaVec.y *
-                                           flag(ic + glm::ivec2{1, 1}) *
-                                           flag(ic + glm::ivec2{1, 2});
-        vy_accum(ic + glm::ivec2{0, 1}) -= (1.0f - st.x) * st.y * deltaVec.y *
-                                           flag(ic + glm::ivec2{0, 1}) *
-                                           flag(ic + glm::ivec2{0, 2});
-        vy_accum(ic + glm::ivec2{1, 0}) -= st.x * (1.0f - st.y) * deltaVec.y *
-                                           flag(ic + glm::ivec2{1, 0}) *
-                                           flag(ic + glm::ivec2{1, 1});
-        vy_accum(ic + glm::ivec2{0, 0}) -=
-            (1.0f - st.x) * (1.0f - st.y) * deltaVec.y *
-            flag(ic + glm::ivec2{0, 1}) * flag(ic + glm::ivec2{0, 2});
-        assert(!std::isnan(vy_accum(ic)));
-      }
+      glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
+      bilinearScatter(vy_accum, cy, -deltaVec.y);
     }
 
     kin.angForce = 0;
