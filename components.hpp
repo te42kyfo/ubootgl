@@ -53,7 +53,7 @@ struct CoPlayer {
   CoPlayer(int keySet) : keySet(keySet){};
   float torpedoCooldown = 0.0;
   float torpedosLoaded = 10.0;
-  float timer = 0.5f;
+  float timer = 0.1f;
   PLAYER_STATE state = PLAYER_STATE::ALIVE_PROTECTED;
   int deaths = 0;
   int kills = 0;
