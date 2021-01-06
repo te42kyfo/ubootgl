@@ -10,7 +10,6 @@
 using namespace std;
 
 void UbootGlApp::loop() {
-
   gameTimeStep = 0.1f / max(5.0, smoothedFrameRate);
 
   double updateTime = dtime();
@@ -170,8 +169,7 @@ void UbootGlApp::loop() {
       registry.destroy(entity);
   });
 
-  classicSwarmAI(registry, sim.flag, sim.getVX(), sim.getVY(), sim.vx.width,
-                 sim.h);
+  classicSwarmAI(registry, sim.flag, sim.ivx, sim.ivy, sim.h);
 
   double gameLogicT2 = dtime();
 

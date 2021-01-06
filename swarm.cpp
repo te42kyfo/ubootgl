@@ -1,5 +1,5 @@
 #include "swarm.hpp"
-
+#include "interpolators.hpp"
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/vec2.hpp>
@@ -7,8 +7,8 @@
 
 using namespace std;
 
-void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* vx, float* vy, int vwidth,
-                    float h) {
+void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
+                    const Single2DGrid &vx, const Single2DGrid &vy, float h) {
 
   auto agentView = registry.view<CoAgent, CoItem, CoKinematics>();
   agentView.less([&](auto &item1, auto &kin1) {
@@ -31,9 +31,11 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* v
       }
       if (d < 0.000001f)
         continue;
-      if (d < (item1.size.x + item1.size.y)*1.0f) {
-          rejectionDirection += (item1.pos + kin1.vel * 0.1f - item2.pos - kin2.vel * 0.1f) / (d + item1.size.x);
-          }
+      if (d < (item1.size.x + item1.size.y) * 1.0f) {
+        rejectionDirection +=
+            (item1.pos + kin1.vel * 0.1f - item2.pos - kin2.vel * 0.1f) /
+            (d + item1.size.x);
+      }
     }
 
     glm::vec2 wallAvoidance = {0.0f, 0.0f};
@@ -44,21 +46,20 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* v
     lookAheadPos = glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos));
 
     if (flag(lookAheadPos / h + 0.5f) < 1.0f) {
-      wallAvoidance =
-          glm::vec2(cos(item1.rotation - 0.5*3.1), sin(item1.rotation - 0.5*3.1));
+      wallAvoidance = glm::vec2(cos(item1.rotation - 0.5 * 3.1),
+                                sin(item1.rotation - 0.5 * 3.1));
     }
     glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.1f;
     lookAheadPos2 =
         glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos2));
 
     if (flag(lookAheadPos2 / h + 0.5f) < 1.0f) {
-        wallAvoidance += glm::vec2(kin1.vel.y, -kin1.vel.x);
+      wallAvoidance += glm::vec2(kin1.vel.y, -kin1.vel.x);
     }
 
-
-    auto vgridPos = glm::ivec2 ((item1.pos / h * 2.0f) + 0.5f);
-    auto flowDir = -glm::normalize(glm::vec2(vx[vgridPos.y * vwidth + vgridPos.x],
-                                         vy[vgridPos.y * vwidth + vgridPos.x]));
+    auto vgridPos = glm::ivec2((item1.pos / h * 2.0f) + 0.5f);
+    auto flowDir = -glm::normalize(
+        glm::vec2(bilinearSample(vx, vgridPos), bilinearSample(vy, vgridPos)));
 
     /*    auto targetDir = normalize(
         glm::vec2(-0.001, 0) + wallAvoidance * 400.0f +
@@ -68,28 +69,27 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* v
         5.0f * commonDirection / (float)swarmCount);
     */
 
-    auto targetDir = flowDir * 0.1f + wallAvoidance * 400.0f +
-        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) * 20.0f +
+    auto targetDir =
+        flowDir * 0.1f + wallAvoidance * 400.0f +
+        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) *
+            20.0f +
         100.0f * rejectionDirection +
         5.0f * commonDirection / (float)swarmCount;
 
-
-
-
     float directedAngle = 0.0f;
     if (glm::length(targetDir) > 0.0f) {
-        auto heading = glm::vec2{cos(item1.rotation), sin(item1.rotation)};
-        directedAngle = glm::orientedAngle(normalize(targetDir), heading);
+      auto heading = glm::vec2{cos(item1.rotation), sin(item1.rotation)};
+      directedAngle = glm::orientedAngle(normalize(targetDir), heading);
     }
 
-    if( directedAngle < 0)
-        kin1.angVel = min( max( kin1.angVel + 60.0, -120.0), 120.0);
-    else if( directedAngle > 0)
-        kin1.angVel = min( max( kin1.angVel - 60.0, -120.0), 120.0);
+    if (directedAngle < 0)
+      kin1.angVel = min(max(kin1.angVel + 60.0, -120.0), 120.0);
+    else if (directedAngle > 0)
+      kin1.angVel = min(max(kin1.angVel - 60.0, -120.0), 120.0);
     else
-        kin1.angVel = min( max( kin1.angVel - 4.0, -120.0), 120.0);
-    
-    kin1.angVel*=0.6;
+      kin1.angVel = min(max(kin1.angVel - 4.0, -120.0), 120.0);
+
+    kin1.angVel *= 0.6;
 
     /*    if (directedAngle < 0)
         item1.rotation -= max(directedAngle, -0.2f);
@@ -97,7 +97,8 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag, float* v
         item1.rotation -= min(directedAngle, +0.2f);
     */
 
-    kin1.force = 2.0f * glm::vec2(cos(item1.rotation), sin(item1.rotation));// *
+    kin1.force =
+        2.0f * glm::vec2(cos(item1.rotation), sin(item1.rotation)); // *
     //                 (dot(targetDir, heading) + 0.5f) / 1.5f;
     assert(!std::isnan(kin1.force.x));
     assert(!std::isnan(kin1.force.y));
