@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <map>
 #include <string>
+
 enum class CONTROLS {
   THRUST_FORWARD,
   THRUST_BACKWARD,

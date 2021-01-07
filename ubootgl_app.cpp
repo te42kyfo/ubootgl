@@ -34,11 +34,16 @@ void UbootGlApp::loop() {
     rot(pEnt) += timeDelta * dir * 0.00007 * length(joyVec) *
                  (0.2 + min((float)M_PI * 0.5f, abs(diffAngle)));
 
-    if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]])
-      rot(pEnt) -= 4.0 * timeDelta;
-    if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_COUNTERCLOCKWISE}]])
-      rot(pEnt) += 4.0 * timeDelta;
-
+    registry.get<CoKinematics>(pEnt).angVel = 0.0f;
+    if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]]) {
+      // rot(pEnt) -= 4.0 * timeDelta;
+      registry.get<CoKinematics>(pEnt).angVel = -40.0;
+    }
+    if (keysPressed[key_map[{player.keySet,
+                             CONTROLS::TURN_COUNTERCLOCKWISE}]]) {
+      // rot(pEnt) += 4.0 * timeDelta;
+      registry.get<CoKinematics>(pEnt).angVel = 40.0;
+    }
     registry.get<CoAnimated>(pEnt).frame = 0.0;
     if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
         joyButtonPressed[player.keySet][4]) {

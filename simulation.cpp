@@ -497,20 +497,46 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       float sideLength[] = {item.size.y, item.size.y, item.size.x, item.size.x};
 
       for (int i = 0; i < 4; i++) {
-        auto sp = surfacePoints[i];
+        for (int n = 0; n < 6; n++) {
+          auto sp = surfacePoints[i] + glm::abs(glm::vec2(surfacePoints[i].y,
+                                                          surfacePoints[i].x)) *
+                                           (1.0f - n * 2.0f / 5.0f);
 
-        auto tSP = sp * item.size * 0.5f;
-        tSP = rotate(tSP, item.rotation);
-        tSP = tSP + item.pos;
-        auto sampleVel = bilinearVel(tSP / h);
-        auto deltaVel = sampleVel - kin.vel;
-        auto force = rotate(sp, item.rotation) *
-                     glm::min(0.0f, dot(deltaVel, rotate(sp, item.rotation)));
+          auto tSP = sp * item.size * 0.5f;
+          tSP = glm::rotate(tSP, item.rotation);
+          tSP = tSP + item.pos;
 
-        centralForce +=
-            force * 2000.0f * (300.0f * sideLength[i] + 1.0f) * sideLength[i];
+          auto deltaVel =
+              bilinearVel(tSP / h) +
+              vec2(bilinearSample(vx_accum, tSP - vec2(0.5f, 0.0f)),
+                   bilinearSample(vy_accum, tSP - vec2(0.0f, 0.5f))) -
+              (kin.vel + 3.141f *
+                             glm::rotate(sp * item.size * 0.5f,
+                                         item.rotation + 0.5f * 3.141f) *
+                             kin.angVel);
+
+          vec2 normal = glm::rotate(glm::normalize(sp), item.rotation);
+          auto force =
+              normal *
+              glm::min(0.0f, dot(deltaVel,
+                                 glm::rotate(surfacePoints[i], item.rotation)));
+          centralForce += force * 400000.0f * (0.002f + sideLength[i]) *
+                          sideLength[i] / 6.0f;
+
+          if (tSP.x / h < 1.0f || tSP.x / h > vx.width - 2.0f ||
+              tSP.y / h < 1.0f || tSP.y / h > vx.height - 2.0f)
+            continue;
+          auto deltaVec = force * (0.002f + sideLength[i]) * sideLength[i] /
+                          6.0f * subDT * 7000000.0f;
+          glm::vec2 cx = tSP / h - vec2(0.5f, 0.0);
+          bilinearScatter(vx_accum, cx, -deltaVec.x);
+          glm::vec2 cy = tSP / h - vec2(0.0f, 0.5);
+          bilinearScatter(vy_accum, cy, -deltaVec.y);
+        }
       }
-      centralForce += (bilinearVel(item.pos / h) - kin.vel) * 6.0f;
+
+      centralForce += 1000.0f * (item.size[0] + item.size[1]) *
+                      (bilinearVel(item.pos / h) - kin.vel);
 
       // Calculate new velocity
       kin.vel += subDT * (externalForce + centralForce) / kin.mass;
@@ -519,24 +545,10 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       kin.angVel += subDT * angForce / angMass;
 
       // Compute forces on fluid
-      gridPos = item.pos / (pwidth / (flag.width));
-      if (gridPos.x < 1 || gridPos.x > flag.width - 1 || gridPos.y < 2 ||
-          gridPos.y > flag.height - 2)
-        continue;
-      float area = item.size.x * item.size.y / (h * h);
-      auto deltaVel =
-          bilinearVel(item.pos / h) +
-          vec2(bilinearSample(vx_accum, item.pos / h - vec2(0.5f, 0.0f)),
-               bilinearSample(vy_accum, item.pos / h - vec2(0.0f, 0.5f))) -
-          kin.vel;
-
-      auto deltaVec = deltaVel * area * subDT * 20.0f;
-
-      glm::vec2 cx = item.pos / h - vec2(0.5f, 0.0);
-      bilinearScatter(vx_accum, cx, -deltaVec.x);
-
-      glm::vec2 cy = item.pos / h - vec2(0.0f, 0.5);
-      bilinearScatter(vy_accum, cy, -deltaVec.y);
+      // gridPos = item.pos / (pwidth / (flag.width));
+      // if (gridPos.x < 1 || gridPos.x > flag.width - 1 || gridPos.y < 2 ||
+      //    gridPos.y > flag.height - 2)
+      //  continue;
     }
 
     kin.angForce = 0;

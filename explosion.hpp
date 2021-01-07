@@ -43,10 +43,10 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
           registry.assign<CoAnimated>(newDebris, static_cast<float>(type));
           registry.assign<CoKinematics>(
-              newDebris, 0.8 * size * (0.2f * type + 0.1f),
+              newDebris, 0.3 * size * (0.2f * type + 0.1f),
               glm::normalize(glm::vec2(x, y)) * 3.0f +
                   glm::vec2{cos(velangle), sin(velangle)} * dist(gen) * 0.4f,
-              (randRotationDist(gen) - randRotationDist(gen)) * 10.0f);
+              (randRotationDist(gen) - randRotationDist(gen)) * 400.0f);
           registry.assign<CoDeletedOoB>(newDebris);
           registry.assign<CoDecays>(newDebris, 0.41f);
         }
