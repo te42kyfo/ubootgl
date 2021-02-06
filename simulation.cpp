@@ -446,8 +446,8 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
     auto &kin = floatingItemView.get<CoKinematics>(entity);
 
     int iterationSteps =
-        fmin(5.0f, fmax(1.0f, glm::max(abs(kin.vel.x), abs(kin.vel.y)) *
-                                  gameDT / h * 2.5));
+        fmin(15.0f, fmax(1.0f, glm::max(abs(kin.vel.x), abs(kin.vel.y)) *
+                                   gameDT / h * 2.5));
 
     float subDT = gameDT / iterationSteps;
 
@@ -489,7 +489,7 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
 
       glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
       glm::vec2 centralForce = glm::vec2(0.0, 0.0);
-      float angForce = kin.angForce - kin.angVel * 0.000001f;
+      float angForce = kin.angForce;
 
       glm::vec2 surfacePoints[] = {
           {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f}};
@@ -497,19 +497,21 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       float sideLength[] = {item.size.y, item.size.y, item.size.x, item.size.x};
 
       for (int i = 0; i < 4; i++) {
-        for (int n = 0; n < 6; n++) {
+        int nSP = fmax(2.0f, sideLength[i] / h);
+
+        for (int n = 0; n < nSP; n++) {
           auto sp = surfacePoints[i] + glm::abs(glm::vec2(surfacePoints[i].y,
                                                           surfacePoints[i].x)) *
-                                           (1.0f - n * 2.0f / 5.0f);
+                                           (1.0f - n * 2.0f / (nSP - 1));
 
           auto tSP = sp * item.size * 0.5f;
           tSP = glm::rotate(tSP, item.rotation);
           tSP = tSP + item.pos;
 
           auto deltaVel =
-              bilinearVel(tSP / h) +
-              vec2(bilinearSample(vx_accum, tSP - vec2(0.5f, 0.0f)),
-                   bilinearSample(vy_accum, tSP - vec2(0.0f, 0.5f))) -
+              bilinearVel(tSP / h) -
+              // vec2(bilinearSample(vx_accum, tSP - vec2(0.5f, 0.0f)),
+              //     bilinearSample(vy_accum, tSP - vec2(0.0f, 0.5f))) -
               (kin.vel + 3.141f *
                              glm::rotate(sp * item.size * 0.5f,
                                          item.rotation + 0.5f * 3.141f) *
@@ -520,14 +522,14 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
               normal *
               glm::min(0.0f, dot(deltaVel,
                                  glm::rotate(surfacePoints[i], item.rotation)));
-          centralForce += force * 400000.0f * (0.002f + sideLength[i]) *
-                          sideLength[i] / 6.0f;
+          centralForce += force * 400000.0f * (0.003f + sideLength[i]) *
+                          sideLength[i] / (float)nSP;
 
           if (tSP.x / h < 1.0f || tSP.x / h > vx.width - 2.0f ||
               tSP.y / h < 1.0f || tSP.y / h > vx.height - 2.0f)
             continue;
           auto deltaVec = force * (0.002f + sideLength[i]) * sideLength[i] /
-                          6.0f * subDT * 7000000.0f;
+                          (float)nSP * subDT * 15000000.0f;
           glm::vec2 cx = tSP / h - vec2(0.5f, 0.0);
           bilinearScatter(vx_accum, cx, -deltaVec.x);
           glm::vec2 cy = tSP / h - vec2(0.0f, 0.5);
@@ -543,6 +545,8 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
 
       float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
       kin.angVel += subDT * angForce / angMass;
+      // Hacky, non physical decay of angular velocity
+      kin.angVel *= 0.98;
 
       // Compute forces on fluid
       // gridPos = item.pos / (pwidth / (flag.width));
