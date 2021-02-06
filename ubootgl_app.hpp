@@ -21,7 +21,7 @@
 class UbootGlApp {
 public:
   UbootGlApp()
-      : sim("resources/level2.png", 0.8, 0.001f),
+      : sim("resources/level2_hires.png", 0.8, 0.001f),
         rock_texture("resources/rock_texture2.png"), joyAxis(4),
         joyButtonPressed(4) {
     Draw2DBuf::init();

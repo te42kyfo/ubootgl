@@ -11,9 +11,10 @@ void main(void) {
   vec2 texCoord = FragCoord;
   // float tdy = dFdy(texCoord.y);
 
-  float tv = textureLod(mask_tex, texCoord, 1).r * 0.6 +
-             textureLod(mask_tex, texCoord, 0).r * 0.5 +
-             textureLod(mask_tex, texCoord, 2).r * -0.1;
+  float tv = textureLod(mask_tex, texCoord, 2).r * 0.6 +
+             textureLod(mask_tex, texCoord, 1).r * 0.4 +
+             textureLod(mask_tex, texCoord, 0).r * 0.2 +
+             textureLod(mask_tex, texCoord, 3).r * -0.2;
 
   float aaf = length(fwidth(texCoord)) * 64.0f;
   float opaque = 1.0 - smoothstep( max(0.1, 0.5 - aaf), min(0.9, 0.5 + aaf), tv);
