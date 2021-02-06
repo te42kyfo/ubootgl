@@ -31,18 +31,19 @@ void UbootGlApp::loop() {
 
     auto joyVec =
         glm::vec2(joyAxis[player.keySet][0] + 0.001, joyAxis[player.keySet][1]);
-    rot(pEnt) += timeDelta * dir * 0.00007 * length(joyVec) *
-                 (0.2 + min((float)M_PI * 0.5f, abs(diffAngle)));
-
     registry.get<CoKinematics>(pEnt).angVel = 0.0f;
+    registry.get<CoKinematics>(pEnt).angVel =
+        dir * 0.001 * length(joyVec) *
+        (0.3 + min((float)M_PI * 0.5f, abs(diffAngle)));
+
     if (keysPressed[key_map[{player.keySet, CONTROLS::TURN_CLOCKWISE}]]) {
       // rot(pEnt) -= 4.0 * timeDelta;
-      registry.get<CoKinematics>(pEnt).angVel = -40.0;
+      registry.get<CoKinematics>(pEnt).angVel = -50.0;
     }
     if (keysPressed[key_map[{player.keySet,
                              CONTROLS::TURN_COUNTERCLOCKWISE}]]) {
       // rot(pEnt) += 4.0 * timeDelta;
-      registry.get<CoKinematics>(pEnt).angVel = 40.0;
+      registry.get<CoKinematics>(pEnt).angVel = 50.0;
     }
     registry.get<CoAnimated>(pEnt).frame = 0.0;
     if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
