@@ -11,17 +11,17 @@ void UbootGlApp::launchTorpedo(entt::entity pEnt) {
   registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, playerItem.pos,
                           playerItem.rotation);
   registry.assign<CoKinematics>(
-      newTorpedo, 0.8,
+      newTorpedo, 0.6,
       playerKin.vel +
-          glm::vec2{cos(playerItem.rotation), sin(playerItem.rotation)} * 1.0f,
+          glm::vec2{cos(playerItem.rotation), sin(playerItem.rotation)} * 0.8f,
       playerKin.angVel);
   registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
   registry.assign<CoDeletedOoB>(newTorpedo);
   registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
   registry.assign<CoTarget>(newTorpedo);
   registry.assign<CoHasTracer>(newTorpedo);
-
   torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
+
   torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
   torpedosFired(pEnt)++;
 }
@@ -71,16 +71,16 @@ void UbootGlApp::processTorpedos() {
           }
         });
 
-        if (torpedo.age < 0.03f) {
+        if (torpedo.age < 0.01f) {
           kin.force = glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
         } else if (torpedo.age < 0.4f) {
-          kin.angVel = glm::sign(bestAngle) * 7.0;
+          kin.angVel = glm::sign(bestAngle) * 8.0;
           if (bestTarget != entt::null)
             kin.force =
-                glm::vec2(cos(item.rotation), sin(item.rotation)) * 7.0f;
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
           else
             kin.force =
-                glm::vec2(cos(item.rotation), sin(item.rotation)) * 4.0f;
+                glm::vec2(cos(item.rotation), sin(item.rotation)) * 2.0f;
         } else {
           explodes = true;
         }

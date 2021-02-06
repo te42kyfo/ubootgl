@@ -26,11 +26,11 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           gridC.y > sim.flag.height - 3)
         continue;
       if (explosionDiam > 0.002)
-        sim.sinks.push_back(glm::vec3(gridC * sim.h, 40.0f));
+        sim.sinks.push_back(glm::vec3(gridC * sim.h, 150.0f));
       if (sim.flag(gridC) < 1.0) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 2; i++) {
           float velangle = randRotationDist(gen);
-          float size = dist(gen) * 1.2 + 1.5f;
+          float size = dist(gen) * 1.2 + 1.1f;
           size *= size;
           int type = (int)(dist(gen) * 2.0f);
 
@@ -43,10 +43,10 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
           registry.assign<CoAnimated>(newDebris, static_cast<float>(type));
           registry.assign<CoKinematics>(
-              newDebris, 0.3 * size * (0.2f * type + 0.1f),
+              newDebris, 0.3 * size * (0.3f * type + 0.06f),
               glm::normalize(glm::vec2(x, y)) * 3.0f +
                   glm::vec2{cos(velangle), sin(velangle)} * dist(gen) * 0.4f,
-              (randRotationDist(gen) - randRotationDist(gen)) * 400.0f);
+              (randRotationDist(gen) - randRotationDist(gen)) * 1000.0f);
           registry.assign<CoDeletedOoB>(newDebris);
           registry.assign<CoDecays>(newDebris, 0.41f);
         }
