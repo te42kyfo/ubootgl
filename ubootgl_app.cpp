@@ -187,8 +187,8 @@ void UbootGlApp::loop() {
 
   static int frame = 0;
   frame++;
-  // if (frame % 1000 == 0)
-  //  shiftMap();
+  if (frame % 100 == 0)
+    shiftMap();
 
   lastFrameTime = thisFrameTime;
 }
@@ -239,48 +239,52 @@ void UbootGlApp::shiftMap() {
     for (int x = 1; x < sim.flag.width; x++) {
       sim.setGrids(glm::vec2(x - 1, y), sim.flag(x, y));
     }
-  }
-  for (int i = 0; i < 40; i++) {
-    int y = rand() % (sim.flag.height - 2) + 1;
-    if (fabs(sim.vx(sim.vx.width - 1, y)) < 0.01)
-      sim.setGrids(glm::vec2(sim.flag.width - 1, y), rand() % 20 <= 7);
+    sim.setGrids(glm::vec2(sim.flag.width - 1, y),
+                 sim.flag(sim.flag.width - 2, y));
   }
 
-  for (int y = 1; y < sim.flag.height - 2; y++) {
-    float v =
-        sim.flag(sim.flag.width - 2, y) - sim.flag(sim.flag.width - 2, y + 1);
-    float v2 =
-        sim.flag(sim.flag.width - 2, y - 1) - sim.flag(sim.flag.width - 2, y);
+  for (int i = 0; i < 1; i++) {
+    if (rand() % 1 != 0)
+      continue;
+    int y = rand() % (sim.flag.height - 20) + 10;
+    int v = sim.flag(sim.flag.width - 2, y) > 0.0 ? 0.0 : 1.0;
+    sim.setGrids(glm::vec2(sim.flag.width - 2, y - 2), v);
+    sim.setGrids(glm::vec2(sim.flag.width - 2, y - 1), v);
+    sim.setGrids(glm::vec2(sim.flag.width - 2, y), v);
+    sim.setGrids(glm::vec2(sim.flag.width - 2, y + 1), v);
+    sim.setGrids(glm::vec2(sim.flag.width - 2, y + 2), v);
+  }
 
-    if (rand() % 2 == 0) {
-      if (v > 0 && rand() % 1 == 0) {
-        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 0.0);
-      }
-      if (v < 0 && rand() % 1 == 0) {
-        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 1.0);
-      }
-    } else {
+  for (int y = 4; y < sim.flag.height - 4; y++) {
 
-      if (v2 > 0 && rand() % 1 == 0) {
-        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 1.0);
-      }
-      if (v2 < 0 && rand() % 1 == 0) {
-        sim.setGrids(glm::vec2(sim.flag.width - 1, y), 0.0);
+    float v = 0.0;
+    int count = 0;
+    for (int n = 2; n < 4; n++) {
+      for (int i = -4 + n; i <= 4 - n; i++) {
+        v += sim.flag(sim.flag.width - n, y + i);
+        count++;
       }
     }
+    v += 4.0 * sim.flag(y, y);
+    count += 4;
+    v /= count;
+    v = 1.0f / (1.0f + exp(-5.0f * (v - 0.5f)));
+    sim.setGrids(glm::vec2(sim.flag.width - 1, y), (rand() % 100) / 100.0f < v);
   }
 
-  for (int y = 1; y < sim.flag.height - 2; y++) {
-    float v = (sim.flag(sim.flag.width - 1, y - 1) +
-               sim.flag(sim.flag.width - 1, y) * 1.0 +
-               sim.flag(sim.flag.width - 1, y + 1)) /
-              3.0f;
-    if (v > 0.5f)
-      sim.setGrids(glm::vec2(sim.flag.width - 1, y), 1.0);
-    else if (v < 0.5f)
-      sim.setGrids(glm::vec2(sim.flag.width - 1, y), 0.0);
-  }
+  for (int y = 4; y < sim.flag.height - 4; y++) {
+    float v = 0.0;
+    v += sim.flag(sim.flag.width - 2, y);
+    v += sim.flag(sim.flag.width - 1, y);
+    v += sim.flag(sim.flag.width - 1, y - 1);
+    v += sim.flag(sim.flag.width - 1, y + 1);
+    v += sim.flag(sim.flag.width - 2, y - 1);
+    v += sim.flag(sim.flag.width - 2, y + 1);
 
+    if (v <= 2 || v >= 4.0) {
+      sim.setGrids(glm::vec2(sim.flag.width - 1, y), v <= 2.0 ? 0.0f : 1.0f);
+    }
+  }
   float inletArea = 1.0f;
   for (int y = 0; y < sim.vy.height; y++) {
     inletArea += sim.flag(0, y);
