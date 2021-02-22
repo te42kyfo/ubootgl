@@ -86,9 +86,9 @@ float Simulation::VBCPer(BC bc, float a, float b) {
   if (bc == BC::INFLOW)
     return b;
   if (bc == BC::OUTFLOW)
-    return a;
+    return fmax(a, 0.0f);
   if (bc == BC::OUTFLOW_ZERO_PRESSURE)
-    return a;
+    return fmax(a, 0.0f);
   if (bc == BC::NOSLIP)
     return -a;
   assert(false);

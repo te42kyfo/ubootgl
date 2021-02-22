@@ -97,6 +97,12 @@ void *simulationLoop(void *arg) {
     app->simTimes.add(dt * 1000.f);
     tprev = tnow;
     smoothedSimTime = smoothedSimTime * 0.95 + 0.05 * dt;
+
+    static int frameCounter = 0;
+    frameCounter ++;
+    if (frameCounter % 10 == 0) {
+      app->shiftMap();
+    }
   }
   return nullptr;
 }
