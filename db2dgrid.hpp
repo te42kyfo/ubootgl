@@ -17,6 +17,7 @@ public:
 
   int idx(int x, int y) const { return y * width + x; }
   float *data() { return v.data(); }
+  float const *data() const { return v.data(); }
 
   float &operator()(int x, int y) {
     assert(x < width && x >= 0 && y < height && y >= 0);
