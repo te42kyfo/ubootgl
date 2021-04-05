@@ -1,10 +1,10 @@
-#include "terrain_generator.hpp"
+#include "nn_terrain_generator.hpp"
 #include <iomanip>
 #include <random>
 
 using namespace std;
 
-namespace TerrainGenerator {
+namespace NNTerrainGenerator {
 
 default_random_engine gen(1293);
 uniform_real_distribution<float> dist(0.0, 1.0);
@@ -72,15 +72,15 @@ const int W = 2;
 const int D = 4;
 const int IN = (W * 2 + 1) * D;
 
-const int HN = 2;
+const int HN = 4;
 
 Layer<HN, 1> outputLayer;
 Layer<IN, HN> hiddenLayer;
 
 void learn(const Single2DGrid &flag) {
 
-  float alpha = 0.0015;
-  for (int iter = 0; iter < 100; iter++) {
+  float alpha = 0.02;
+  for (int iter = 0; iter < 20; iter++) {
     float averageError = 0.0f;
     int sampleCount = 0;
     for (int x = D; x < flag.width; x++) {
@@ -149,7 +149,7 @@ std::vector<float> generateLine(const Single2DGrid &flag) {
     }
     float score = outputLayer.score1(0, hiddenOutputs);
 
-    if (score + normalDist(gen) * 0.0 > 0.5) {
+    if (score + normalDist(gen) * 1.0 > density*0.7) {
       newLine[y] = 1.0;
     } else {
       newLine[y] = 0.0;

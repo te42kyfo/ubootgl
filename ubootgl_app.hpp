@@ -12,7 +12,7 @@
 #include "swarm.hpp"
 #include "texture.hpp"
 #include "velocity_textures.hpp"
-#include "terrain_generator.hpp"
+#include "nn_terrain_generator.hpp"
 #include <glm/vec2.hpp>
 #include <iostream>
 #include <map>
@@ -73,7 +73,7 @@ public:
       registry.assign<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                     0.0f);
     }
-    TerrainGenerator::learn(sim.flag);
+    NNTerrainGenerator::learn(sim.flag);
   }
 
   void loop();

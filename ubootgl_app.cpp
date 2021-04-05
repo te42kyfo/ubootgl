@@ -212,7 +212,7 @@ void UbootGlApp::handleJoyButton(SDL_JoyButtonEvent event) {
 }
 void UbootGlApp::shiftMap() {
 
-  auto newLine = TerrainGenerator::generateLine(sim.flag);
+  auto newLine = NNTerrainGenerator::generateLine(sim.flag);
 
   for (int y = 0; y < sim.vx.height; y++) {
     for (int x = 2; x < sim.vx.width; x++) {

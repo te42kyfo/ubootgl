@@ -4,7 +4,7 @@
 #include <vector>
 #include "db2dgrid.hpp"
 
-namespace TerrainGenerator {
+namespace NNTerrainGenerator {
 
 void learn(const Single2DGrid& flag);
 
