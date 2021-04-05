@@ -93,11 +93,11 @@ void UbootGlApp::draw() {
     //                  glm::vec3(0.0f, 0.0f, -1.0f));
     PVM = glm::translate(PVM, glm::vec3(-item.pos, 0.0f));
 
-    //Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), sim.ivx.width,
-    //                    sim.ivx.height, PVM, sim.pwidth);
-    Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
+    Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), sim.ivx.width,
+                        sim.ivx.height, PVM, sim.pwidth);
+    //Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
     Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
-                         sim.width, sim.height, PVM, sim.pwidth);
+                         sim.width, sim.height, PVM, sim.pwidth, texture_offset);
 
     DrawTracersCS::draw(PVM);
     DrawTracersCS::drawPlayerTracers(PVM);

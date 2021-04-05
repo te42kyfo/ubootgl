@@ -151,6 +151,7 @@ public:
   Simulation sim;
   Texture rock_texture;
   Texture black_texture = Texture("resources/black.png");
+    float texture_offset = 0.0f;
 
   double lastKeyUpdate;
   bool cheatMode = false;

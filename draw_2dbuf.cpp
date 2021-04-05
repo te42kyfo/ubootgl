@@ -16,7 +16,7 @@ using namespace std;
 namespace Draw2DBuf {
 
 GLuint mag_shader;
-GLuint flag_shader;
+Shader flag_shader;
 Shader scalar_shader;
 GLuint vao, vbo, tbo, tex_id;
 
@@ -37,12 +37,8 @@ void init() {
   mag_shader_TM_uloc = glGetUniformLocation(mag_shader, "TM");
 
   // Flag Field Shader and uloc loading
-  flag_shader = loadShader("./scale_translate2D.vert", "./flag_tex.frag",
-                           {{0, "in_Position"}});
-  flag_shader_mask_tex_uloc = glGetUniformLocation(flag_shader, "mask_tex");
-  flag_shader_fill_tex_uloc = glGetUniformLocation(flag_shader, "fill_tex");
-  flag_shader_TM_uloc = glGetUniformLocation(flag_shader, "TM");
-
+  flag_shader = Shader(loadShader("./scale_translate2D.vert", "./flag_tex.frag",
+                           {{0, "in_Position"}}));
   scalar_shader = Shader(loadShader("./scale_translate2D.vert",
                                     "./color_tex.frag", {{0, "in_Position"}}));
 
@@ -101,10 +97,12 @@ void draw_mag(GLuint tex_id, int nx, int ny, glm::mat4 PVM, float pwidth) {
 }
 
 void draw_flag(Texture fill_tex, GLuint flag_tex_id, int nx, int ny,
-               glm::mat4 PVM, float pwidth) {
-  GL_CALL(glUseProgram(flag_shader));
-  GL_CALL(glUniform1i(flag_shader_mask_tex_uloc, 0));
-  GL_CALL(glUniform1i(flag_shader_fill_tex_uloc, 1));
+               glm::mat4 PVM, float pwidth, float offset) {
+  GL_CALL(glUseProgram(flag_shader.id));
+  GL_CALL(glUniform1i(flag_shader.uloc("mask_tex"), 0));
+  GL_CALL(glUniform1i(flag_shader.uloc("fill_tex"), 1));
+  GL_CALL(glUniform1f(flag_shader.uloc("offset"), offset));
+
   glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
 
   GL_CALL(

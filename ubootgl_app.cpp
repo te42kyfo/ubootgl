@@ -213,6 +213,7 @@ void UbootGlApp::handleJoyButton(SDL_JoyButtonEvent event) {
 void UbootGlApp::shiftMap() {
 
   auto newLine = TerrainGenerator::generateLine(sim.flag);
+
   for (int y = 0; y < sim.vx.height; y++) {
     for (int x = 2; x < sim.vx.width; x++) {
       sim.vx(x - 1, y) = sim.vx(x, y);
@@ -248,8 +249,8 @@ void UbootGlApp::shiftMap() {
     inletArea += sim.flag(0, y);
   }
   for (int y = 0; y < sim.vx.height; y++) {
-    sim.vx.f(0, y) = 40.0f / inletArea;
-    sim.vx.b(0, y) = 40.0f / inletArea;
+    sim.vx.f(0, y) = 50.0f / inletArea;
+    sim.vx.b(0, y) = 50.0f / inletArea;
   }
 
   /*for (int y = 0; y < sim.flag.height; y++) {
@@ -266,23 +267,29 @@ void UbootGlApp::shiftMap() {
     }
     }*/
 
-
-  for (int y = 1; y < sim.flag.height-1; y++) {
-    int x = sim.flag.width-10;
-    int c = 0;
-    float v = sim.flag(x,y);
-    c += v != sim.flag(x+1,y);
-    c += v != sim.flag(x-1,y);
-    c += v != sim.flag(x,y+1);
-    c += v != sim.flag(x,y-1);
-    c += v != sim.flag(x+1,y+1);
-    c += v != sim.flag(x+1,y-1);
-    c += v != sim.flag(x-1,y-1);
-    c += v != sim.flag(x-1,y+1);
-    if (c > 3) {
-      sim.setGrids( glm::vec2(x,y), 1.0f-v);
+  int dir = rand() % 2;
+  for (int i = 0; i < 3; i++) {
+    for (int iy = 1; iy < sim.flag.height - 1; iy++) {
+      int x = sim.flag.width - 2;
+      int y = i % 2 + dir == 0 ? sim.height - iy : iy;
+      int c = 0;
+      float v = sim.flag(x, y);
+      c += v != sim.flag(x + 1, y);
+      c += v != sim.flag(x - 1, y);
+      c += v != sim.flag(x, y + 1);
+      c += v != sim.flag(x, y - 1);
+      c += v != sim.flag(x + 1, y + 1);
+      c += v != sim.flag(x + 1, y - 1);
+      c += v != sim.flag(x - 1, y - 1);
+      c += v != sim.flag(x - 1, y + 1);
+      if (c > 9) {
+        sim.setGrids(glm::vec2(x, y), 1.0f - v);
+      }
     }
   }
+
+  texture_offset -=
+      (float)rock_texture.width * 10.0f / sim.flag.width / sim.flag.width;
 
   sim.mg.updateFields(sim.flag);
 

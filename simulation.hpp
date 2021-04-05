@@ -79,7 +79,7 @@ public:
     bcSouth = BC::NOSLIP;
     bcNorth = BC::NOSLIP;
     bcWest = BC::INFLOW;
-    bcEast = BC::OUTFLOW;
+    bcEast = BC::OUTFLOW_ZERO_PRESSURE;
 
     for (int x = 0; x < vy.width; x++) {
       vy.f(x, 0) = vy.b(x, 0) = 0.0;
