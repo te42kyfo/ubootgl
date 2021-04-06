@@ -116,7 +116,9 @@ public:
       flag(c) = val;
       if (val == 0) {
         vx(c) = 0.0;
+        vx(c + glm::ivec2(-1, 0)) = 0.0;
         vy(c) = 0.0;
+        vy(c + glm::ivec2(0, -1)) = 0.0;
         p(c) = 0.0;
       }
     }

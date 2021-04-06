@@ -100,7 +100,7 @@ void *simulationLoop(void *arg) {
 
     static int frameCounter = 0;
     frameCounter ++;
-    if (frameCounter % 5 == 0) {
+    if (frameCounter % 20 == 0) {
       app->shiftMap();
     }
   }

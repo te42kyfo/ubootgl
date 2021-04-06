@@ -212,7 +212,7 @@ void UbootGlApp::handleJoyButton(SDL_JoyButtonEvent event) {
 }
 void UbootGlApp::shiftMap() {
 
-  auto newLine = NNTerrainGenerator::generateLine(sim.flag);
+  auto newLine = TerrainGenerator::generateLine(sim.flag);
 
   for (int y = 0; y < sim.vx.height; y++) {
     for (int x = 2; x < sim.vx.width; x++) {
@@ -249,8 +249,8 @@ void UbootGlApp::shiftMap() {
     inletArea += sim.flag(0, y);
   }
   for (int y = 0; y < sim.vx.height; y++) {
-    sim.vx.f(0, y) = 50.0f / inletArea;
-    sim.vx.b(0, y) = 50.0f / inletArea;
+    sim.vx.f(0, y) = 30.0f / inletArea;
+    sim.vx.b(0, y) = 30.0f / inletArea;
   }
 
   /*for (int y = 0; y < sim.flag.height; y++) {
