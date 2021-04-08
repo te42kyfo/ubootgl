@@ -205,8 +205,9 @@ void Simulation::project() {
       end(sinks));
 
   mg.solve(p, f, flag, h, true);
+  mg.solve(p, f, flag, h, true);
 
-  centerP();
+  //centerP();
 
   setPBC();
 

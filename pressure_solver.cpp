@@ -169,7 +169,7 @@ void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
   }
 
   for (int i = 0; i < 2; i++) {
-    rbgs(p, f, flag, h, 1.2);
+    rbgs(p, f, flag, h, 1.0);
     if (level == 0 && zeroGradientBC)
       setZeroGradientBC(p);
   }
