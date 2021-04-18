@@ -160,15 +160,15 @@ void setZeroGradientBC(Single2DGrid &p) {
 
 void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
                     float h, int level, bool zeroGradientBC) {
-  if (level == levels - 3) {
-    for (int i = 0; i < 3; i++) {
+  if (level == levels - 2) {
+    for (int i = 0; i < 5; i++) {
       rbgs(p, f, flag, h, 1.0);
     }
     // drawGrid(flag);
     return;
   }
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 3; i++) {
     rbgs(p, f, flag, h, 1.0);
     if (level == 0 && zeroGradientBC)
       setZeroGradientBC(p);
@@ -200,8 +200,8 @@ void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
   if (level == 0 && zeroGradientBC)
     setZeroGradientBC(p);
 
-  for (int i = 0; i < 2; i++) {
-    rbgs(p, f, flag, h, 0.8);
+  for (int i = 0; i < 3; i++) {
+    rbgs(p, f, flag, h, 1.0);
     if (level == 0 && zeroGradientBC)
       setZeroGradientBC(p);
   }
