@@ -110,7 +110,7 @@ void draw_flag(Texture fill_tex, GLuint flag_tex_id, int nx, int ny,
 
   GL_CALL(glActiveTexture(GL_TEXTURE1));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
   GL_CALL(glActiveTexture(GL_TEXTURE0));
