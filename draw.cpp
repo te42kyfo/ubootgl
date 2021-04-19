@@ -190,19 +190,16 @@ void UbootGlApp::draw() {
   ImPlot::SetNextPlotLimits(0, frameTimes.data().size(), 0, max(simTimes.largest(), frameTimes.largest()), ImGuiCond_Always);
   ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(2, 2));
   ImPlot::BeginPlot("##frameTimePlot", NULL, "ms", ImVec2(500, 105), ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations);
+  ImPlot::SetNextLineStyle(ImVec4(1.0, 0.2, 0.2, 1.0));
   ImPlot::PlotLine("", frameTimes.data().data(), frameTimes.data().size());
+  ImPlot::SetNextLineStyle(ImVec4(0.2, 1.0, 0.2, 1.0));
   ImPlot::PlotLine("", gfxTimes.data().data(), gfxTimes.data().size());
+  ImPlot::SetNextLineStyle(ImVec4(0.2, 0.2, 1.0, 1.0));
   ImPlot::PlotLine("", simTimes.data().data(), simTimes.data().size());
+  float  data[] = {16.6};
+  ImPlot::SetNextLineStyle(ImVec4(1.0, 1.0, 0.2, 1.0));
+  ImPlot::PlotHLines("", data, 1);
 
-
- // ImGui::PlotLines("", frameTimes.data().data(), frameTimes.data().size(), 0,
-                   //NULL, 0, frameTimes.largest(), ImVec2(300, 80));
-  //ImGui::SameLine();
-  //ImGui::PlotLines("", gfxTimes.data().data(), gfxTimes.data().size(), 0, NULL,
-                   //0, gfxTimes.largest(), ImVec2(300, 80));
-  //ImGui::SameLine();
-  //ImGui::PlotLines("", simTimes.data().data(), simTimes.data().size(), 0, NULL,
-  //                 0, simTimes.largest(), ImVec2(300, 80));
   ImPlot::EndPlot();
   ImPlot::PopStyleVar();
   ImGui::End();
