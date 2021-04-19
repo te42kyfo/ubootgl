@@ -1,11 +1,12 @@
 .PHONY: all clean cleanall
 
-CPP_FILES := $(wildcard *.cpp) $(wildcard external/imgui/*.cpp) $(wildcard external/*.cpp)
+CPP_FILES := $(wildcard *.cpp) $(wildcard external/implot/*.cpp) $(wildcard external/imgui/*.cpp) $(wildcard external/*.cpp)
+CPP_FILES := $(CPP_FILES) external/imgui/backends/imgui_impl_sdl.cpp external/imgui/backends/imgui_impl_opengl3.cpp
 HEADERS= $(shell find . -iname "*.hpp")
 OBJ_FILES := $(addprefix obj/,$(CPP_FILES:.cpp=.o))
 DEPS := $(addprefix obj/,$(CPP_FILES:.cpp=.d))
 
-INCLUDE = -I/usr/include/SDL2 -I/usr/include/ -I./external/
+INCLUDE = -I/usr/include/SDL2 -I/usr/include/ -I./external/ -I./external/imgui
 LD_FLAGS = -L./external/ `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp
 LD_FLAGS_DEBUG = $(LD_FLAGS) -g -pg
 CC_FLAGS = -std=c++17 -Wall -Wextra -fopenmp -Wno-strict-overflow -Ofast -g -march=native  -DNDEBUG -DGLM_ENABLE_EXPERIMENTAL
@@ -32,6 +33,8 @@ obj_directory:
 	mkdir -p obj
 	mkdir -p obj/external
 	mkdir -p obj/external/imgui
+	mkdir -p obj/external/implot
+	mkdir -p obj/external/imgui/backends
 
 
 clean:

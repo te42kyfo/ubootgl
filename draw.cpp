@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <glm/gtx/transform.hpp>
 #include <glm/vec2.hpp>
+#include "implot/implot.h"
 
 using namespace std;
 
@@ -41,7 +42,7 @@ void UbootGlApp::draw() {
                                VelocityTextures::getFlagTex(), sim.ivx.width,
                                sim.ivy.height, gameTimeStep, sim.pwidth);
 
-  ImColor colors[] = {ImColor(100, 0, 0, 155), ImColor(0, 100, 0, 155),
+  ImU32 colors[] = {ImColor(100, 0, 0, 155), ImColor(0, 100, 0, 155),
                       ImColor(100, 100, 0, 155), ImColor(100, 0, 100, 155)};
 
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
@@ -171,7 +172,7 @@ void UbootGlApp::draw() {
       true);
 
   ImGui::SetNextWindowPos(ImVec2(displayWidth / 2 - 550, 0));
-  ImGui::SetNextWindowSize(ImVec2(1100, 90));
+  ImGui::SetNextWindowSize(ImVec2(1100, 120));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -183,16 +184,27 @@ void UbootGlApp::draw() {
       gfxTimes.avg(), gfxTimes.high1pct(), gfxTimes.largest(), simTimes.avg(),
       simTimes.high1pct(), simTimes.largest());
 
-  ImGui::SameLine();
-  ImGui::PlotLines("", frameTimes.data().data(), frameTimes.data().size(), 0,
-                   NULL, 0, frameTimes.largest(), ImVec2(300, 80));
-  ImGui::SameLine();
-  ImGui::PlotLines("", gfxTimes.data().data(), gfxTimes.data().size(), 0, NULL,
-                   0, gfxTimes.largest(), ImVec2(300, 80));
-  ImGui::SameLine();
-  ImGui::PlotLines("", simTimes.data().data(), simTimes.data().size(), 0, NULL,
-                   0, simTimes.largest(), ImVec2(300, 80));
 
+
+  ImGui::SameLine();
+  ImPlot::SetNextPlotLimits(0, frameTimes.data().size(), 0, max(simTimes.largest(), frameTimes.largest()), ImGuiCond_Always);
+  ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(2, 2));
+  ImPlot::BeginPlot("##frameTimePlot", NULL, "ms", ImVec2(500, 105), ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations);
+  ImPlot::PlotLine("", frameTimes.data().data(), frameTimes.data().size());
+  ImPlot::PlotLine("", gfxTimes.data().data(), gfxTimes.data().size());
+  ImPlot::PlotLine("", simTimes.data().data(), simTimes.data().size());
+
+
+ // ImGui::PlotLines("", frameTimes.data().data(), frameTimes.data().size(), 0,
+                   //NULL, 0, frameTimes.largest(), ImVec2(300, 80));
+  //ImGui::SameLine();
+  //ImGui::PlotLines("", gfxTimes.data().data(), gfxTimes.data().size(), 0, NULL,
+                   //0, gfxTimes.largest(), ImVec2(300, 80));
+  //ImGui::SameLine();
+  //ImGui::PlotLines("", simTimes.data().data(), simTimes.data().size(), 0, NULL,
+  //                 0, simTimes.largest(), ImVec2(300, 80));
+  ImPlot::EndPlot();
+  ImPlot::PopStyleVar();
   ImGui::End();
 
   double graphicsT2 = dtime();

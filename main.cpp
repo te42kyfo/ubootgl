@@ -1,12 +1,15 @@
 #include "dtime.hpp"
 #include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl_gl3.h"
+#include "imgui/backends/imgui_impl_sdl.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
+#include "implot/implot.h"
 #include "ubootgl_app.hpp"
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <omp.h>
 #include <stdio.h>
+
 
 using namespace std;
 
@@ -19,24 +22,30 @@ int main(int, char **) {
   pthread_create(&threadId, NULL, simulationLoop,
                  reinterpret_cast<void *>(&app));
 
-  ImGui_ImplSdlGL3_Init(app.vis.window);
 
-  ImGuiIO &io = ImGui::GetIO();
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImPlot::CreateContext();
+  ImGuiIO &io = ImGui::GetIO(); (void) io;
   ImFontConfig config;
   config.GlyphExtraSpacing.x = 1.0f; // Increase spacing between characters
   io.Fonts->AddFontFromFileTTF("resources/DroidSans.ttf", 17, &config);
+  ImGui::StyleColorsDark();
+  ImGui_ImplSDL2_InitForOpenGL(app.vis.window, app.vis.gl_context);
+  ImGui_ImplOpenGL3_Init("#version 130");
 
-  // Main loop
+
   bool done = false;
   SDL_JoystickOpen(0);
   SDL_JoystickOpen(1);
 
   double lastFrameTime = dtime();
 
+  // Main loop
   while (!done) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      ImGui_ImplSdlGL3_ProcessEvent(&event);
+      ImGui_ImplSDL2_ProcessEvent(&event);
       switch (event.type) {
       case SDL_QUIT:
         done = true;
@@ -56,9 +65,14 @@ int main(int, char **) {
       }
     }
 
-    ImGui_ImplSdlGL3_NewFrame(app.vis.window);
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(app.vis.window);
+    ImGui::NewFrame();
     app.draw();
     ImGui::Render();
+
+
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glFlush();
     app.loop();
@@ -70,8 +84,8 @@ int main(int, char **) {
   }
 
   // Cleanup
-  ImGui_ImplSdlGL3_Shutdown();
-
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
   return 0;
 }
 
@@ -100,7 +114,7 @@ void *simulationLoop(void *arg) {
 
     static int frameCounter = 0;
     frameCounter ++;
-    if (frameCounter % 20 == 0) {
+    if (frameCounter % 2 == 0) {
       app->shiftMap();
     }
   }
