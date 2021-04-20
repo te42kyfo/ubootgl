@@ -11,7 +11,7 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
                     const Single2DGrid &vx, const Single2DGrid &vy, float h) {
 
   auto agentView = registry.view<CoAgent, CoItem, CoKinematics>();
-  agentView.less([&](auto &item1, auto &kin1) {
+  agentView.each([&](auto &item1, auto &kin1) {
     glm::vec2 swarmCenter = {0, 0};
     int swarmCount = 0;
     glm::vec2 rejectionDirection = {};

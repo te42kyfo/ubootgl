@@ -42,12 +42,12 @@ void init() {
   glGenBuffers(1, &player_ssbo);
 }
 
-void draw(entt::registry &registry, entt::component component, Texture texture,
+void draw(entt::registry &registry, entt::id_type component, Texture texture,
           glm::mat4 PVM, float magnification, bool blendSum, bool highlight) {
 
-  entt::component components[] = {component, registry.type<CoItem>()};
-  auto spriteView = registry.runtime_view(begin(components), end(components));
-  if (spriteView.empty())
+  entt::id_type components[] = {component, entt::type_hash<CoItem>::value()};
+  auto spriteView = registry.runtime_view(cbegin(components), cend(components));
+  if (begin(spriteView) == end(spriteView))
     return;
 
   vector<glm::vec2> pos_buf;
@@ -73,18 +73,18 @@ void draw(entt::registry &registry, entt::component component, Texture texture,
       size_buf.push_back(item.size * magnification);
       rot_buf.push_back(item.rotation);
 
-      float f = 0.0f;
-      if (registry.has<CoAnimated>(entity)) {
-        f = registry.get<CoAnimated>(entity).frame;
+      auto* f = registry.try_get<CoAnimated>(entity);
+      if (f) {
+        frame_buf.push_back(f->frame);
       }
 
-      frame_buf.push_back(f);
-      int p = -1;
-      if (registry.has<CoPlayerAligned>(entity) && highlight) {
-        p = registry.get<CoPlayer>(registry.get<CoPlayerAligned>(entity).player)
-                .keySet;
+      auto* p = registry.try_get<CoPlayerAligned>(entity);
+      if (p && highlight) {
+        player_buf.push_back(registry.get<CoPlayer>(p->player).keySet);
+      } else {
+        player_buf.push_back(-1);
       }
-      player_buf.push_back(p);
+
     }
   }
 

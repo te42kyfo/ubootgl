@@ -1,3 +1,6 @@
+#pragma once
+
+#include "ubootgl_app.hpp"
 
 void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
                               entt::entity player, int fragmentLevel) {
@@ -8,14 +11,14 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
   static std::default_random_engine gen(std::random_device{}());
 
   auto newExp = registry.create();
-  registry.assign<CoExplosion>(newExp, explosionDiam, fragmentLevel);
-  registry.assign<CoItem>(newExp,
+  registry.emplace<CoExplosion>(newExp, explosionDiam, fragmentLevel);
+  registry.emplace<CoItem>(newExp,
                           glm::vec2{explosionDiam, explosionDiam} * 3.0f, pos,
                           randRotationDist(gen));
   if (player != entt::null)
-    registry.assign<CoPlayerAligned>(newExp, player);
-  registry.assign<entt::tag<"tex_explosion"_hs>>(newExp);
-  registry.assign<CoAnimated>(newExp, 0.0f);
+    registry.emplace<CoPlayerAligned>(newExp, player);
+  registry.emplace<entt::tag<"tex_explosion"_hs>>(newExp);
+  registry.emplace<CoAnimated>(newExp, 0.0f);
 
   float diam = explosionDiam * 0.8f / sim.h;
   for (int y = -diam; y <= diam; y++) {
@@ -35,20 +38,20 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           int type = (int)(dist(gen) * 2.0f);
 
           auto newDebris = registry.create();
-          registry.assign<CoItem>(
+          registry.emplace<CoItem>(
               newDebris, glm::vec2{0.0003, 0.0003} * size,
               pos + glm::vec2(x + dist(gen), y + dist(gen)) * sim.h,
               randRotationDist(gen));
 
-          registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
-          registry.assign<CoAnimated>(newDebris, static_cast<float>(type));
-          registry.assign<CoKinematics>(
+          registry.emplace<entt::tag<"tex_debris"_hs>>(newDebris);
+          registry.emplace<CoAnimated>(newDebris, static_cast<float>(type));
+          registry.emplace<CoKinematics>(
               newDebris, 0.3 * size * (0.3f * type + 0.06f),
               glm::normalize(glm::vec2(x, y)) * 3.0f +
                   glm::vec2{cos(velangle), sin(velangle)} * dist(gen) * 0.4f,
               (randRotationDist(gen) - randRotationDist(gen)) * 1000.0f);
-          registry.assign<CoDeletedOoB>(newDebris);
-          registry.assign<CoDecays>(newDebris, 0.41f);
+          registry.emplace<CoDeletedOoB>(newDebris);
+          registry.emplace<CoDecays>(newDebris, 0.41f);
         }
         sim.setGrids(gridC, 1.0);
       }
@@ -68,35 +71,32 @@ void UbootGlApp::processExplosions() {
       auto expEnt = *expIter;
 
       float explosionRadiusModifier =
-          registry.has<CoPlayer>(targetEnt) ? 0.5f : 1.5f;
+          registry.all_of<CoPlayer>(targetEnt) ? 0.5f : 1.5f;
 
       if (glm::length(pos(expEnt) - pos(targetEnt)) <
           (explosionDiam(expEnt) * 0.5 +
            (size(targetEnt).x + size(targetEnt).y) * 0.5) *
-              explosionRadiusModifier) {
-        if (registry.has<CoPlayerAligned>(targetEnt) &&
-            registry.has<CoPlayerAligned>(expEnt) &&
-            registry.get<CoPlayerAligned>(targetEnt).player ==
-                registry.get<CoPlayerAligned>(expEnt).player) {
+          explosionRadiusModifier) {
+        auto targetAligned = registry.try_get<CoPlayerAligned>(targetEnt);
+        auto expAligned = registry.try_get<CoPlayerAligned>(expEnt);
+        if (targetAligned && expAligned && targetAligned->player == expAligned->player) {
           continue;
         }
 
-        if (registry.has<CoAgent>(targetEnt)) {
-          if (registry.has<CoPlayerAligned>(expEnt))
-            newExplosion(pos(targetEnt), 0.008f,
-                         registry.get<CoPlayerAligned>(expEnt).player);
-          else
-            newExplosion(pos(targetEnt), 0.008f, entt::null);
+        if (registry.all_of<CoAgent>(targetEnt)) {
+
+          newExplosion(pos(targetEnt), 0.008f, expAligned ? expAligned->player : entt::null);
+
           pos(targetEnt) = glm::vec2(-1, -1);
 
-        } else if (registry.has<CoTorpedo>(targetEnt)) {
+        } else if (registry.all_of<CoTorpedo>(targetEnt)) {
           bumpCount(targetEnt) += 1;
-        } else if (registry.has<CoPlayer>(targetEnt)) {
+        } else if (registry.all_of<CoPlayer>(targetEnt)) {
           auto &targetPlayer = registry.get<CoPlayer>(targetEnt);
           if (targetPlayer.state != PLAYER_STATE::ALIVE)
             continue;
 
-          if (registry.has<CoPlayerAligned>(expEnt))
+          if (expAligned)
             newExplosion(pos(targetEnt), 0.01f,
                          registry.get<CoPlayerAligned>(expEnt).player);
           else
@@ -104,9 +104,8 @@ void UbootGlApp::processExplosions() {
 
           targetPlayer.state = PLAYER_STATE::KILLED;
 
-          if (registry.has<CoPlayerAligned>(expEnt))
-            registry.get<CoPlayer>(registry.get<CoPlayerAligned>(expEnt).player)
-                .kills++;
+          if (expAligned)
+            registry.get<CoPlayer>(expAligned->player).kills++;
         }
       }
     }
@@ -115,9 +114,8 @@ void UbootGlApp::processExplosions() {
     exp.age += gameTimeStep;
     frame(expEnt) = exp.age * 210.1f + 2; // / exp.explosionDiam * 1.5 + 0.5;
 
-    auto playerEnt = registry.has<CoPlayerAligned>(expEnt)
-                         ? registry.get<CoPlayerAligned>(expEnt).player
-                         : entt::null;
+    auto expAligned = registry.try_get<CoPlayerAligned>(expEnt);
+    auto playerEnt = expAligned ? expAligned->player : entt::null;
 
     if (exp.explosionDiam > 0.0002 && exp.age > 0.003 && !exp.fragmented) {
       exp.fragmented = true;

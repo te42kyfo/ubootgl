@@ -104,41 +104,41 @@ void UbootGlApp::draw() {
     DrawTracersCS::drawPlayerTracers(PVM);
 
     DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_debris"_hs>>(),
-        textures[registry.type<entt::tag<"tex_debris"_hs>>()], PVM, 1.0f, true);
+        registry, entt::type_hash<entt::tag<"tex_debris"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_debris"_hs>>::value()], PVM, 1.0f, true);
 
     DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_debris1"_hs>>(),
-        textures[registry.type<entt::tag<"tex_debris1"_hs>>()], PVM, 1.0f,
+        registry, entt::type_hash<entt::tag<"tex_debris1"_hs>>(),
+        textures[entt::type_hash<entt::tag<"tex_debris1"_hs>>::value()], PVM, 1.0f,
         true);
 
     DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_agent"_hs>>(),
-        textures[registry.type<entt::tag<"tex_agent"_hs>>()], PVM, 1.0f, false);
+        registry, entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_agent"_hs>>::value()], PVM, 1.0f, false);
 
     DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
+        registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 1.0f,
         false, true);
     DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-        textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 1.0f,
+        registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 1.0f,
         false);
-    DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
-                            textures[registry.type<entt::tag<"tex_ship"_hs>>()],
+    DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
+                            textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
                             PVM, 1.0f, false, true);
 
-    DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
-                            textures[registry.type<entt::tag<"tex_ship"_hs>>()],
+    DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
+                            textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
                             PVM, 1.0f, false);
 
     /*DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
-        textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
+        registry, entt::type_hash<entt::tag<"tex_explosion"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_explosion"_hs>>::value()], PVM, 1.0f,
         true, true);*/
     DrawFloatingItems::draw(
-        registry, registry.type<entt::tag<"tex_explosion"_hs>>(),
-        textures[registry.type<entt::tag<"tex_explosion"_hs>>()], PVM, 1.0f,
+        registry, entt::type_hash<entt::tag<"tex_explosion"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_explosion"_hs>>::value()], PVM, 1.0f,
         true);
   });
 
@@ -160,15 +160,15 @@ void UbootGlApp::draw() {
   Draw2DBuf::draw_flag(black_texture, VelocityTextures::getFlagTex(), sim.width,
                        sim.height, PVM, sim.pwidth);
 
-  DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_ship"_hs>>(),
-                          textures[registry.type<entt::tag<"tex_ship"_hs>>()],
+  DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
+                          textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
                           PVM, 5.0f, false, true);
-  DrawFloatingItems::draw(registry, registry.type<entt::tag<"tex_agent"_hs>>(),
-                          textures[registry.type<entt::tag<"tex_agent"_hs>>()],
+  DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
+                          textures[entt::type_hash<entt::tag<"tex_agent"_hs>>::value()],
                           PVM, 3.0f, false, true);
   DrawFloatingItems::draw(
-      registry, registry.type<entt::tag<"tex_torpedo"_hs>>(),
-      textures[registry.type<entt::tag<"tex_torpedo"_hs>>()], PVM, 3.0f, false,
+      registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
+      textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 3.0f, false,
       true);
 
   ImGui::SetNextWindowPos(ImVec2(displayWidth / 2 - 550, 0));

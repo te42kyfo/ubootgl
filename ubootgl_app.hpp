@@ -5,6 +5,8 @@
 #include "draw_tracers_cs.hpp"
 #include "entt/entity/helper.hpp"
 #include "entt/entity/registry.hpp"
+#include "entt/core/hashed_string.hpp"
+
 #include "frame_times.hpp"
 #include "imgui/imgui.h"
 #include "sdl_gl.hpp"
@@ -19,6 +21,8 @@
 #include <random>
 #include <vector>
 
+using namespace entt::literals;
+
 class UbootGlApp {
 public:
   UbootGlApp()
@@ -32,30 +36,29 @@ public:
 
     scale = 3.0;
 
-    textures.emplace(registry.type<entt::tag<"tex_ship"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
                      Texture("resources/ship2.png", 1, 1));
-    textures.emplace(registry.type<entt::tag<"tex_debris1"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_debris1"_hs>>::value(),
                      Texture("resources/debris1.png"));
-    textures.emplace(registry.type<entt::tag<"tex_debris2"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_debris2"_hs>>::value(),
                      Texture("resources/debris2.png"));
-    textures.emplace(registry.type<entt::tag<"tex_debris"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_debris"_hs>>::value(),
                      Texture("resources/debris.png", 2, 1));
-    textures.emplace(registry.type<entt::tag<"tex_agent"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
                      Texture("resources/agent2.png"));
-    textures.emplace(registry.type<entt::tag<"tex_torpedo"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
                      Texture("resources/torpedo.png"));
-    textures.emplace(registry.type<entt::tag<"tex_explosion"_hs>>(),
+    textures.emplace(entt::type_hash<entt::tag<"tex_explosion"_hs>>::value(),
                      Texture("resources/explosion_fullalpha.png", 4, 4));
 
     for (int i = 0; i < 6; i++) {
       auto newAgent = registry.create();
-      registry.assign<CoItem>(newAgent, glm::vec2{0.005f, 0.002f},
-                              glm::vec2(-1, -1), 0.0f);
-      registry.assign<entt::tag<"tex_agent"_hs>>(newAgent);
-      registry.assign<CoAgent>(newAgent);
-      registry.assign<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
-      registry.assign<CoRespawnsOoB>(newAgent);
-      registry.assign<CoTarget>(newAgent);
+      registry.emplace<CoItem>(newAgent, glm::vec2{0.005f, 0.002f}, glm::vec2(-1, -1), 0.0f);
+      registry.emplace<entt::tag<"tex_agent"_hs>>(newAgent);
+      registry.emplace<CoAgent>(newAgent);
+      registry.emplace<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
+      registry.emplace<CoRespawnsOoB>(newAgent);
+      registry.emplace<CoTarget>(newAgent);
     }
 
     static auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
@@ -63,14 +66,14 @@ public:
 
     for (int i = 0; i < 10; i++) {
       auto newDebris = registry.create();
-      registry.assign<CoItem>(newDebris, glm::vec2{0.0003, 0.0003} * 3.0f,
+      registry.emplace<CoItem>(newDebris, glm::vec2{0.0003, 0.0003} * 3.0f,
                               glm::vec2(dist(gen), dist(gen)), 1.2f);
 
-      registry.assign<entt::tag<"tex_debris"_hs>>(newDebris);
+      registry.emplace<entt::tag<"tex_debris"_hs>>(newDebris);
 
-      registry.assign<CoRespawnsOoB>(newDebris);
-      registry.assign<CoAnimated>(newDebris, static_cast<float>(i % 2));
-      registry.assign<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
+      registry.emplace<CoRespawnsOoB>(newDebris);
+      registry.emplace<CoAnimated>(newDebris, static_cast<float>(i % 2));
+      registry.emplace<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                     0.0f);
     }
     TerrainGenerator::init(sim.flag);
@@ -161,5 +164,5 @@ public:
   std::map<SDL_Keycode, bool> keysPressed;
   std::vector<std::map<int, int>> joyAxis;
   std::vector<std::map<int, bool>> joyButtonPressed;
-  std::map<entt::component, Texture> textures;
+  std::map<entt::id_type, Texture> textures;
 };

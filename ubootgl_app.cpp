@@ -89,16 +89,16 @@ void UbootGlApp::loop() {
 
     for (int p = 0; p < playerCount; p++) {
       auto newPlayer = registry.create();
-      registry.assign<CoItem>(newPlayer, glm::vec2{0.009, 0.0022},
+      registry.emplace<CoItem>(newPlayer, glm::vec2{0.009, 0.0022},
                               glm::vec2(0.2, 0.2), 0.0f);
-      registry.assign<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
-      registry.assign<entt::tag<"tex_ship"_hs>>(newPlayer);
-      registry.assign<CoPlayer>(newPlayer, p);
-      registry.assign<CoRespawnsOoB>(newPlayer);
-      registry.assign<CoTarget>(newPlayer);
-      registry.assign<CoAnimated>(newPlayer, 0.0f);
-      registry.assign<CoPlayerAligned>(newPlayer, newPlayer);
-      registry.assign<CoHasTracer>(newPlayer);
+      registry.emplace<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
+      registry.emplace<entt::tag<"tex_ship"_hs>>(newPlayer);
+      registry.emplace<CoPlayer>(newPlayer, p);
+      registry.emplace<CoRespawnsOoB>(newPlayer);
+      registry.emplace<CoTarget>(newPlayer);
+      registry.emplace<CoAnimated>(newPlayer, 0.0f);
+      registry.emplace<CoPlayerAligned>(newPlayer, newPlayer);
+      registry.emplace<CoHasTracer>(newPlayer);
     }
   }
 
@@ -109,7 +109,7 @@ void UbootGlApp::loop() {
   processTorpedos();
   processExplosions();
 
-  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().less([&](auto &item,
+  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().each([&](auto &item,
                                                                 auto &kin) {
     static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
     static auto disy = std::uniform_real_distribution<float>(0.0f, sim.height);
@@ -128,7 +128,7 @@ void UbootGlApp::loop() {
     }
   });
 
-  registry.view<CoDeletedOoB, CoItem>().less([&](auto entity, auto &item) {
+  registry.view<CoDeletedOoB, CoItem>().each([&](auto entity, auto &item) {
     glm::vec2 gridPos = item.pos / sim.h + 0.5f;
     if (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
         gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
@@ -153,8 +153,8 @@ void UbootGlApp::loop() {
         if (player.state == PLAYER_STATE::RESPAWNING) {
           kin.vel = glm::vec2(0.0f, 0.0f);
           if (player.timer <= 0.0f) {
-            registry.assign<entt::tag<"tex_ship"_hs>>(pEnt);
-            registry.assign<CoTarget>(pEnt);
+            registry.emplace<entt::tag<"tex_ship"_hs>>(pEnt);
+            registry.emplace<CoTarget>(pEnt);
             item.pos = glm::vec2(-1.0f, -1.0f);
             player.state = PLAYER_STATE::ALIVE_PROTECTED;
             player.timer = 0.4f;

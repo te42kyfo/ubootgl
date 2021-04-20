@@ -7,19 +7,19 @@ void UbootGlApp::launchTorpedo(entt::entity pEnt) {
   auto playerItem = registry.get<CoItem>(pEnt);
   auto playerKin = registry.get<CoKinematics>(pEnt);
   auto newTorpedo = registry.create();
-  registry.assign<CoTorpedo>(newTorpedo);
-  registry.assign<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, playerItem.pos,
+  registry.emplace<CoTorpedo>(newTorpedo);
+  registry.emplace<CoItem>(newTorpedo, glm::vec2{0.004, 0.0008}, playerItem.pos,
                           playerItem.rotation);
-  registry.assign<CoKinematics>(
+  registry.emplace<CoKinematics>(
       newTorpedo, 0.6,
       playerKin.vel +
           glm::vec2{cos(playerItem.rotation), sin(playerItem.rotation)} * 0.8f,
       playerKin.angVel);
-  registry.assign<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
-  registry.assign<CoDeletedOoB>(newTorpedo);
-  registry.assign<CoPlayerAligned>(newTorpedo, pEnt);
-  registry.assign<CoTarget>(newTorpedo);
-  registry.assign<CoHasTracer>(newTorpedo);
+  registry.emplace<entt::tag<"tex_torpedo"_hs>>(newTorpedo);
+  registry.emplace<CoDeletedOoB>(newTorpedo);
+  registry.emplace<CoPlayerAligned>(newTorpedo, pEnt);
+  registry.emplace<CoTarget>(newTorpedo);
+  registry.emplace<CoHasTracer>(newTorpedo);
   torpedoCooldown(pEnt) = cheatMode ? 0.005 : 0.02;
 
   torpedosLoaded(pEnt) -= cheatMode ? 0.0 : 1.0;
@@ -39,11 +39,11 @@ void UbootGlApp::processTorpedos() {
 
         bool explodes = false;
 
-        registry.view<CoTarget, CoItem>().less([&](auto target,
+        registry.view<CoTarget, CoItem>().each([&](auto target,
                                                    auto &target_item) {
           if (playerAligned.player == target)
             return;
-          if (registry.has<CoPlayerAligned>(target) &&
+          if (registry.all_of<CoPlayerAligned>(target) &&
               registry.get<CoPlayerAligned>(target).player ==
                   playerAligned.player)
             return;
@@ -55,7 +55,7 @@ void UbootGlApp::processTorpedos() {
                         (target_item.size.x + target_item.size.y) * 20000.0f;
 
           float explosionRadiusModifier =
-              registry.has<CoPlayer>(target) ? 0.5f : 1.5f;
+              registry.all_of<CoPlayer>(target) ? 0.5f : 1.5f;
 
           if (distance <
               (explosionDiam * 0.5 + (size(target).x + size(target).y) * 0.5) *

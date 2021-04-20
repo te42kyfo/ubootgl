@@ -2,13 +2,11 @@
 #define ENTT_ENTITY_SPARSE_SET_HPP
 
 
-#include <algorithm>
 #include <iterator>
 #include <utility>
 #include <vector>
 #include <memory>
 #include <cstddef>
-#include <numeric>
 #include <type_traits>
 #include "../config/config.h"
 #include "../core/algorithm.hpp"
@@ -35,32 +33,27 @@ namespace entt {
  * purpose of the framework.
  *
  * @note
- * There are no guarantees that entities are returned in the insertion order
- * when iterate a sparse set. Do not make assumption on the order in any case.
- *
- * @note
- * Internal data structures arrange elements to maximize performance. Because of
- * that, there are no guarantees that elements have the expected order when
- * iterate directly the internal packed array (see `data` and `size` member
- * functions for that). Use `begin` and `end` instead.
+ * Internal data structures arrange elements to maximize performance. There are
+ * no guarantees that entities are returned in the insertion order when iterate
+ * a sparse set. Do not make assumption on the order in any case.
  *
  * @tparam Entity A valid entity type (see entt_traits for more details).
  */
 template<typename Entity>
-class sparse_set {
-    using traits_type = entt_traits<std::underlying_type_t<Entity>>;
+class basic_sparse_set {
+    static constexpr auto page_size = ENTT_PAGE_SIZE;
 
-    static_assert(ENTT_PAGE_SIZE && ((ENTT_PAGE_SIZE & (ENTT_PAGE_SIZE - 1)) == 0));
-    static constexpr auto entt_per_page = ENTT_PAGE_SIZE / sizeof(typename traits_type::entity_type);
+    using traits_type = entt_traits<Entity>;
+    using page_type = std::unique_ptr<Entity[]>;
 
-    class iterator {
-        friend class sparse_set<Entity>;
+    class sparse_set_iterator final {
+        friend class basic_sparse_set<Entity>;
 
-        using direct_type = const std::vector<Entity>;
+        using packed_type = std::vector<Entity>;
         using index_type = typename traits_type::difference_type;
 
-        iterator(direct_type *ref, const index_type idx) ENTT_NOEXCEPT
-            : direct{ref}, index{idx}
+        sparse_set_iterator(const packed_type &ref, const index_type idx) ENTT_NOEXCEPT
+            : packed{&ref}, index{idx}
         {}
 
     public:
@@ -70,108 +63,121 @@ class sparse_set {
         using reference = const value_type &;
         using iterator_category = std::random_access_iterator_tag;
 
-        iterator() ENTT_NOEXCEPT = default;
+        sparse_set_iterator() ENTT_NOEXCEPT = default;
 
-        iterator & operator++() ENTT_NOEXCEPT {
+        sparse_set_iterator & operator++() ENTT_NOEXCEPT {
             return --index, *this;
         }
 
-        iterator operator++(int) ENTT_NOEXCEPT {
+        sparse_set_iterator operator++(int) ENTT_NOEXCEPT {
             iterator orig = *this;
             return ++(*this), orig;
         }
 
-        iterator & operator--() ENTT_NOEXCEPT {
+        sparse_set_iterator & operator--() ENTT_NOEXCEPT {
             return ++index, *this;
         }
 
-        iterator operator--(int) ENTT_NOEXCEPT {
-            iterator orig = *this;
-            return --(*this), orig;
+        sparse_set_iterator operator--(int) ENTT_NOEXCEPT {
+            sparse_set_iterator orig = *this;
+            return operator--(), orig;
         }
 
-        iterator & operator+=(const difference_type value) ENTT_NOEXCEPT {
+        sparse_set_iterator & operator+=(const difference_type value) ENTT_NOEXCEPT {
             index -= value;
             return *this;
         }
 
-        iterator operator+(const difference_type value) const ENTT_NOEXCEPT {
-            return iterator{direct, index-value};
+        sparse_set_iterator operator+(const difference_type value) const ENTT_NOEXCEPT {
+            sparse_set_iterator copy = *this;
+            return (copy += value);
         }
 
-        iterator & operator-=(const difference_type value) ENTT_NOEXCEPT {
+        sparse_set_iterator & operator-=(const difference_type value) ENTT_NOEXCEPT {
             return (*this += -value);
         }
 
-        iterator operator-(const difference_type value) const ENTT_NOEXCEPT {
+        sparse_set_iterator operator-(const difference_type value) const ENTT_NOEXCEPT {
             return (*this + -value);
         }
 
-        difference_type operator-(const iterator &other) const ENTT_NOEXCEPT {
+        difference_type operator-(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return other.index - index;
         }
 
-        reference operator[](const difference_type value) const ENTT_NOEXCEPT {
-            const auto pos = size_type(index-value-1);
-            return (*direct)[pos];
+        [[nodiscard]] reference operator[](const difference_type value) const {
+            const auto pos = size_type(index-value-1u);
+            return (*packed)[pos];
         }
 
-        bool operator==(const iterator &other) const ENTT_NOEXCEPT {
+        [[nodiscard]] bool operator==(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return other.index == index;
         }
 
-        bool operator!=(const iterator &other) const ENTT_NOEXCEPT {
+        [[nodiscard]] bool operator!=(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return !(*this == other);
         }
 
-        bool operator<(const iterator &other) const ENTT_NOEXCEPT {
+        [[nodiscard]] bool operator<(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return index > other.index;
         }
 
-        bool operator>(const iterator &other) const ENTT_NOEXCEPT {
+        [[nodiscard]] bool operator>(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return index < other.index;
         }
 
-        bool operator<=(const iterator &other) const ENTT_NOEXCEPT {
+        [[nodiscard]] bool operator<=(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return !(*this > other);
         }
 
-        bool operator>=(const iterator &other) const ENTT_NOEXCEPT {
+        [[nodiscard]] bool operator>=(const sparse_set_iterator &other) const ENTT_NOEXCEPT {
             return !(*this < other);
         }
 
-        pointer operator->() const ENTT_NOEXCEPT {
-            const auto pos = size_type(index-1);
-            return &(*direct)[pos];
+        [[nodiscard]] pointer operator->() const {
+            const auto pos = size_type(index-1u);
+            return &(*packed)[pos];
         }
 
-        reference operator*() const ENTT_NOEXCEPT {
+        [[nodiscard]] reference operator*() const {
             return *operator->();
         }
 
     private:
-        direct_type *direct;
+        const packed_type *packed;
         index_type index;
     };
 
-    void assure(const std::size_t page) {
-        if(!(page < reverse.size())) {
-            reverse.resize(page+1);
+    [[nodiscard]] auto page(const Entity entt) const ENTT_NOEXCEPT {
+        return size_type{(to_integral(entt) & traits_type::entity_mask) / page_size};
+    }
+
+    [[nodiscard]] auto offset(const Entity entt) const ENTT_NOEXCEPT {
+        return size_type{to_integral(entt) & (page_size - 1)};
+    }
+
+    [[nodiscard]] page_type & assure(const std::size_t pos) {
+        if(!(pos < sparse.size())) {
+            sparse.resize(pos+1);
         }
 
-        if(!reverse[page]) {
-            reverse[page] = std::make_unique<entity_type[]>(entt_per_page);
+        if(!sparse[pos]) {
+            sparse[pos].reset(new entity_type[page_size]);
             // null is safe in all cases for our purposes
-            std::fill_n(reverse[page].get(), entt_per_page, null);
+            for(auto *first = sparse[pos].get(), *last = first + page_size; first != last; ++first) {
+                *first = null;
+            }
         }
+
+        return sparse[pos];
     }
 
-    auto map(const Entity entt) const ENTT_NOEXCEPT {
-        const auto identifier = to_integer(entt) & traits_type::entity_mask;
-        const auto page = size_type(identifier / entt_per_page);
-        const auto offset = size_type(identifier & (entt_per_page - 1));
-        return std::make_pair(page, offset);
-    }
+protected:
+    /*! @brief Swaps two entities in the internal packed array. */
+    virtual void swap_at(const std::size_t, const std::size_t) {}
+
+    /*! @brief Attempts to remove an entity from the internal packed array. */
+    virtual void swap_and_pop(const std::size_t, void *) {}
 
 public:
     /*! @brief Underlying entity identifier. */
@@ -179,49 +185,21 @@ public:
     /*! @brief Unsigned integer type. */
     using size_type = std::size_t;
     /*! @brief Random access iterator type. */
-    using iterator_type = iterator;
+    using iterator = sparse_set_iterator;
+    /*! @brief Reverse iterator type. */
+    using reverse_iterator = const entity_type *;
 
     /*! @brief Default constructor. */
-    sparse_set() = default;
-
-    /**
-     * @brief Copy constructor.
-     * @param other The instance to copy from.
-     */
-    sparse_set(const sparse_set &other)
-        : reverse{},
-          direct{other.direct}
-    {
-        for(size_type pos{}, last = other.reverse.size(); pos < last; ++pos) {
-            if(other.reverse[pos]) {
-                assure(pos);
-                std::copy_n(other.reverse[pos].get(), entt_per_page, reverse[pos].get());
-            }
-        }
-    }
+    basic_sparse_set() = default;
 
     /*! @brief Default move constructor. */
-    sparse_set(sparse_set &&) = default;
+    basic_sparse_set(basic_sparse_set &&) = default;
 
     /*! @brief Default destructor. */
-    virtual ~sparse_set() ENTT_NOEXCEPT = default;
-
-    /**
-     * @brief Copy assignment operator.
-     * @param other The instance to copy from.
-     * @return This sparse set.
-     */
-    sparse_set & operator=(const sparse_set &other) {
-        if(&other != this) {
-            auto tmp{other};
-            *this = std::move(tmp);
-        }
-
-        return *this;
-    }
+    virtual ~basic_sparse_set() = default;
 
     /*! @brief Default move assignment operator. @return This sparse set. */
-    sparse_set & operator=(sparse_set &&) = default;
+    basic_sparse_set & operator=(basic_sparse_set &&) = default;
 
     /**
      * @brief Increases the capacity of a sparse set.
@@ -232,7 +210,7 @@ public:
      * @param cap Desired capacity.
      */
     void reserve(const size_type cap) {
-        direct.reserve(cap);
+        packed.reserve(cap);
     }
 
     /**
@@ -240,19 +218,19 @@ public:
      * allocated space for.
      * @return Capacity of the sparse set.
      */
-    size_type capacity() const ENTT_NOEXCEPT {
-        return direct.capacity();
+    [[nodiscard]] size_type capacity() const ENTT_NOEXCEPT {
+        return packed.capacity();
     }
 
     /*! @brief Requests the removal of unused capacity. */
     void shrink_to_fit() {
         // conservative approach
-        if(direct.empty()) {
-            reverse.clear();
+        if(packed.empty()) {
+            sparse.clear();
         }
 
-        reverse.shrink_to_fit();
-        direct.shrink_to_fit();
+        sparse.shrink_to_fit();
+        packed.shrink_to_fit();
     }
 
     /**
@@ -265,8 +243,8 @@ public:
      *
      * @return Extent of the sparse set.
      */
-    size_type extent() const ENTT_NOEXCEPT {
-        return reverse.size() * entt_per_page;
+    [[nodiscard]] size_type extent() const ENTT_NOEXCEPT {
+        return sparse.size() * page_size;
     }
 
     /**
@@ -279,35 +257,32 @@ public:
      *
      * @return Number of elements.
      */
-    size_type size() const ENTT_NOEXCEPT {
-        return direct.size();
+    [[nodiscard]] size_type size() const ENTT_NOEXCEPT {
+        return packed.size();
     }
 
     /**
      * @brief Checks whether a sparse set is empty.
      * @return True if the sparse set is empty, false otherwise.
      */
-    bool empty() const ENTT_NOEXCEPT {
-        return direct.empty();
+    [[nodiscard]] bool empty() const ENTT_NOEXCEPT {
+        return packed.empty();
     }
 
     /**
      * @brief Direct access to the internal packed array.
      *
-     * The returned pointer is such that range `[data(), data() + size()]` is
+     * The returned pointer is such that range `[data(), data() + size())` is
      * always a valid range, even if the container is empty.
      *
      * @note
-     * There are no guarantees on the order, even though `respect` has been
-     * previously invoked. Internal data structures arrange elements to maximize
-     * performance. Accessing them directly gives a performance boost but less
-     * guarantees. Use `begin` and `end` if you want to iterate the sparse set
-     * in the expected order.
+     * Entities are in the reverse order as returned by the `begin`/`end`
+     * iterators.
      *
      * @return A pointer to the internal packed array.
      */
-    const entity_type * data() const ENTT_NOEXCEPT {
-        return direct.data();
+    [[nodiscard]] const entity_type * data() const ENTT_NOEXCEPT {
+        return packed.data();
     }
 
     /**
@@ -317,15 +292,11 @@ public:
      * array. If the sparse set is empty, the returned iterator will be equal to
      * `end()`.
      *
-     * @note
-     * Random access iterators stay true to the order imposed by a call to
-     * `respect`.
-     *
      * @return An iterator to the first entity of the internal packed array.
      */
-    iterator_type begin() const ENTT_NOEXCEPT {
-        const typename traits_type::difference_type pos = direct.size();
-        return iterator_type{&direct, pos};
+    [[nodiscard]] iterator begin() const ENTT_NOEXCEPT {
+        const typename traits_type::difference_type pos = packed.size();
+        return iterator{packed, pos};
     }
 
     /**
@@ -335,15 +306,39 @@ public:
      * the internal packed array. Attempting to dereference the returned
      * iterator results in undefined behavior.
      *
-     * @note
-     * Random access iterators stay true to the order imposed by a call to
-     * `respect`.
-     *
      * @return An iterator to the element following the last entity of the
      * internal packed array.
      */
-    iterator_type end() const ENTT_NOEXCEPT {
-        return iterator_type{&direct, {}};
+    [[nodiscard]] iterator end() const ENTT_NOEXCEPT {
+        return iterator{packed, {}};
+    }
+
+    /**
+     * @brief Returns a reverse iterator to the beginning.
+     *
+     * The returned iterator points to the first entity of the reversed internal
+     * packed array. If the sparse set is empty, the returned iterator will be
+     * equal to `rend()`.
+     *
+     * @return An iterator to the first entity of the reversed internal packed
+     * array.
+     */
+    [[nodiscard]] reverse_iterator rbegin() const ENTT_NOEXCEPT {
+        return packed.data();
+    }
+
+    /**
+     * @brief Returns a reverse iterator to the end.
+     *
+     * The returned iterator points to the element following the last entity in
+     * the reversed internal packed array. Attempting to dereference the
+     * returned iterator results in undefined behavior.
+     *
+     * @return An iterator to the element following the last entity of the
+     * reversed internal packed array.
+     */
+    [[nodiscard]] reverse_iterator rend() const ENTT_NOEXCEPT {
+        return rbegin() + packed.size();
     }
 
     /**
@@ -352,8 +347,8 @@ public:
      * @return An iterator to the given entity if it's found, past the end
      * iterator otherwise.
      */
-    iterator_type find(const entity_type entt) const ENTT_NOEXCEPT {
-        return has(entt) ? --(end() - index(entt)) : end();
+    [[nodiscard]] iterator find(const entity_type entt) const {
+        return contains(entt) ? --(end() - index(entt)) : end();
     }
 
     /**
@@ -361,10 +356,10 @@ public:
      * @param entt A valid entity identifier.
      * @return True if the sparse set contains the entity, false otherwise.
      */
-    bool has(const entity_type entt) const ENTT_NOEXCEPT {
-        auto [page, offset] = map(entt);
-        // testing against null permits to avoid accessing the direct vector
-        return (page < reverse.size() && reverse[page] && reverse[page][offset] != null);
+    [[nodiscard]] bool contains(const entity_type entt) const {
+        const auto curr = page(entt);
+        // testing against null permits to avoid accessing the packed array
+        return (curr < sparse.size() && sparse[curr] && sparse[curr][offset(entt)] != null);
     }
 
     /**
@@ -372,17 +367,33 @@ public:
      *
      * @warning
      * Attempting to get the position of an entity that doesn't belong to the
-     * sparse set results in undefined behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode if the
-     * sparse set doesn't contain the given entity.
+     * sparse set results in undefined behavior.
      *
      * @param entt A valid entity identifier.
      * @return The position of the entity in the sparse set.
      */
-    size_type index(const entity_type entt) const ENTT_NOEXCEPT {
-        ENTT_ASSERT(has(entt));
-        auto [page, offset] = map(entt);
-        return size_type(reverse[page][offset]);
+    [[nodiscard]] size_type index(const entity_type entt) const {
+        ENTT_ASSERT(contains(entt));
+        return size_type{to_integral(sparse[page(entt)][offset(entt)])};
+    }
+
+    /**
+     * @brief Returns the entity at specified location, with bounds checking.
+     * @param pos The position for which to return the entity.
+     * @return The entity at specified location if any, a null entity otherwise.
+     */
+    [[nodiscard]] entity_type at(const size_type pos) const {
+        return pos < packed.size() ? packed[pos] : null;
+    }
+
+    /**
+     * @brief Returns the entity at specified location, without bounds checking.
+     * @param pos The position for which to return the entity.
+     * @return The entity at specified location.
+     */
+    [[nodiscard]] entity_type operator[](const size_type pos) const {
+        ENTT_ASSERT(pos < packed.size());
+        return packed[pos];
     }
 
     /**
@@ -390,18 +401,14 @@ public:
      *
      * @warning
      * Attempting to assign an entity that already belongs to the sparse set
-     * results in undefined behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode if the
-     * sparse set already contains the given entity.
+     * results in undefined behavior.
      *
      * @param entt A valid entity identifier.
      */
-    void construct(const entity_type entt) {
-        ENTT_ASSERT(!has(entt));
-        auto [page, offset] = map(entt);
-        assure(page);
-        reverse[page][offset] = entity_type(direct.size());
-        direct.push_back(entt);
+    void emplace(const entity_type entt) {
+        ENTT_ASSERT(!contains(entt));
+        assure(page(entt))[offset(entt)] = entity_type{static_cast<typename traits_type::entity_type>(packed.size())};
+        packed.push_back(entt);
     }
 
     /**
@@ -409,24 +416,21 @@ public:
      *
      * @warning
      * Attempting to assign an entity that already belongs to the sparse set
-     * results in undefined behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode if the
-     * sparse set already contains the given entity.
+     * results in undefined behavior.
      *
-     * @tparam It Type of forward iterator.
+     * @tparam It Type of input iterator.
      * @param first An iterator to the first element of the range of entities.
      * @param last An iterator past the last element of the range of entities.
      */
     template<typename It>
-    void batch(It first, It last) {
-        std::for_each(first, last, [this, next = direct.size()](const auto entt) mutable {
-            ENTT_ASSERT(!has(entt));
-            auto [page, offset] = map(entt);
-            assure(page);
-            reverse[page][offset] = entity_type(next++);
-        });
+    void insert(It first, It last) {
+        auto next = static_cast<typename traits_type::entity_type>(packed.size());
+        packed.insert(packed.end(), first, last);
 
-        direct.insert(direct.end(), first, last);
+        for(; first != last; ++first) {
+            ENTT_ASSERT(!contains(*first));
+            assure(page(*first))[offset(*first)] = entity_type{next++};
+        }
     }
 
     /**
@@ -434,52 +438,66 @@ public:
      *
      * @warning
      * Attempting to remove an entity that doesn't belong to the sparse set
-     * results in undefined behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode if the
-     * sparse set doesn't contain the given entity.
+     * results in undefined behavior.
      *
      * @param entt A valid entity identifier.
+     * @param ud Optional user data that are forwarded as-is to derived classes.
      */
-    void destroy(const entity_type entt) {
-        ENTT_ASSERT(has(entt));
-        auto [from_page, from_offset] = map(entt);
-        auto [to_page, to_offset] = map(direct.back());
-        direct[size_type(reverse[from_page][from_offset])] = entity_type(direct.back());
-        reverse[to_page][to_offset] = reverse[from_page][from_offset];
-        reverse[from_page][from_offset] = null;
-        direct.pop_back();
+    void remove(const entity_type entt, void *ud = nullptr) {
+        ENTT_ASSERT(contains(entt));
+        auto &ref = sparse[page(entt)][offset(entt)];
+
+        // last chance to use the entity for derived classes and mixins, if any
+        swap_and_pop(size_type{to_integral(ref)}, ud);
+
+        const auto other = packed.back();
+        sparse[page(other)][offset(other)] = ref;
+        // if it looks weird, imagine what the subtle bugs it prevents are
+        ENTT_ASSERT((packed.back() = entt, true));
+        packed[size_type{to_integral(ref)}] = other;
+        ref = null;
+
+        packed.pop_back();
     }
 
     /**
-     * @brief Swaps two entities in the internal packed array.
+     * @brief Removes multiple entities from a pool.
+     * @tparam It Type of input iterator.
+     * @param first An iterator to the first element of the range of entities.
+     * @param last An iterator past the last element of the range of entities.
+     * @param ud Optional user data that are forwarded as-is to derived classes.
+     */
+    template<typename It>
+    void remove(It first, It last, void *ud = nullptr) {
+        for(; first != last; ++first) {
+            remove(*first, ud);
+        }
+    }
+
+    /**
+     * @copybrief swap_at
      *
      * For what it's worth, this function affects both the internal sparse array
      * and the internal packed array. Users should not care of that anyway.
      *
      * @warning
      * Attempting to swap entities that don't belong to the sparse set results
-     * in undefined behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode if the
-     * sparse set doesn't contain the given entities.
+     * in undefined behavior.
      *
      * @param lhs A valid entity identifier.
      * @param rhs A valid entity identifier.
      */
-    virtual void swap(const entity_type lhs, const entity_type rhs) ENTT_NOEXCEPT {
-        auto [src_page, src_offset] = map(lhs);
-        auto [dst_page, dst_offset] = map(rhs);
-        auto &from = reverse[src_page][src_offset];
-        auto &to = reverse[dst_page][dst_offset];
-        std::swap(direct[size_type(from)], direct[size_type(to)]);
-        std::swap(from, to);
+    void swap(const entity_type lhs, const entity_type rhs) {
+        const auto from = index(lhs);
+        const auto to = index(rhs);
+        std::swap(sparse[page(lhs)][offset(lhs)], sparse[page(rhs)][offset(rhs)]);
+        std::swap(packed[from], packed[to]);
+        swap_at(from, to);
     }
 
     /**
-     * @brief Sort elements according to the given comparison function.
-     *
-     * Sort the elements so that iterating the range with a couple of iterators
-     * returns them in the expected order. See `begin` and `end` for more
-     * details.
+     * @brief Sort the first count elements according to the given comparison
+     * function.
      *
      * The comparison function object must return `true` if the first element
      * is _less_ than the second one, `false` otherwise. The signature of the
@@ -492,97 +510,59 @@ public:
      * Moreover, the comparison function object shall induce a
      * _strict weak ordering_ on the values.
      *
-     * The sort function oject must offer a member function template
+     * The sort function object must offer a member function template
      * `operator()` that accepts three arguments:
      *
      * * An iterator to the first element of the range to sort.
      * * An iterator past the last element of the range to sort.
      * * A comparison function to use to compare the elements.
      *
-     * @note
-     * Attempting to iterate elements using a raw pointer returned by a call to
-     * `data` gives no guarantees on the order, even though `sort` has been
-     * invoked.
-     *
      * @tparam Compare Type of comparison function object.
      * @tparam Sort Type of sort function object.
      * @tparam Args Types of arguments to forward to the sort function object.
-     * @param first An iterator to the first element of the range to sort.
-     * @param last An iterator past the last element of the range to sort.
+     * @param count Number of elements to sort.
      * @param compare A valid comparison function object.
      * @param algo A valid sort function object.
      * @param args Arguments to forward to the sort function object, if any.
      */
     template<typename Compare, typename Sort = std_sort, typename... Args>
-    void sort(iterator_type first, iterator_type last, Compare compare, Sort algo = Sort{}, Args &&... args) {
-        ENTT_ASSERT(!(last < first));
-        ENTT_ASSERT(!(last > end()));
+    void sort_n(const size_type count, Compare compare, Sort algo = Sort{}, Args &&... args) {
+        ENTT_ASSERT(!(count > size()));
 
-        const auto length = std::distance(first, last);
-        const auto skip = std::distance(last, end());
-        const auto to = direct.rend() - skip;
-        const auto from = to - length;
+        algo(packed.rend() - count, packed.rend(), std::move(compare), std::forward<Args>(args)...);
 
-        algo(from, to, std::move(compare), std::forward<Args>(args)...);
+        for(size_type pos{}; pos < count; ++pos) {
+            auto curr = pos;
+            auto next = index(packed[curr]);
 
-        for(size_type pos = skip, end = skip+length; pos < end; ++pos) {
-            auto [page, offset] = map(direct[pos]);
-            reverse[page][offset] = entity_type(pos);
+            while(curr != next) {
+                const auto idx = index(packed[next]);
+                const auto entt = packed[curr];
+
+                swap_at(next, idx);
+                sparse[page(entt)][offset(entt)] = entity_type{static_cast<typename traits_type::entity_type>(curr)};
+
+                curr = next;
+                next = idx;
+            }
         }
     }
 
     /**
-     * @brief Sort elements according to the given comparison function.
+     * @brief Sort all elements according to the given comparison function.
      *
-     * @sa sort
+     * @sa sort_n
      *
-     * This function is a slightly slower version of `sort` that invokes the
-     * caller to indicate which entities are swapped.<br/>
-     * It's recommended when the caller wants to sort its own data structures to
-     * align them with the order induced in the sparse set.
-     *
-     * The signature of the callback should be equivalent to the following:
-     *
-     * @code{.cpp}
-     * bool(const Entity, const Entity);
-     * @endcode
-     *
-     * @tparam Apply Type of function object to invoke to notify the caller.
      * @tparam Compare Type of comparison function object.
      * @tparam Sort Type of sort function object.
      * @tparam Args Types of arguments to forward to the sort function object.
-     * @param first An iterator to the first element of the range to sort.
-     * @param last An iterator past the last element of the range to sort.
-     * @param apply A valid function object to use as a callback.
      * @param compare A valid comparison function object.
      * @param algo A valid sort function object.
      * @param args Arguments to forward to the sort function object, if any.
      */
-    template<typename Apply, typename Compare, typename Sort = std_sort, typename... Args>
-    void arrange(iterator_type first, iterator_type last, Apply apply, Compare compare, Sort algo = Sort{}, Args &&... args) {
-        ENTT_ASSERT(!(last < first));
-        ENTT_ASSERT(!(last > end()));
-
-        const auto length = std::distance(first, last);
-        const auto skip = std::distance(last, end());
-        const auto to = direct.rend() - skip;
-        const auto from = to - length;
-
-        algo(from, to, std::move(compare), std::forward<Args>(args)...);
-
-        for(size_type pos = skip, end = skip+length; pos < end; ++pos) {
-            auto curr = pos;
-            auto next = index(direct[curr]);
-
-            while(curr != next) {
-                apply(direct[curr], direct[next]);
-                auto [page, offset] = map(direct[curr]);
-                reverse[page][offset] = entity_type(curr);
-
-                curr = next;
-                next = index(direct[curr]);
-            }
-        }
+    template<typename Compare, typename Sort = std_sort, typename... Args>
+    void sort(Compare compare, Sort algo = Sort{}, Args &&... args) {
+        sort_n(size(), std::move(compare), std::move(algo), std::forward<Args>(args)...);
     }
 
     /**
@@ -598,23 +578,18 @@ public:
      * the expected order after a call to `respect`. See `begin` and `end` for
      * more details.
      *
-     * @note
-     * Attempting to iterate elements using a raw pointer returned by a call to
-     * `data` gives no guarantees on the order, even though `respect` has been
-     * invoked.
-     *
      * @param other The sparse sets that imposes the order of the entities.
      */
-    void respect(const sparse_set &other) ENTT_NOEXCEPT {
+    void respect(const basic_sparse_set &other) {
         const auto to = other.end();
         auto from = other.begin();
 
-        size_type pos = direct.size() - 1;
+        size_type pos = packed.size() - 1;
 
         while(pos && from != to) {
-            if(has(*from)) {
-                if(*from != direct[pos]) {
-                    swap(direct[pos], *from);
+            if(contains(*from)) {
+                if(*from != packed[pos]) {
+                    swap(packed[pos], *from);
                 }
 
                 --pos;
@@ -625,20 +600,20 @@ public:
     }
 
     /**
-     * @brief Resets a sparse set.
+     * @brief Clears a sparse set.
+     * @param ud Optional user data that are forwarded as-is to derived classes.
      */
-    void reset() {
-        reverse.clear();
-        direct.clear();
+    void clear(void *ud = nullptr) ENTT_NOEXCEPT {
+        remove(begin(), end(), ud);
     }
 
 private:
-    std::vector<std::unique_ptr<entity_type[]>> reverse;
-    std::vector<entity_type> direct;
+    std::vector<page_type> sparse;
+    std::vector<entity_type> packed;
 };
 
 
 }
 
 
-#endif // ENTT_ENTITY_SPARSE_SET_HPP
+#endif

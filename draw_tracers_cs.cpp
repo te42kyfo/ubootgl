@@ -95,8 +95,8 @@ public:
       ssbo_indices, ssbo_end_pointers, ssbo_players;
 
   GLuint vao;
-  int npoints = 40;
-  int ntracers = 2000;
+  int npoints = 30;
+  int ntracers = 1000;
 };
 const int nPlayerPoints = 100;
 
@@ -170,7 +170,7 @@ void updateTracers(GLuint tex_vxy, GLuint flag_tex, int nx, int ny, float dt,
 void updatePlayerTracers(entt::registry &registry) {
 
   // update new item positions into tracer point arrays
-  registry.view<CoItem, CoPlayerAligned, CoHasTracer>().less(
+  registry.view<CoItem, CoPlayerAligned, CoHasTracer>().each(
       [&](auto ent, auto &item, auto &player) {
         if (playerPoints.count(ent) == 0) {
           playerPoints[ent] = Tracer();
@@ -187,7 +187,7 @@ void updatePlayerTracers(entt::registry &registry) {
             item.pos -
             item.size[0] * vec2(cos(item.rotation), sin(item.rotation)) * 0.5f;
         tracer.age = 3.141;
-        if (registry.has<CoPlayer>(ent))
+        if (registry.all_of<CoPlayer>(ent))
           tracer.width = 3.0;
         else
           tracer.width = 0.8;

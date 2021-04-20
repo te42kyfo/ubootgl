@@ -5,12 +5,12 @@
 namespace entt {
 
 
-/*! @brief Empty class type used to request the _as alias_ policy. */
-struct as_alias_t {};
+/*! @brief Empty class type used to request the _as ref_ policy. */
+struct as_ref_t {};
 
 
-/*! @brief Disambiguation tag. */
-constexpr as_alias_t as_alias;
+/*! @brief Empty class type used to request the _as cref_ policy. */
+struct as_cref_t {};
 
 
 /*! @brief Empty class type used to request the _as-is_ policy. */
@@ -24,4 +24,4 @@ struct as_void_t {};
 }
 
 
-#endif // ENTT_META_POLICY_HPP
+#endif
