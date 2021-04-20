@@ -2,7 +2,6 @@
 #include "controls.hpp"
 #include "dtime.hpp"
 
-#include "explosion.hpp"
 #include "velocity_textures.hpp"
 
 #include <vector>

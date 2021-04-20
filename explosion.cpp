@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ubootgl_app.hpp"
 
 void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
