@@ -252,40 +252,6 @@ void UbootGlApp::shiftMap() {
     sim.vx.b(0, y) = 30.0f / inletArea;
   }
 
-  /*for (int y = 0; y < sim.flag.height; y++) {
-    for (int x = 0; x < sim.flag.width; x++) {
-      if (sim.flag(x, y) < 1.0) {
-        if (abs(sim.p(x - 1, y) - sim.p(x + 1, y)) +
-                abs(sim.p(x - 1, y) - sim.p(x + 1, y)) >
-            0.001f) {
-          sim.flag(x, y) = 1.0f;
-          cout << x << " " << y << "\n";
-          break;
-        }
-      }
-    }
-    }*/
-
-  int dir = rand() % 2;
-  for (int i = 0; i < 3; i++) {
-    for (int iy = 1; iy < sim.flag.height - 1; iy++) {
-      int x = sim.flag.width - 2;
-      int y = i % 2 + dir == 0 ? sim.height - iy : iy;
-      int c = 0;
-      float v = sim.flag(x, y);
-      c += v != sim.flag(x + 1, y);
-      c += v != sim.flag(x - 1, y);
-      c += v != sim.flag(x, y + 1);
-      c += v != sim.flag(x, y - 1);
-      c += v != sim.flag(x + 1, y + 1);
-      c += v != sim.flag(x + 1, y - 1);
-      c += v != sim.flag(x - 1, y - 1);
-      c += v != sim.flag(x - 1, y + 1);
-      if (c > 9) {
-        sim.setGrids(glm::vec2(x, y), 1.0f - v);
-      }
-    }
-  }
 
   texture_offset -=
       (float)rock_texture.width * 10.0f / sim.flag.width / sim.flag.width;

@@ -110,10 +110,14 @@ public:
     if (c.x >= 0 && c.y >= 0 && c.x < width && c.y < height) {
       flag(c) = val;
       if (val == 0) {
-        vx(c) = 0.0;
-        vx(c + glm::ivec2(-1, 0)) = 0.0;
-        vy(c) = 0.0;
-        vy(c + glm::ivec2(0, -1)) = 0.0;
+        if (c.x < vx.width)
+          vx(c) = 0.0;
+        if (c.x > 0)
+          vx(c + glm::ivec2(-1, 0)) = 0.0;
+        if (c.y < vy.height)
+          vy(c) = 0.0;
+        if (c.y > 0)
+          vy(c + glm::ivec2(0, -1)) = 0.0;
         p(c) = 0.0;
       }
     }

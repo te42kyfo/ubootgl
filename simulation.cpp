@@ -397,7 +397,7 @@ float Simulation::psampleFlagLinear(glm::vec2 pc) {
 
   glm::vec2 c = pc / (pwidth / (flag.width)) - 0.5f;
   glm::ivec2 ic = c;
-  ic = glm::max({0, 0}, glm::min({flag.width - 1, flag.height - 1}, ic));
+  ic = glm::max({0, 0}, glm::min({flag.width - 2, flag.height - 2}, ic));
   glm::vec2 st = fract(c);
 
   float p01 = flag(ic + glm::ivec2{0, 1});
@@ -429,6 +429,7 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
     auto &item = floatingItemView.get<CoItem>(entity);
     auto &kin = floatingItemView.get<CoKinematics>(entity);
 
+
     int iterationSteps =
         fmin(15.0f, fmax(1.0f, glm::max(abs(kin.vel.x), abs(kin.vel.y)) *
                                    gameDT / h * 2.5));
@@ -440,6 +441,8 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
 
       // Position update
       item.pos += subDT * kin.vel;
+      assert(!std::isnan(item.pos.x) && !std::isnan(item.pos.y));
+
 
       item.rotation =
           fmod(item.rotation + subDT * kin.angVel + 2 * M_PI, 2 * M_PI);
@@ -526,6 +529,7 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
 
       // Calculate new velocity
       kin.vel += subDT * (externalForce + centralForce) / kin.mass;
+      assert(!std::isnan(kin.vel.x) && !std::isnan(kin.vel.y));
 
       float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
       kin.angVel += subDT * angForce / angMass;
