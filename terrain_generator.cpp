@@ -48,10 +48,10 @@ namespace TerrainGenerator {
             int xdir = rand()%2;
             int ydir = rand()%2;
             auto newSlice = Single2DGrid(sliceWidth, flag.height);
-            int sliceStart = rand()%(flag.width - sliceWidth);
+            int sliceStart = rand()%(flag.width - sliceWidth - 1);
             for(int y = 0; y < flag.height; y++) {
                 for(int x = 0; x < sliceWidth; x++) {
-                    int sliceX = xdir ? x + sliceStart : flag.width -x + sliceStart;
+                    int sliceX = xdir ? x + sliceStart : sliceStart + sliceWidth - x - 1;
                     int sliceY = ydir ? y : flag.height-y-1;
                     newSlice(x,y) = 0.5f *blurredFlag(sliceX, sliceY) + 0.5f * flag(sliceX, sliceY);
                 }
