@@ -5,6 +5,10 @@
 
 namespace VelocityTextures {
 
+
+int getNX();
+int getNY();
+
 GLuint getMagTex();
 GLuint getVXYTex();
 GLuint getFlagTex();

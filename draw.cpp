@@ -39,8 +39,8 @@ void UbootGlApp::draw() {
                                         sim.vy_current.data());
 
   DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
-                               VelocityTextures::getFlagTex(), sim.ivx.width,
-                               sim.ivy.height, gameTimeStep, sim.pwidth);
+                               VelocityTextures::getFlagTex(), VelocityTextures::getNX(),
+                               VelocityTextures::getNY(), gameTimeStep, sim.pwidth);
 
   ImU32 colors[] = {ImColor(100, 0, 0, 155), ImColor(0, 100, 0, 155),
                       ImColor(100, 100, 0, 155), ImColor(100, 0, 100, 155)};
@@ -94,8 +94,8 @@ void UbootGlApp::draw() {
     //                  glm::vec3(0.0f, 0.0f, -1.0f));
     PVM = glm::translate(PVM, glm::vec3(-item.pos, 0.0f));
 
-    Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), sim.ivx.width,
-                        sim.ivx.height, PVM, sim.pwidth);
+    Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), VelocityTextures::getNX(),
+                        VelocityTextures::getNY(), PVM, sim.pwidth);
     Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
     Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
                          sim.width, sim.height, PVM, sim.pwidth, texture_offset);

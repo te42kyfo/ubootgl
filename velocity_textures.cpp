@@ -16,6 +16,9 @@ int nx, ny;
 GLuint interp_shader;
 GLuint uloc_nx, uloc_ny, uloc_vx, uloc_vy;
 
+int getNX() { return nx; }
+int getNY() { return ny; }
+
 GLuint getMagTex() { return tex_mag; }
 GLuint getVXYTex() { return tex_vxy; }
 GLuint getFlagTex() { return tex_flag; }
