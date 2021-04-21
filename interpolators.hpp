@@ -8,7 +8,7 @@ template <typename GridType>
 inline float bilinearSample(const GridType &grid, glm::vec2 c) {
 
   c = glm::clamp(c, glm::vec2(0.0f, 0.0f),
-                 glm::vec2(grid.width - 1.0f, grid.height - 1.0f));
+                 glm::vec2(grid.width - 1.1f, grid.height - 1.1f));
 
   glm::ivec2 ic = c;
   glm::vec2 st = fract(c);
