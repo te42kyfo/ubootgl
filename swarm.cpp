@@ -39,17 +39,8 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
     }
 
     glm::vec2 wallAvoidance = {0.0f, 0.0f};
-    glm::vec2 lookAheadPos =
-        item1.pos +
-        glm::vec2(cos(item1.rotation), sin(item1.rotation)) * 1.0f * h;
 
-    lookAheadPos = glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos));
-
-    if (flag(lookAheadPos / h + 0.5f) < 1.0f) {
-      wallAvoidance = glm::vec2(cos(item1.rotation - 0.5 * 3.1),
-                                sin(item1.rotation - 0.5 * 3.1));
-    }
-    glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.1f;
+    glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.01f;
     lookAheadPos2 =
         glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos2));
 
@@ -69,10 +60,10 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
     */
 
     auto targetDir =
-        flowDir * 1.0f + wallAvoidance * 400.0f +
-        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) *
-            20.0f +
-        100.0f * rejectionDirection +
+        flowDir * 1.0f + wallAvoidance * 40.0f +
+        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.01f)) *
+            30.0f +
+        15.0f * rejectionDirection +
         5.0f * commonDirection / (float)swarmCount;
 
     float directedAngle = 0.0f;
@@ -90,16 +81,17 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
 
     //kin1.angVel *= 0.6;
 
-      if (directedAngle < 0)
+    if (directedAngle < 0)
         item1.rotation -= max(directedAngle, -0.2f);
     else
         item1.rotation -= min(directedAngle, +0.2f);
 
     if ( length(targetDir) < 0.1f) targetDir = glm::vec2(1.0, 0.0);
-    targetDir = normalize(targetDir);
+    //targetDir = normalize(targetDir);
     //item1.rotation = item1.rotation * 0.95 + 0.05*atan2(targetDir.y, targetDir.x);
 
-    kin1.force = 2.0f * targetDir;
+
+    kin1.force =  normalize(targetDir) * min(10.0f, length(targetDir));
     assert(!std::isnan(kin1.force.x));
     assert(!std::isnan(kin1.force.y));
   });
