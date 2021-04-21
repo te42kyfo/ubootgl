@@ -124,4 +124,4 @@ template <int neuronCount, int inputCount> class NeuronLayer {
 };
 
 void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
-                    const Single2DGrid &vx, const Single2DGrid &vy, float h);
+                    const DoubleBuffered2DGrid &vx, const DoubleBuffered2DGrid &vy, float h);

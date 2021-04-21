@@ -174,7 +174,7 @@ void UbootGlApp::loop() {
       registry.destroy(entity);
   });
 
-  classicSwarmAI(registry, sim.flag, sim.ivx, sim.ivy, sim.h);
+  classicSwarmAI(registry, sim.flag, sim.vx, sim.vy, sim.h);
 
   double gameLogicT2 = dtime();
 
