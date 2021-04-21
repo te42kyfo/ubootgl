@@ -56,9 +56,12 @@ public:
   DoubleBuffered2DGrid(int width, int height)
       : width(width), height(height), front(0),
         back(1), v{std::vector<float>(width * height),
-                   std::vector<float>(width * height)} {}
+  std::vector<float>(width * height)} {};
 
-  DoubleBuffered2DGrid() : width(0), height(0){};
+    DoubleBuffered2DGrid() : width(0), height(0) {};
+
+  DoubleBuffered2DGrid(const DoubleBuffered2DGrid &) = delete;
+
 
   int idx(int x, int y) const { return y * width + x; }
   void swap() { std::swap(front, back); }
@@ -105,5 +108,5 @@ public:
 
 private:
   int front, back;
-  std::vector<float> v[2];
+  std::array<std::vector<float>, 2> v;
 };
