@@ -1,15 +1,16 @@
 #include "dtime.hpp"
-#include "imgui/imgui.h"
-#include "imgui/backends/imgui_impl_sdl.h"
 #include "imgui/backends/imgui_impl_opengl3.h"
+#include "imgui/backends/imgui_impl_sdl.h"
+#include "imgui/imgui.h"
 #include "implot/implot.h"
 #include "ubootgl_app.hpp"
 #include <cstdio>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <omp.h>
 #include <stdio.h>
-
+#include <thread>
 
 using namespace std;
 
@@ -18,15 +19,13 @@ void *simulationLoop(void *arg);
 int main(int, char **) {
   UbootGlApp app;
 
-  pthread_t threadId;
-  pthread_create(&threadId, NULL, simulationLoop,
-                 reinterpret_cast<void *>(&app));
-
+  std::thread simulationThread(&UbootGlApp::sim_loop, &app);
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImPlot::CreateContext();
-  ImGuiIO &io = ImGui::GetIO(); (void) io;
+  ImGuiIO &io = ImGui::GetIO();
+  (void)io;
   ImFontConfig config;
   config.GlyphExtraSpacing.x = 1.0f; // Increase spacing between characters
   io.Fonts->AddFontFromFileTTF("resources/DroidSans.ttf", 17, &config);
@@ -34,21 +33,19 @@ int main(int, char **) {
   ImGui_ImplSDL2_InitForOpenGL(app.vis.window, app.vis.gl_context);
   ImGui_ImplOpenGL3_Init("#version 130");
 
-
-  bool done = false;
   SDL_JoystickOpen(0);
   SDL_JoystickOpen(1);
 
   double lastFrameTime = dtime();
 
   // Main loop
-  while (!done) {
+  while (app.gameRunning) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
       switch (event.type) {
       case SDL_QUIT:
-        done = true;
+        app.gameRunning = false;
         break;
       case SDL_KEYDOWN:
       case SDL_KEYUP:
@@ -71,7 +68,6 @@ int main(int, char **) {
     app.draw();
     ImGui::Render();
 
-
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glFlush();
@@ -83,40 +79,11 @@ int main(int, char **) {
     lastFrameTime = newFrameTime;
   }
 
+  simulationThread.join();
+  std::cout << "thread has joined\n";
+
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   return 0;
-}
-
-void *simulationLoop(void *arg) {
-
-  UbootGlApp *app = reinterpret_cast<UbootGlApp *>(arg);
-
-  int threadCount = 0;
-#pragma omp parallel
-  { threadCount = omp_get_num_threads(); }
-  int simulationThreads = max(1, threadCount / 2 - 1);
-  cout << simulationThreads << "/" << threadCount << " threads\n";
-  omp_set_num_threads(simulationThreads);
-  double tprev = dtime();
-  double smoothedSimTime = 0.0;
-  while (true) {
-
-    app->simTimeStep = 0.1f * min(0.2, smoothedSimTime);
-    app->sim.step(app->simTimeStep);
-
-    double tnow = dtime();
-    double dt = tnow - tprev;
-    app->simTimes.add(dt * 1000.f);
-    tprev = tnow;
-    smoothedSimTime = smoothedSimTime * 0.95 + 0.05 * dt;
-
-    static int frameCounter = 0;
-    frameCounter ++;
-    if (frameCounter % 2 == 0) {
-      app->shiftMap();
-    }
-  }
-  return nullptr;
 }

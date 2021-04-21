@@ -191,7 +191,7 @@ void UbootGlApp::handleKey(SDL_KeyboardEvent event) {
 
   switch (event.keysym.sym) {
   case SDLK_ESCAPE:
-    exit(0);
+    gameRunning = false;
     break;
   case SDLK_HASH:
     if (event.state)

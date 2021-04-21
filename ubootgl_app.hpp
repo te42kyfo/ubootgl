@@ -3,18 +3,18 @@
 #include "draw_2dbuf.hpp"
 #include "draw_floating_items.hpp"
 #include "draw_tracers_cs.hpp"
+#include "entt/core/hashed_string.hpp"
 #include "entt/entity/helper.hpp"
 #include "entt/entity/registry.hpp"
-#include "entt/core/hashed_string.hpp"
 
 #include "frame_times.hpp"
 #include "imgui/imgui.h"
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
 #include "swarm.hpp"
+#include "terrain_generator.hpp"
 #include "texture.hpp"
 #include "velocity_textures.hpp"
-#include "terrain_generator.hpp"
 #include <glm/vec2.hpp>
 #include <iostream>
 #include <map>
@@ -53,10 +53,12 @@ public:
 
     for (int i = 0; i < 6; i++) {
       auto newAgent = registry.create();
-      registry.emplace<CoItem>(newAgent, glm::vec2{0.005f, 0.002f}, glm::vec2(-1, -1), 0.0f);
+      registry.emplace<CoItem>(newAgent, glm::vec2{0.005f, 0.002f},
+                               glm::vec2(-1, -1), 0.0f);
       registry.emplace<entt::tag<"tex_agent"_hs>>(newAgent);
       registry.emplace<CoAgent>(newAgent);
-      registry.emplace<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f), 0.0f);
+      registry.emplace<CoKinematics>(newAgent, 0.5, glm::vec2(0.0f, 0.0f),
+                                     0.0f);
       registry.emplace<CoRespawnsOoB>(newAgent);
       registry.emplace<CoTarget>(newAgent);
     }
@@ -67,20 +69,21 @@ public:
     for (int i = 0; i < 10; i++) {
       auto newDebris = registry.create();
       registry.emplace<CoItem>(newDebris, glm::vec2{0.0003, 0.0003} * 3.0f,
-                              glm::vec2(dist(gen), dist(gen)), 1.2f);
+                               glm::vec2(dist(gen), dist(gen)), 1.2f);
 
       registry.emplace<entt::tag<"tex_debris"_hs>>(newDebris);
 
       registry.emplace<CoRespawnsOoB>(newDebris);
       registry.emplace<CoAnimated>(newDebris, static_cast<float>(i % 2));
       registry.emplace<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
-                                    0.0f);
+                                     0.0f);
     }
     TerrainGenerator::init(sim.flag);
   }
 
   void loop();
   void draw();
+  void sim_loop(void);
   void handleKey(SDL_KeyboardEvent event);
   void handleJoyAxis(SDL_JoyAxisEvent event);
   void handleJoyButton(SDL_JoyButtonEvent event);
@@ -154,9 +157,10 @@ public:
   Simulation sim;
   Texture rock_texture;
   Texture black_texture = Texture("resources/black.png");
-    float texture_offset = 0.0f;
+  float texture_offset = 0.0f;
 
   double lastKeyUpdate;
+  bool gameRunning = true ;
   bool cheatMode = false;
 
   entt::registry registry;
