@@ -33,9 +33,8 @@ public:
         vx_current(width - 1, height), // grids
         vy_current(width, height - 1), // grids
         p(width, height), f(width, height), flag(width, height),
-        r(width, height), ivx(width, height), ivy(width, height),
-        mg(width, height), h(pwidth / (width - 1.0f)), disx(0.0f, 1.0f),
-        disy(0.0f, (float)height / width) {}
+        r(width, height), mg(width, height), h(pwidth / (width - 1.0f)),
+        disx(0.0f, 1.0f), disy(0.0f, (float)height / width) {}
 
   Simulation(std::string filename, float pwidth, float mu)
       : pwidth(pwidth), mu(mu) {
@@ -63,8 +62,6 @@ public:
     f = {width, height};
     flag = {width, height};
     r = {width, height};
-    ivx = {width, height};
-    ivy = {width, height};
 
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
@@ -104,8 +101,6 @@ public:
   void setVBCs();
 
   void interpolateFields();
-  float *getVX();
-  float *getVY();
   float *getFlag() { return flag.data(); }
   float *getP() { return p.data(); }
   float *getR() { return r.data(); }
@@ -156,7 +151,6 @@ public:
   Single2DGrid vx_current, vy_current;
   std::mutex accum_mutex;
   Single2DGrid p, f, flag, r;
-  Single2DGrid ivx, ivy;
   MG mg;
   float h;
 
