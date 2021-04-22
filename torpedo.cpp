@@ -41,12 +41,20 @@ void UbootGlApp::processTorpedos() {
 
         registry.view<CoTarget, CoItem>().each([&](auto target,
                                                    auto &target_item) {
+          // Do not aim for the player that has owns the torpedo
           if (playerAligned.player == target)
             return;
+
+          // Do not aim for entities that have the same alignment as the torpedo
           if (registry.all_of<CoPlayerAligned>(target) &&
               registry.get<CoPlayerAligned>(target).player ==
                   playerAligned.player)
             return;
+
+          // Only aim for players that are alive and not protected
+          if( auto targetPlayer = registry.try_get<CoPlayer>(target); targetPlayer != nullptr && targetPlayer->state != PLAYER_STATE::ALIVE)
+            return;
+
 
           float distance = length(item.pos - target_item.pos);
           float angle = glm::dot({cos(item.rotation), sin(item.rotation)},

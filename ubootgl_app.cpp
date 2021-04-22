@@ -108,23 +108,32 @@ void UbootGlApp::loop() {
   processTorpedos();
   processExplosions();
 
-  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().each([&](auto &item,
+  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().each([&](auto entity,
+                                                                auto &item,
                                                                 auto &kin) {
     static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
     static auto disy = std::uniform_real_distribution<float>(0.0f, sim.height);
     static std::default_random_engine gen(std::random_device{}());
 
     glm::vec2 gridPos = item.pos / sim.h + 0.5f;
+    bool respawned = false;
     while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
            gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
            sim.psampleFlagLinear(item.pos) < 0.01) {
 
+      respawned = true;
       gridPos = glm::vec2(disx(gen), disy(gen));
       item.pos = gridPos * sim.h;
       kin.vel = {0.0f, 0.0f};
       kin.angVel = 0;
       kin.force = {0.0f, 0.0f};
+
     }
+      auto player = registry.try_get<CoPlayer>(entity);
+      if (player && respawned){
+        player->state = PLAYER_STATE::ALIVE_PROTECTED;
+        player->timer += 0.15;
+      }
   });
 
   registry.view<CoDeletedOoB, CoItem>().each([&](auto entity, auto &item) {
@@ -156,7 +165,7 @@ void UbootGlApp::loop() {
             registry.emplace<CoTarget>(pEnt);
             item.pos = glm::vec2(-1.0f, -1.0f);
             player.state = PLAYER_STATE::ALIVE_PROTECTED;
-            player.timer = 0.4f;
+            player.timer = 0.3f;
           }
           return;
         }

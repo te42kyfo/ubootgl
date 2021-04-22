@@ -171,8 +171,8 @@ void UbootGlApp::draw() {
       textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 3.0f, false,
       true);
 
-  ImGui::SetNextWindowPos(ImVec2(displayWidth / 2 - 550, 0));
-  ImGui::SetNextWindowSize(ImVec2(1100, 120));
+  ImGui::SetNextWindowPos(ImVec2(displayWidth - 610, 0));
+  ImGui::SetNextWindowSize(ImVec2(600, 120));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -188,8 +188,8 @@ void UbootGlApp::draw() {
 
   ImGui::SameLine();
   ImPlot::SetNextPlotLimits(0, frameTimes.data().size(), 0, max(simTimes.largest(), frameTimes.largest()), ImGuiCond_Always);
-  ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(2, 2));
-  ImPlot::BeginPlot("##frameTimePlot", NULL, "ms", ImVec2(500, 105), ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations);
+  ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(5, 5));
+  ImPlot::BeginPlot("##frameTimePlot", NULL, "ms", ImVec2(450, 105), ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations);
   ImPlot::SetNextLineStyle(ImVec4(1.0, 0.2, 0.2, 1.0));
   ImPlot::PlotLine("", frameTimes.data().data(), frameTimes.data().size());
   ImPlot::SetNextLineStyle(ImVec4(0.2, 1.0, 0.2, 1.0));
