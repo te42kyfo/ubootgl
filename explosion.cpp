@@ -110,7 +110,8 @@ void UbootGlApp::processExplosions() {
   }
   registry.view<CoExplosion>().each([&](auto expEnt, auto &exp) {
     exp.age += gameTimeStep;
-    frame(expEnt) = exp.age * 210.1f + 2; // / exp.explosionDiam * 1.5 + 0.5;
+    frame(expEnt) = exp.age *180.0f;//*210.1f; // / exp.explosionDiam * 1.5 + 0.5;
+
 
     auto expAligned = registry.try_get<CoPlayerAligned>(expEnt);
     auto playerEnt = expAligned ? expAligned->player : entt::null;
@@ -134,7 +135,7 @@ void UbootGlApp::processExplosions() {
       }
     }
 
-    if (age(expEnt) > 0.08) // 10.0f * explosionDiam(expEnt))
+    if (age(expEnt) > 0.07) // 10.0f * explosionDiam(expEnt))
       registry.destroy(expEnt);
   });
 

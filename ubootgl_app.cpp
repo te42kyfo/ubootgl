@@ -44,15 +44,15 @@ void UbootGlApp::loop() {
       // rot(pEnt) += 4.0 * timeDelta;
       registry.get<CoKinematics>(pEnt).angVel = 50.0;
     }
-    registry.get<CoAnimated>(pEnt).frame = 0.0;
+    registry.get<CoAnimated>(pEnt).frame = (-cos(player.timer * 180.0) + 1) *0.5f;
     if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
         joyButtonPressed[player.keySet][4]) {
       force(pEnt) += 12.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-      registry.get<CoAnimated>(pEnt).frame = 1.0;
+      registry.get<CoAnimated>(pEnt).frame = (-cos(player.timer * 180.0) + 1) *0.5f + 2.0f;
     }
     if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]]) {
       force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-      registry.get<CoAnimated>(pEnt).frame = 1.0;
+      registry.get<CoAnimated>(pEnt).frame = (-cos(player.timer * 180.0) + 1) *0.5f + 2.0f;
     }
     if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
         joyButtonPressed[player.keySet][5]) {
@@ -89,7 +89,7 @@ void UbootGlApp::loop() {
     for (int p = 0; p < playerCount; p++) {
       auto newPlayer = registry.create();
       registry.emplace<CoItem>(newPlayer, glm::vec2{0.009, 0.0022},
-                              glm::vec2(0.2, 0.2), 0.0f);
+                               glm::vec2(0.2, 0.2), 0.0f);
       registry.emplace<CoKinematics>(newPlayer, 1.3, glm::vec2(0, 0), 0.0f);
       registry.emplace<entt::tag<"tex_ship"_hs>>(newPlayer);
       registry.emplace<CoPlayer>(newPlayer, p);
@@ -251,7 +251,6 @@ void UbootGlApp::shiftMap() {
     sim.vx.f(0, y) = 30.0f / inletArea;
     sim.vx.b(0, y) = 30.0f / inletArea;
   }
-
 
   texture_offset -=
       (float)rock_texture.width * 10.0f / sim.flag.width / sim.flag.width;

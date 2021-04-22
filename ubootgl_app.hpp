@@ -37,7 +37,7 @@ public:
     scale = 3.0;
 
     textures.emplace(entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
-                     Texture("resources/ship2.png", 1, 1));
+                     Texture("resources/ship2.png", 1, 4));
     textures.emplace(entt::type_hash<entt::tag<"tex_debris1"_hs>>::value(),
                      Texture("resources/debris1.png"));
     textures.emplace(entt::type_hash<entt::tag<"tex_debris2"_hs>>::value(),
