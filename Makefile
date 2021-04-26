@@ -7,9 +7,9 @@ OBJ_FILES := $(addprefix obj/,$(CPP_FILES:.cpp=.o))
 DEPS := $(addprefix obj/,$(CPP_FILES:.cpp=.d))
 
 INCLUDE = -I/usr/include/SDL2 -I/usr/include/ -I./external/ -I./external/imgui
-LD_FLAGS = -L./external/ `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp
+LD_FLAGS = -flto -L./external/ `sdl2-config --libs` -lSDL2_ttf -lGL -lGLEW  -fopenmp
 LD_FLAGS_DEBUG = $(LD_FLAGS) -g -pg
-CC_FLAGS = -std=c++17 -Wall -Wextra -fopenmp -Wno-strict-overflow -Ofast -g -march=native  -DNDEBUG -DGLM_ENABLE_EXPERIMENTAL
+CC_FLAGS = -flto -std=c++17 -Wall -Wextra -fopenmp -Wno-strict-overflow -Ofast -g -march=native  -DNDEBUG -DGLM_ENABLE_EXPERIMENTAL
 CC_FLAGS_DEBUG = -std=c++17 -Wall -Wextra -Wno-strict-overflow -g -pg -O2 -fopenmp -fno-omit-frame-pointer -DENABLE_GLM_EXPERIMENTAL
 NAME = ubootgl
 BIN =
