@@ -24,47 +24,38 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
 
       float d = length(item1.pos - item2.pos);
 
+      if (d < 0.000001f)
+        continue;
       if (d < 10.0f * (item1.size.x + item1.size.y)) {
         swarmCenter += item2.pos + kin2.vel * 0.1f;
         commonDirection += kin2.vel;
         swarmCount++;
       }
-      if (d < 0.000001f)
-        continue;
       if (d < (item1.size.x + item1.size.y) * 1.0f) {
         rejectionDirection +=
-            (item1.pos + kin1.vel * 0.1f - item2.pos - kin2.vel * 0.1f) /
-            (d + item1.size.x);
+            (item1.pos + kin1.vel * 0.01f - item2.pos - kin2.vel * 0.01f) / max(0.001f, d);
       }
     }
-
-    glm::vec2 wallAvoidance = {0.0f, 0.0f};
-
-    glm::vec2 lookAheadPos2 = item1.pos + kin1.vel * 0.01f;
-    lookAheadPos2 =
-        glm::min({1.0f, 1.0f}, glm::max({0.0f, 0.0f}, lookAheadPos2));
-
-    if ( bilinearSample(flag, lookAheadPos2 / h) < 1.0f) {
-      wallAvoidance += glm::vec2(kin1.vel.y, -kin1.vel.x);
-    }
+    swarmCount = max(swarmCount,1);
+    auto lookAheadPos = item1.pos + kin1.vel * 0.02f;
+    glm::vec2 wallAvoidance  = glm::vec2( bilinearSample(flag, lookAheadPos / h - glm::vec2(4,0)) -
+                               bilinearSample(flag, lookAheadPos / h + glm::vec2(4,0)),
+                               bilinearSample(flag, lookAheadPos / h - glm::vec2(0,4)) -
+                               bilinearSample(flag, lookAheadPos / h + glm::vec2(0,4)));
+    wallAvoidance += glm::vec2( bilinearSample(flag,item1.pos / h - glm::vec2(4,0)) -
+                               bilinearSample(flag, item1.pos / h + glm::vec2(4,0)),
+                               bilinearSample(flag, item1.pos / h - glm::vec2(0,4)) -
+                                bilinearSample(flag, item1.pos / h + glm::vec2(0,4)));
 
     auto vgridPos = glm::ivec2((item1.pos / h));
     auto flowDir = -glm::vec2(bilinearSample(vx, vgridPos), bilinearSample(vy, vgridPos));
 
-    /*    auto targetDir = normalize(
-        glm::vec2(-0.001, 0) + wallAvoidance * 400.0f +
-        (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.1f)) *
-            20.0f +
-        100.0f * rejectionDirection +
-        5.0f * commonDirection / (float)swarmCount);
-    */
-
     auto targetDir =
-        flowDir * 1.0f + wallAvoidance * 40.0f +
+        flowDir * 10.0f - wallAvoidance * 20.0f +
         (swarmCenter / (float)swarmCount - (item1.pos + kin1.vel * 0.01f)) *
             30.0f +
-        15.0f * rejectionDirection +
-        5.0f * commonDirection / (float)swarmCount;
+        1.0f * rejectionDirection +
+        10.0f * commonDirection / (float)swarmCount;
 
     float directedAngle = 0.0f;
     if (glm::length(targetDir) > 0.0f) {
@@ -72,26 +63,14 @@ void classicSwarmAI(entt::registry &registry, const Single2DGrid &flag,
       directedAngle = glm::orientedAngle(normalize(targetDir), heading);
     }
 
-    //if (directedAngle < 0)
-    //  kin1.angVel = min(max(kin1.angVel + 60.0, -120.0), 120.0);
-    //else if (directedAngle > 0)
-    //  kin1.angVel = min(max(kin1.angVel - 60.0, -120.0), 120.0);
-    //else
-    //  kin1.angVel = min(max(kin1.angVel - 4.0, -120.0), 120.0);
-
-    //kin1.angVel *= 0.6;
-
     if (directedAngle < 0)
         item1.rotation -= max(directedAngle, -0.2f);
     else
         item1.rotation -= min(directedAngle, +0.2f);
 
     if ( length(targetDir) < 0.1f) targetDir = glm::vec2(1.0, 0.0);
-    //targetDir = normalize(targetDir);
-    //item1.rotation = item1.rotation * 0.95 + 0.05*atan2(targetDir.y, targetDir.x);
 
-
-    kin1.force =  normalize(targetDir) * min(10.0f, length(targetDir));
+    kin1.force =  normalize(targetDir) * min(8.0f, max(2.0f, length(targetDir)));
     assert(!std::isnan(kin1.force.x));
     assert(!std::isnan(kin1.force.y));
   });
