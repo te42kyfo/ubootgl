@@ -4,7 +4,7 @@ using namespace std;
 
 namespace TerrainGenerator {
 
-    const int sliceWidth = 600;
+    const int sliceWidth = 500;
 
     vector<Single2DGrid> slices;
 
@@ -58,8 +58,14 @@ namespace TerrainGenerator {
             }
 
             slices.push_back(newSlice);
-
         }
+
+
+        auto newSlice = Single2DGrid(sliceWidth, flag.height);
+        newSlice = 1.0f;
+        slices.push_back(newSlice);
+        slices.push_back(newSlice);
+
         currentSlice = -1;
         nextSlice = rand() % slices.size();
         sliceProgress = 0;
