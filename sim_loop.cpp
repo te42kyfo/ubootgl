@@ -11,7 +11,10 @@ void UbootGlApp::sim_loop(void) {
 
   int threadCount = 0;
 #pragma omp parallel
-  { threadCount = omp_get_num_threads(); }
+  {
+#pragma omp master
+      threadCount = omp_get_num_threads();
+  }
   int simulationThreads = max(1, threadCount / 2 - 1);
   cout << simulationThreads << "/" << threadCount << " threads\n";
   omp_set_num_threads(simulationThreads);
@@ -30,7 +33,7 @@ void UbootGlApp::sim_loop(void) {
 
     static int frameCounter = 0;
     frameCounter++;
-    if (frameCounter % 20 == 0) {
+    if (frameCounter % 10 == 0) {
       shiftMap();
     }
   }
