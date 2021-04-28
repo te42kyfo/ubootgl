@@ -62,6 +62,13 @@ void UbootGlApp::processTorpedos() {
           float score = angle / distance / distance *
                         (target_item.size.x + target_item.size.y) * 20000.0f;
 
+          if (registry.all_of<CoTorpedo>(target))
+            score *= 5.0;
+
+          if (registry.all_of<CoPlayer>(target))
+            score *= 3.0;
+
+
           float explosionRadiusModifier =
               registry.all_of<CoPlayer>(target) ? 0.5f : 1.5f;
 
