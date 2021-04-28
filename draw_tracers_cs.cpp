@@ -13,6 +13,17 @@ using namespace std;
 using vec2 = glm::vec2;
 namespace DrawTracersCS {
 
+template <typename T> size_t vectorBytes(std::vector<T> &vec) {
+  return sizeof(T) * vec.size();
+}
+
+template <typename T> void glVectorToSSBO(GLuint target, std::vector<T> &vec) {
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, target);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, vectorBytes(vec), vec.data(),
+               GL_STATIC_DRAW);
+  GL_CALL(glGetError());
+}
+
 class GLTracers {
 public:
   void init(int _npoints, int _ntracers) {
@@ -30,10 +41,7 @@ public:
 
     // initialize points SSBO
     vector<vec2> pointdata(ntracers * npoints, vec2(0, 0));
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_points);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, pointdata.size() * sizeof(vec2),
-                 pointdata.data(), GL_STATIC_DRAW);
+    glVectorToSSBO(ssbo_points, pointdata);
 
     // allocate vertices SSBO with zeros
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_vertices);
@@ -43,29 +51,20 @@ public:
 
     // allocate pointers SSBO with zeros
     vector<int> pointers(ntracers, 0);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_start_pointers);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, pointers.size() * sizeof(int),
-                 pointers.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_end_pointers);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, pointers.size() * sizeof(int),
-                 pointers.data(), GL_STATIC_DRAW);
+    glVectorToSSBO(ssbo_start_pointers, pointers);
+    glVectorToSSBO(ssbo_end_pointers, pointers);
 
     vector<int> players(ntracers, -1);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_players);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, players.size() * sizeof(int),
-                 players.data(), GL_STATIC_DRAW);
+    glVectorToSSBO(ssbo_players, players);
 
     // allocate age SSBO with random values
     vector<float> ages(ntracers, 0.0);
     for (int i = 0; i < ntracers; i++) {
       ages[i] = 2 * 3.1; //(rand() % 10000) / 10000.0 * 2.0 * 3.141;
     }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_ages);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, ages.size() * sizeof(float),
-                 ages.data(), GL_STATIC_DRAW);
+    glVectorToSSBO(ssbo_ages, ages);
 
     // allocate index buffer
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_indices);
     vector<int> indices(ntracers * (npoints - 1) * 6);
     for (int nt = 0; nt < ntracers; nt++) {
       for (int np = 0; np < npoints - 1; np++) {
@@ -78,8 +77,8 @@ public:
         indices[(nt * (npoints - 1) + np) * 6 + 5] = base + 3;
       }
     }
-    glBufferData(GL_SHADER_STORAGE_BUFFER, indices.size() * sizeof(int),
-                 indices.data(), GL_STATIC_DRAW);
+
+    glVectorToSSBO(ssbo_indices, indices);
   }
 
   void bindSSBOs() {
@@ -261,29 +260,14 @@ void updatePlayerTracers(entt::registry &registry) {
   player_tracers.ntracers = start_pointers_buf.size();
 
   // upload buffers
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_points);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, points_buf.size() * sizeof(vec2),
-               points_buf.data(), GL_STATIC_DRAW);
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_start_pointers);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               start_pointers_buf.size() * sizeof(vec2),
-               start_pointers_buf.data(), GL_STATIC_DRAW);
+  glVectorToSSBO(player_tracers.ssbo_points, points_buf);
+  glVectorToSSBO(player_tracers.ssbo_start_pointers, start_pointers_buf);
+  glVectorToSSBO(player_tracers.ssbo_end_pointers, end_pointers_buf);
+  glVectorToSSBO(player_tracers.ssbo_ages, ages_buf);
+  glVectorToSSBO(player_tracers.ssbo_players, players_buf);
+  glVectorToSSBO(player_tracers.ssbo_vertices, vertices_buf);
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_end_pointers);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, end_pointers_buf.size() * sizeof(vec2),
-               end_pointers_buf.data(), GL_STATIC_DRAW);
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_ages);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, ages_buf.size() * sizeof(vec2),
-               ages_buf.data(), GL_STATIC_DRAW);
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_players);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, players_buf.size() * sizeof(int),
-               players_buf.data(), GL_STATIC_DRAW);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, player_tracers.ssbo_vertices);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, vertices_buf.size() * sizeof(vec2),
-               vertices_buf.data(), GL_STATIC_DRAW);
 }
 
 void draw(GLTracers &tracers, glm::mat4 PVM) {
