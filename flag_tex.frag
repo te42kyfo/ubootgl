@@ -1,6 +1,6 @@
 #version 450
 
-varying vec2 FragCoord;
+in vec2 FragCoord;
 
 uniform sampler2D mask_tex;
 uniform sampler2D fill_tex;

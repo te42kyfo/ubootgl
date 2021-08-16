@@ -2,9 +2,9 @@
 
 uniform mat4 TM;
 uniform int npoints;
-varying vec2 FragCoord;
-varying vec4 v_color;
-varying float v_side;
+out vec2 FragCoord;
+out vec4 v_color;
+out float v_side;
 
 layout( std430, binding=0 )  buffer SP {uint  start_pointers[];};
 layout( std430, binding=1 )  buffer EP {uint  end_pointers[];};
