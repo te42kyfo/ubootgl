@@ -35,12 +35,15 @@ GLuint loadShader(string vshader, string fshader,
   glCompileShader(vertex);
   glCompileShader(fragment);
   glGetShaderInfoLog(vertex, 5000, &length, log);
-  if (length > 0)
+  if (length > 0) {
+    std::cout << vshader << "\n";
     std::cout << "Vertex Shader: " << log << "\n";
+  }
   glGetShaderInfoLog(fragment, 5000, &length, log);
-  if (length > 0)
+  if (length > 0) {
+    std::cout << fshader << "\n";
     std::cout << "Fragment Shader: " << log << "\n";
-
+  }
   glAttachShader(program, vertex);
   glAttachShader(program, fragment);
 
@@ -69,8 +72,10 @@ GLuint loadComputeShader(string cshader) {
   glShaderSource(compute_shader, 1, &shader_source, NULL);
   glCompileShader(compute_shader);
   glGetShaderInfoLog(compute_shader, 5000, &length, log);
-  if (length > 0)
+  if (length > 0) {
+    std::cout << cshader << "\n";
     std::cout << "Compute Shader: " << log << "\n";
+  }
 
   glAttachShader(program, compute_shader);
   glLinkProgram(program);
