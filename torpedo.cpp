@@ -70,7 +70,7 @@ void UbootGlApp::processTorpedos() {
 
 
           float explosionRadiusModifier =
-              registry.all_of<CoPlayer>(target) ? 0.5f : 1.5f;
+              registry.all_of<CoPlayer>(target) ? 0.4f : 1.0f;
 
           if (distance <
               (explosionDiam * 0.5 + (size(target).x + size(target).y) * 0.5) *
