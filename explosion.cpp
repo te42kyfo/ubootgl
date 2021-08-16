@@ -11,8 +11,8 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
   auto newExp = registry.create();
   registry.emplace<CoExplosion>(newExp, explosionDiam, fragmentLevel);
   registry.emplace<CoItem>(newExp,
-                          glm::vec2{explosionDiam, explosionDiam} * 3.0f, pos,
-                          randRotationDist(gen));
+                           glm::vec2{explosionDiam, explosionDiam} * 3.0f, pos,
+                           randRotationDist(gen));
   if (player != entt::null)
     registry.emplace<CoPlayerAligned>(newExp, player);
   registry.emplace<entt::tag<"tex_explosion"_hs>>(newExp);
@@ -64,26 +64,30 @@ void UbootGlApp::processExplosions() {
 
   for (auto it = std::begin(targetView); it != std::end(targetView); it++) {
     auto targetEnt = *it;
+    float explosionRadiusModifier =
+        registry.all_of<CoPlayer>(targetEnt) ? 0.7f : 1.5f;
     for (auto expIter = std::begin(explosionView);
          expIter != std::end(explosionView); expIter++) {
       auto expEnt = *expIter;
 
-      float explosionRadiusModifier =
-          registry.all_of<CoPlayer>(targetEnt) ? 0.5f : 1.5f;
+      if (registry.get<CoExplosion>(expEnt).age < 0.002f)
+        continue;
 
       if (glm::length(pos(expEnt) - pos(targetEnt)) <
           (explosionDiam(expEnt) * 0.5 +
            (size(targetEnt).x + size(targetEnt).y) * 0.5) *
-          explosionRadiusModifier) {
+              explosionRadiusModifier) {
         auto targetAligned = registry.try_get<CoPlayerAligned>(targetEnt);
         auto expAligned = registry.try_get<CoPlayerAligned>(expEnt);
-        if (targetAligned && expAligned && targetAligned->player == expAligned->player) {
+        if (targetAligned && expAligned &&
+            targetAligned->player == expAligned->player) {
           continue;
         }
 
         if (registry.all_of<CoAgent>(targetEnt)) {
 
-          newExplosion(pos(targetEnt), 0.008f, expAligned ? expAligned->player : entt::null);
+          newExplosion(pos(targetEnt), 0.008f,
+                       expAligned ? expAligned->player : entt::null);
 
           pos(targetEnt) = glm::vec2(-1, -1);
 
@@ -110,8 +114,8 @@ void UbootGlApp::processExplosions() {
   }
   registry.view<CoExplosion>().each([&](auto expEnt, auto &exp) {
     exp.age += gameTimeStep;
-    frame(expEnt) = exp.age *180.0f;//*210.1f; // / exp.explosionDiam * 1.5 + 0.5;
-
+    frame(expEnt) =
+        exp.age * 180.0f; //*210.1f; // / exp.explosionDiam * 1.5 + 0.5;
 
     auto expAligned = registry.try_get<CoPlayerAligned>(expEnt);
     auto playerEnt = expAligned ? expAligned->player : entt::null;
