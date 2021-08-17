@@ -16,12 +16,14 @@ using namespace std;
 namespace Draw2DBuf {
 
 GLuint mag_shader;
+
 Shader flag_shader;
+Shader flag_mag_shader;
 Shader scalar_shader;
+
 GLuint vao, vbo, tbo, tex_id;
 
 GLint mag_shader_tex_uloc, mag_shader_TM_uloc, mag_shader_bounds_uloc;
-GLint flag_shader_mask_tex_uloc, flag_shader_fill_tex_uloc, flag_shader_TM_uloc;
 
 float tex_min = 0;
 float tex_max = 0;
@@ -38,7 +40,9 @@ void init() {
 
   // Flag Field Shader and uloc loading
   flag_shader = Shader(loadShader("./scale_translate2D.vert", "./flag_tex.frag",
-                           {{0, "in_Position"}}));
+                                  {{0, "in_Position"}}));
+  flag_mag_shader = Shader(loadShader("./scale_translate2D.vert", "./flag_mag.frag",
+                                  {{0, "in_Position"}}));
   scalar_shader = Shader(loadShader("./scale_translate2D.vert",
                                     "./color_tex.frag", {{0, "in_Position"}}));
 
@@ -64,6 +68,55 @@ glm::mat4 transformationMatrix(int tex_width, int tex_height, float pwidth,
       PVM, glm::vec3(pwidth, pwidth * (float)tex_height / tex_width, 1.0f));
 
   return TM;
+}
+
+void draw_mag_flag(Texture fill_tex, GLuint flag_tex_id, GLuint mag_tex_id,
+                   int nx, int ny, glm::mat4 PVM, float pwidth, float offset) {
+
+  GL_CALL(glUseProgram(flag_mag_shader.id));
+  GL_CALL(glUniform1i(flag_mag_shader.uloc("mask_tex"), 0));
+  GL_CALL(glUniform1i(flag_mag_shader.uloc("fill_tex"), 1));
+  GL_CALL(glUniform1i(flag_mag_shader.uloc("vel_tex"), 2));
+  GL_CALL(glUniform1f(flag_mag_shader.uloc("offset"), offset));
+  float vmin = 0;
+  float vmax = 1.0;
+  GL_CALL(glUniform2f(flag_mag_shader.uloc("bounds"), vmin, vmax));
+
+  glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
+
+  GL_CALL(glUniformMatrix4fv(flag_shader.uloc("TM"), 1, GL_FALSE,
+                             glm::value_ptr(TM)));
+
+  // mag tex
+  GL_CALL(glActiveTexture(GL_TEXTURE2));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, mag_tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+  // stone tex
+  GL_CALL(glActiveTexture(GL_TEXTURE1));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+  // flag tex
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, flag_tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+  // Draw Quad with texture
+  GL_CALL(glBindVertexArray(vao));
+  GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+  GL_CALL(glEnableVertexAttribArray(0));
+  GL_CALL(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+
+  GL_CALL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+
+  GL_CALL(glUseProgram(0));
 }
 
 void draw_mag(GLuint tex_id, int nx, int ny, glm::mat4 PVM, float pwidth) {
@@ -96,22 +149,15 @@ void draw_mag(GLuint tex_id, int nx, int ny, glm::mat4 PVM, float pwidth) {
   GL_CALL(glUseProgram(0));
 }
 
-void draw_flag(Texture fill_tex, GLuint flag_tex_id, int nx, int ny,
-               glm::mat4 PVM, float pwidth, float offset) {
+void draw_flag(GLuint flag_tex_id, int nx, int ny,
+               glm::mat4 PVM, float pwidth) {
   GL_CALL(glUseProgram(flag_shader.id));
   GL_CALL(glUniform1i(flag_shader.uloc("mask_tex"), 0));
-  GL_CALL(glUniform1i(flag_shader.uloc("fill_tex"), 1));
-  GL_CALL(glUniform1f(flag_shader.uloc("offset"), offset));
 
   glm::mat4 TM = transformationMatrix(nx, ny, pwidth, PVM);
 
   GL_CALL(
-      glUniformMatrix4fv(flag_shader_TM_uloc, 1, GL_FALSE, glm::value_ptr(TM)));
-
-  GL_CALL(glActiveTexture(GL_TEXTURE1));
-  GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
-  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+      glUniformMatrix4fv(flag_shader.uloc("TM"), 1, GL_FALSE, glm::value_ptr(TM)));
 
   GL_CALL(glActiveTexture(GL_TEXTURE0));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, flag_tex_id));

@@ -92,11 +92,11 @@ void UbootGlApp::draw() {
     //                  glm::vec3(0.0f, 0.0f, -1.0f));
     PVM = glm::translate(PVM, glm::vec3(-item.pos, 0.0f));
 
-    Draw2DBuf::draw_mag(VelocityTextures::getMagTex(), VelocityTextures::getNX(),
-                        VelocityTextures::getNY(), PVM, sim.pwidth);
-    Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
-    Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
-                         sim.width, sim.height, PVM, sim.pwidth, texture_offset);
+    Draw2DBuf::draw_mag_flag(rock_texture, VelocityTextures::getFlagTex(), VelocityTextures::getMagTex(), VelocityTextures::getNX(),
+                        VelocityTextures::getNY(), PVM, sim.pwidth, texture_offset);
+    // Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
+    //Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
+    //                     sim.width, sim.height, PVM, sim.pwidth, texture_offset);
 
     DrawTracersCS::draw(PVM);
     DrawTracersCS::drawPlayerTracers(PVM);
@@ -155,7 +155,7 @@ void UbootGlApp::draw() {
       PVM,
       glm::vec3(1.0f, 1.0f * (float)renderWidth / renderHeight, 1.0f) * 2.0f);
   PVM = glm::translate(PVM, glm::vec3(-0.5f, -0.5f, 0.0f));
-  Draw2DBuf::draw_flag(black_texture, VelocityTextures::getFlagTex(), sim.width,
+  Draw2DBuf::draw_flag(VelocityTextures::getFlagTex(), sim.width,
                        sim.height, PVM, sim.pwidth);
 
   DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
