@@ -111,7 +111,7 @@ struct Tracer {
 
 std::map<entt ::entity, Tracer> playerPoints;
 
-Shader advect_points_cs, update_vertices_cs, draw_tracers_sh;
+Shader advect_points_cs, update_vertices_cs, draw_tracers_sh, shift_tracers_cs;
 
 GLTracers fluid_tracers, player_tracers;
 
@@ -119,6 +119,8 @@ void init() {
 
   advect_points_cs = Shader(loadComputeShader("advect_tracer_points.cs"));
   update_vertices_cs = Shader(loadComputeShader("update_tracer_vertices.cs"));
+  shift_tracers_cs = Shader(loadComputeShader("shift_tracers.cs"));
+
   draw_tracers_sh = Shader(
       loadShader("./tracercs.vert", "./color.frag", {{0, "in_Position"}}));
 
@@ -260,15 +262,38 @@ void updatePlayerTracers(entt::registry &registry) {
   player_tracers.ntracers = start_pointers_buf.size();
 
   // upload buffers
-
   glVectorToSSBO(player_tracers.ssbo_points, points_buf);
   glVectorToSSBO(player_tracers.ssbo_start_pointers, start_pointers_buf);
   glVectorToSSBO(player_tracers.ssbo_end_pointers, end_pointers_buf);
   glVectorToSSBO(player_tracers.ssbo_ages, ages_buf);
   glVectorToSSBO(player_tracers.ssbo_players, players_buf);
   glVectorToSSBO(player_tracers.ssbo_vertices, vertices_buf);
-
 }
+
+void shiftTracers(GLTracers &tracers, float shift) {
+
+  tracers.bindSSBOs();
+  GL_CALL(glUseProgram(shift_tracers_cs.id));
+  GL_CALL(glUniform1i(shift_tracers_cs.uloc("npoints"), tracers.npoints));
+  GL_CALL(glUniform1i(shift_tracers_cs.uloc("ntracers"), tracers.ntracers));
+  GL_CALL(glUniform1f(shift_tracers_cs.uloc("shift"), shift));
+
+  GL_CALL(glDispatchCompute((tracers.ntracers * tracers.npoints - 1) / 256 + 1,
+                            1, 1));
+  GL_CALL(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT));
+}
+
+  void shiftPlayerTracers(float shift) {
+
+    for(auto& tracer : playerPoints) {
+      for ( auto& point : tracer.second.points ) {
+        point += vec2(shift, 0.0f);
+      }
+    }
+
+  }
+  
+void shiftFluidTracers(float shift) { shiftTracers(fluid_tracers, shift); }
 
 void draw(GLTracers &tracers, glm::mat4 PVM) {
   GL_CALL(glBindVertexArray(tracers.vao));

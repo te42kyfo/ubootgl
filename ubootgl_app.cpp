@@ -44,15 +44,18 @@ void UbootGlApp::loop() {
       // rot(pEnt) += 4.0 * timeDelta;
       registry.get<CoKinematics>(pEnt).angVel = 50.0;
     }
-    registry.get<CoAnimated>(pEnt).frame = (-cos(player.timer * 180.0) + 1) *0.5f;
+    registry.get<CoAnimated>(pEnt).frame =
+        (-cos(player.timer * 180.0) + 1) * 0.5f;
     if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_FORWARD}]] ||
         joyButtonPressed[player.keySet][4]) {
       force(pEnt) += 12.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-      registry.get<CoAnimated>(pEnt).frame = (-cos(player.timer * 180.0) + 1) *0.5f + 2.0f;
+      registry.get<CoAnimated>(pEnt).frame =
+          (-cos(player.timer * 180.0) + 1) * 0.5f + 2.0f;
     }
     if (keysPressed[key_map[{player.keySet, CONTROLS::THRUST_BACKWARD}]]) {
       force(pEnt) -= 3.0f * glm::vec2(cos(item.rotation), sin(item.rotation));
-      registry.get<CoAnimated>(pEnt).frame = (-cos(player.timer * 180.0) + 1) *0.5f + 2.0f;
+      registry.get<CoAnimated>(pEnt).frame =
+          (-cos(player.timer * 180.0) + 1) * 0.5f + 2.0f;
     }
     if (keysPressed[key_map[{player.keySet, CONTROLS::LAUNCH_TORPEDO}]] ||
         joyButtonPressed[player.keySet][5]) {
@@ -127,13 +130,12 @@ void UbootGlApp::loop() {
       kin.vel = {0.0f, 0.0f};
       kin.angVel = 0;
       kin.force = {0.0f, 0.0f};
-
     }
-      auto player = registry.try_get<CoPlayer>(entity);
-      if (player && respawned){
-        player->state = PLAYER_STATE::ALIVE_PROTECTED;
-        player->timer += 0.15;
-      }
+    auto player = registry.try_get<CoPlayer>(entity);
+    if (player && respawned) {
+      player->state = PLAYER_STATE::ALIVE_PROTECTED;
+      player->timer += 0.15;
+    }
   });
 
   registry.view<CoDeletedOoB, CoItem>().each([&](auto entity, auto &item) {
@@ -185,6 +187,24 @@ void UbootGlApp::loop() {
 
   classicSwarmAI(registry, sim.flag, sim.vx, sim.vy, sim.h);
 
+  scoped_lock lock(mapShiftMutex);
+  {
+    sim.mg.updateFields(sim.flag);
+    VelocityTextures::uploadFlag(sim.getFlag());
+    VelocityTextures::updateFromStaggered(sim.vx_current.data(),
+                                          sim.vy_current.data());
+    while (mapShifts > 0) {
+      float shift = sim.pwidth / (sim.flag.width-1);
+      registry.view<CoItem>().each(
+          [&](auto &item) { item.pos.x -= shift; });
+      texture_offset -=
+          (float)rock_texture.width * 10.0f / sim.flag.width / sim.flag.width;
+      DrawTracersCS::shiftPlayerTracers(-shift);
+      DrawTracersCS::shiftFluidTracers(-shift);
+      mapShifts--;
+    }
+  }
+
   double gameLogicT2 = dtime();
 
   gameLogicTimes.add(gameLogicT2 - gameLogicT1);
@@ -222,50 +242,51 @@ void UbootGlApp::shiftMap() {
 
   auto newLine = TerrainGenerator::generateLine(sim.flag);
 
-  for (int y = 0; y < sim.vx.height; y++) {
-    for (int x = 2; x < sim.vx.width; x++) {
-      sim.vx(x - 1, y) = sim.vx(x, y);
+  {
+    scoped_lock lock(mapShiftMutex);
+    for (int y = 0; y < sim.vx.height; y++) {
+      for (int x = 2; x < sim.vx.width; x++) {
+        sim.vx(x - 1, y) = sim.vx(x, y);
+        sim.vx.b(x - 1, y) = sim.vx(x, y);
+      }
     }
-  }
 
-  for (int y = 0; y < sim.vy.height; y++) {
-    for (int x = 2; x < sim.vy.width; x++) {
-      sim.vy(x - 1, y) = sim.vy(x, y);
+    for (int y = 0; y < sim.vy.height; y++) {
+      for (int x = 2; x < sim.vy.width; x++) {
+        sim.vy(x - 1, y) = sim.vy(x, y);
+        sim.vy.b(x - 1, y) = sim.vy(x, y);
+      }
     }
-  }
 
-  for (int y = 0; y < sim.p.height; y++) {
-    for (int x = 1; x < sim.p.width; x++) {
-      sim.p(x - 1, y) = sim.p(x, y);
+    for (int y = 0; y < sim.p.height; y++) {
+      for (int x = 1; x < sim.p.width; x++) {
+        sim.p(x - 1, y) = sim.p(x, y);
+      }
     }
-  }
 
-  for (int y = 0; y < sim.flag.height; y++) {
-    for (int x = 1; x < sim.flag.width; x++) {
-      sim.setGrids(glm::vec2(x - 1, y), sim.flag(x, y));
+    for (int y = 0; y < sim.flag.height; y++) {
+      for (int x = 1; x < sim.flag.width; x++) {
+        sim.setGrids(glm::vec2(x - 1, y), sim.flag(x, y));
+      }
+      sim.setGrids(glm::vec2(sim.flag.width - 1, y),
+                   sim.flag(sim.flag.width - 2, y));
     }
-    sim.setGrids(glm::vec2(sim.flag.width - 1, y),
-                 sim.flag(sim.flag.width - 2, y));
-  }
 
-  for (int y = 0; y < sim.flag.height; y++) {
-    sim.setGrids(glm::vec2(sim.flag.width - 1, y), newLine[y]);
-  }
+    for (int y = 0; y < sim.flag.height; y++) {
+      sim.setGrids(glm::vec2(sim.flag.width - 1, y), newLine[y]);
+    }
 
-  float inletArea = 1.0f;
-  for (int y = 0; y < sim.vy.height; y++) {
-    inletArea += sim.flag(0, y);
+    float inletArea = 1.0f;
+    for (int y = 0; y < sim.vy.height; y++) {
+      inletArea += sim.flag(0, y);
+    }
+    for (int y = 0; y < sim.vx.height; y++) {
+      sim.vx.f(0, y) = 20.0f / inletArea;
+      sim.vx.b(0, y) = 20.0f / inletArea;
+    }
+    sim.saveCurrentVelocityFields();
   }
-  for (int y = 0; y < sim.vx.height; y++) {
-    sim.vx.f(0, y) = 20.0f / inletArea;
-    sim.vx.b(0, y) = 20.0f / inletArea;
-  }
-
-  texture_offset -=
-      (float)rock_texture.width * 10.0f / sim.flag.width / sim.flag.width;
-
   sim.mg.updateFields(sim.flag);
 
-  registry.view<CoItem>().each(
-      [&](auto &item) { item.pos.x -= sim.pwidth / (sim.flag.width - 1); });
+  mapShifts++;
 }

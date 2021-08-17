@@ -20,7 +20,7 @@
 #include <map>
 #include <random>
 #include <vector>
-
+#include <atomic>
 using namespace entt::literals;
 
 class UbootGlApp {
@@ -152,7 +152,8 @@ public:
   float scale;
   float gameTimeStep = 0;
   float simTimeStep = 0;
-
+  std::atomic<int> mapShifts = 0;
+  std::mutex mapShiftMutex;
   SdlGl vis;
   Simulation sim;
   Texture rock_texture;
@@ -162,6 +163,7 @@ public:
   double lastKeyUpdate;
   bool gameRunning = true ;
   bool cheatMode = false;
+
 
   entt::registry registry;
   entt::registry &reg = registry;

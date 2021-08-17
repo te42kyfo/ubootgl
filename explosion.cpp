@@ -143,6 +143,4 @@ void UbootGlApp::processExplosions() {
       registry.destroy(expEnt);
   });
 
-  sim.mg.updateFields(sim.flag);
-  VelocityTextures::uploadFlag(sim.getFlag());
 }

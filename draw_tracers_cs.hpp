@@ -8,7 +8,8 @@ void init();
 
 void updatePlayerTracers(entt::registry &registry);
 void drawPlayerTracers(glm::mat4 PVM);
-
+void shiftPlayerTracers(float shift);
+void shiftFluidTracers(float shift);
 void updateTracers(GLuint vel_tex, GLuint flag_tex, int nx, int ny, float dt,
                    float pwidth);
 void draw(glm::mat4 PVM);

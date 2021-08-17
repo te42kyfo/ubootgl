@@ -35,8 +35,6 @@ void UbootGlApp::draw() {
 
   DrawTracersCS::updatePlayerTracers(registry);
 
-  VelocityTextures::updateFromStaggered(sim.vx_current.data(),
-                                        sim.vy_current.data());
 
   DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
                                VelocityTextures::getFlagTex(), VelocityTextures::getNX(),
