@@ -515,8 +515,8 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
           if (tSP.x / h < 1.0f || tSP.x / h > vx.width - 2.0f ||
               tSP.y / h < 1.0f || tSP.y / h > vx.height - 2.0f)
             continue;
-          auto deltaVec = force * (0.002f + sideLength[i]) * sideLength[i] /
-                          (float)nSP * subDT * 15000000.0f;
+          auto deltaVec = force * (0.003f + sideLength[i]) * sideLength[i] /
+                          (float)nSP * subDT * 18000000.0f;
           glm::vec2 cx = tSP / h - vec2(0.5f, 0.0);
           bilinearScatter(vx_accum, cx, -deltaVec.x);
           glm::vec2 cy = tSP / h - vec2(0.0f, 0.5);
