@@ -118,6 +118,15 @@ inline __m256 bicubicSample(const GridType &grid, __m256 cx, __m256 cy) {
   __m128 l6 = _mm_loadu_ps( grid.data() + _mm256_extract_epi32(idx, 6));
   __m128 l7 = _mm_loadu_ps( grid.data() + _mm256_extract_epi32(idx, 7));
 
+/*  l0 = _mm_set_ps(11,12,13,14);
+  l1 = _mm_set_ps(21,22,23,24);
+  l2 = _mm_set_ps(31,32,33,34);
+  l3 = _mm_set_ps(41,42,43,44);
+  l4 = _mm_set_ps(51,52,53,54);
+  l5 = _mm_set_ps(61,62,63,64);
+  l6 = _mm_set_ps(71,72,73,74);
+  l7 = _mm_set_ps(81,82,83,84);
+*/
   __m256 A0 = _mm256_insertf128_ps(_mm256_castps128_ps256(l0), l4, 1);
   __m256 A1 = _mm256_insertf128_ps(_mm256_castps128_ps256(l1), l5, 1);
   __m256 A2 = _mm256_insertf128_ps(_mm256_castps128_ps256(l2), l6, 1);
@@ -131,7 +140,14 @@ inline __m256 bicubicSample(const GridType &grid, __m256 cx, __m256 cy) {
   __m256 v11 = _mm256_shuffle_ps(t1, t2, 0b01000100);
   __m256 v12 = _mm256_shuffle_ps(t1, t2, 0b11101110);
   __m256 v13 = _mm256_shuffle_ps(t3, t4, 0b01000100);
-  __m256 v14 = _mm256_shuffle_ps(t4, t4, 0b11101110);
+  __m256 v14 = _mm256_shuffle_ps(t3, t4, 0b11101110);
+
+
+  //for(int i = 0; i < 8; i++) {
+  //    std::cout << v11[i] << " " << v12[i] << " " << v13[i] << " " << v14[i] << "\n";
+  //}
+  //std::cout << "\n";
+
 
   __m256 v1 = CubicHermite(stx, v11, v12, v13, v14);
 
@@ -162,7 +178,7 @@ inline __m256 bicubicSample(const GridType &grid, __m256 cx, __m256 cy) {
   __m256 v21 = _mm256_shuffle_ps(t1, t2, 0b01000100);
   __m256 v22 = _mm256_shuffle_ps(t1, t2, 0b11101110);
   __m256 v23 = _mm256_shuffle_ps(t3, t4, 0b01000100);
-  __m256 v24 = _mm256_shuffle_ps(t4, t4, 0b11101110);
+  __m256 v24 = _mm256_shuffle_ps(t3, t4, 0b11101110);
 
   __m256 v2 = CubicHermite(stx, v21, v22, v23, v24);
 
@@ -193,7 +209,7 @@ inline __m256 bicubicSample(const GridType &grid, __m256 cx, __m256 cy) {
   __m256 v31 = _mm256_shuffle_ps(t1, t2, 0b01000100);
   __m256 v32 = _mm256_shuffle_ps(t1, t2, 0b11101110);
   __m256 v33 = _mm256_shuffle_ps(t3, t4, 0b01000100);
-  __m256 v34 = _mm256_shuffle_ps(t4, t4, 0b11101110);
+  __m256 v34 = _mm256_shuffle_ps(t3, t4, 0b11101110);
 
   __m256 v3 = CubicHermite(stx, v31, v32, v33, v34);
 
@@ -224,7 +240,7 @@ inline __m256 bicubicSample(const GridType &grid, __m256 cx, __m256 cy) {
   __m256 v41 = _mm256_shuffle_ps(t1, t2, 0b01000100);
   __m256 v42 = _mm256_shuffle_ps(t1, t2, 0b11101110);
   __m256 v43 = _mm256_shuffle_ps(t3, t4, 0b01000100);
-  __m256 v44 = _mm256_shuffle_ps(t4, t4, 0b11101110);
+  __m256 v44 = _mm256_shuffle_ps(t3, t4, 0b11101110);
 
   __m256 v4 = CubicHermite(stx, v41, v42, v43, v44);
 
