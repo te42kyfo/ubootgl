@@ -257,6 +257,12 @@ void Simulation::advect() {
             _mm256_set1_epi32(x), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
         __m256i mmy = _mm256_set1_epi32(y);
 
+
+        if(_mm256_movemask_ps( _mm256_cmp_ps(_mm256_add_ps(_mm256_loadu_ps(flag.data() + x - 1 + y * flag.width),
+                                                           _mm256_loadu_ps(flag.data() + x + y * flag.width)),
+                                             _mm256_set1_ps(2.0f), 0)) == 0) continue;
+
+
         __m256 posx =
             _mm256_add_ps(_mm256_cvtepi32_ps(mmx), _mm256_set1_ps(0.5f));
         __m256 posy = _mm256_cvtepi32_ps(mmy);
@@ -298,6 +304,11 @@ void Simulation::advect() {
       }
 
       for (int x = 1; x < vy.width - 8; x += 8) {
+
+        if(_mm256_movemask_ps( _mm256_cmp_ps(_mm256_add_ps(_mm256_loadu_ps(flag.data() + x  + y * flag.width),
+                                                           _mm256_loadu_ps(flag.data() + x + (y-1) * flag.width)),
+                                             _mm256_set1_ps(2.0f), 0)) == 0) continue;
+
         __m256i mmx = _mm256_add_epi32(
             _mm256_set1_epi32(x), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
         __m256i mmy = _mm256_set1_epi32(y);
@@ -343,12 +354,9 @@ void Simulation::advect() {
       }
     }
 
-#pragma omp single
-    {
-      vx.swap();
-      vy.swap();
-    }
   }
+  vx.swap();
+  vy.swap();
 }
 
 void Simulation::step(float timestep) {
