@@ -3,10 +3,11 @@
 #include <cmath>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
+#include <omp.h>
 
 using namespace std;
 
-float smoothingKernel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
+inline float smoothingKernel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
                       float h, float alpha, int x, int y) {
   float val = 0.0f;
   float sum = 0.0f;
@@ -30,20 +31,52 @@ void gs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
     }
   }
 }
+
+inline void rbgs_red_line(int y, Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
+                   float h, float alpha) {
+  for (int x = 1 + (y % 2); x < p.width - 1; x += 2) {
+    p(x, y) = smoothingKernel(p, f, flag, h, alpha, x, y);
+  }
+}
+
+inline void rbgs_black_line(int y, Single2DGrid &p, Single2DGrid &f,
+                     Single2DGrid &flag, float h, float alpha) {
+  for (int x = 1 + ((y + 1) % 2); x < p.width - 1; x += 2) {
+    p(x, y) = smoothingKernel(p, f, flag, h, alpha, x, y);
+  }
+}
+
 void rbgs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
           float alpha) {
-#pragma omp parallel for if (p.height > 30)
-  for (int y = 1; y < p.height - 1; y++) {
-#pragma omp simd
-    for (int x = 1 + (y % 2); x < p.width - 1; x += 2) {
-      p(x, y) = smoothingKernel(p, f, flag, h, alpha, x, y);
-    }
-  }
-#pragma omp parallel for if (p.height > 30)
-  for (int y = 1; y < p.height - 1; y++) {
-#pragma omp simd
-    for (int x = 1 + ((y + 1) % 2); x < p.width - 1; x += 2) {
-      p(x, y) = smoothingKernel(p, f, flag, h, alpha, x, y);
+
+#pragma omp parallel
+  {
+    int num_threads = omp_get_num_threads();
+    int thread_num = omp_get_thread_num();
+
+    if (p.height / num_threads < 100) {
+#pragma omp for
+      for (int y = 1; y < p.height - 1; y++)
+        rbgs_red_line(y, p, f, flag, h, alpha);
+#pragma omp for
+      for (int y = 1; y < p.height - 1; y++)
+        rbgs_black_line(y, p, f, flag, h, alpha);
+    } else {
+
+      int start_line = 1 + (p.height - 2) * thread_num / num_threads;
+      int end_line = 1 + (p.height - 2) * (thread_num + 1) / num_threads;
+
+      rbgs_red_line(start_line, p, f, flag, h, alpha);
+      rbgs_red_line(start_line + 1, p, f, flag, h, alpha);
+
+#pragma omp barrier
+
+      for (int y = start_line; y < end_line - 1; y++) {
+        rbgs_red_line(y + 1, p, f, flag, h, alpha);
+        rbgs_black_line(y, p, f, flag, h, alpha);
+      }
+
+      rbgs_black_line(end_line, p, f, flag, h, alpha);
     }
   }
 }
