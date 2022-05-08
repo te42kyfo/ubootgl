@@ -250,7 +250,7 @@ void Simulation::advect() {
 
 #pragma omp parallel
   {
-#pragma omp for
+#pragma omp for schedule(dynamic, 16)
     for (int y = 1; y < vx.height - 1; y++) {
       for (int x = 1; x < vx.width - 8; x += 8) {
         __m256i mmx = _mm256_add_epi32(
@@ -261,6 +261,7 @@ void Simulation::advect() {
         if(_mm256_movemask_ps( _mm256_cmp_ps(_mm256_add_ps(_mm256_loadu_ps(flag.data() + x - 1 + y * flag.width),
                                                            _mm256_loadu_ps(flag.data() + x + y * flag.width)),
                                              _mm256_set1_ps(2.0f), 0)) == 0) continue;
+
 
 
         __m256 posx =
