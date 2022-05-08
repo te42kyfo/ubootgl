@@ -49,6 +49,14 @@ inline void rbgs_black_line(int y, Single2DGrid &p, Single2DGrid &f,
 void rbgs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
           float alpha) {
 
+  if (p.height < 20) {
+    for (int y = 1; y < p.height - 1; y++)
+      rbgs_red_line(y, p, f, flag, h, alpha);
+    for (int y = 1; y < p.height - 1; y++)
+      rbgs_black_line(y, p, f, flag, h, alpha);
+    return;
+  }
+
 #pragma omp parallel
   {
     int num_threads = omp_get_num_threads();
@@ -67,15 +75,16 @@ void rbgs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
       int end_line = 1 + (p.height - 2) * (thread_num + 1) / num_threads;
 
       rbgs_red_line(start_line, p, f, flag, h, alpha);
-      rbgs_red_line(start_line + 1, p, f, flag, h, alpha);
+      rbgs_red_line(start_line+1, p, f, flag, h, alpha);
 
 #pragma omp barrier
 
-      for (int y = start_line; y < end_line - 1; y++) {
+      for (int y = start_line+1; y < end_line - 1; y++) {
         rbgs_red_line(y + 1, p, f, flag, h, alpha);
         rbgs_black_line(y, p, f, flag, h, alpha);
       }
 
+      rbgs_black_line(end_line-1, p, f, flag, h, alpha);
       rbgs_black_line(end_line, p, f, flag, h, alpha);
     }
   }
