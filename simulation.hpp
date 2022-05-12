@@ -140,6 +140,7 @@ public:
   void step(float timestep);
 
   void advectFloatingItems(entt::registry &registry, float gameDT);
+  void advectFloatingItemsSimple(entt::registry &registry, float gameDT);
 
   float pwidth;
   float mu;

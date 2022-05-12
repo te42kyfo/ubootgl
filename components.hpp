@@ -25,6 +25,22 @@ struct CoKinematics {
   int bumpCount;
 };
 
+struct CoKinematicsSimple {
+  CoKinematicsSimple(float mass, glm::vec2 vel, float angVel)
+      : mass(mass), vel(vel), force({0.0f, 0.0f}), angVel(angVel),
+        angForce(0.0f), bumpCount(0){};
+
+  float mass;
+
+  glm::vec2 vel;
+  glm::vec2 force;
+
+  float angVel;
+  float angForce;
+
+  int bumpCount;
+};
+
 struct CoSprite {
   Texture *tex;
   float frame;

@@ -107,13 +107,12 @@ void UbootGlApp::loop() {
   lastKeyUpdate = updateTime;
 
   sim.advectFloatingItems(registry, gameTimeStep);
+  sim.advectFloatingItemsSimple(registry, gameTimeStep);
 
   processTorpedos();
   processExplosions();
 
-  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().each([&](auto entity,
-                                                                auto &item,
-                                                                auto &kin) {
+  auto respawnLambda = [&](auto entity, auto &item, auto &kin) {
     static auto disx = std::uniform_real_distribution<float>(0.0f, sim.width);
     static auto disy = std::uniform_real_distribution<float>(0.0f, sim.height);
     static std::default_random_engine gen(std::random_device{}());
@@ -136,7 +135,9 @@ void UbootGlApp::loop() {
       player->state = PLAYER_STATE::ALIVE_PROTECTED;
       player->timer += 0.15;
     }
-  });
+  };
+  registry.view<CoRespawnsOoB, CoItem, CoKinematics>().each(respawnLambda);
+  registry.view<CoRespawnsOoB, CoItem, CoKinematicsSimple>().each(respawnLambda);
 
   registry.view<CoDeletedOoB, CoItem>().each([&](auto entity, auto &item) {
     glm::vec2 gridPos = item.pos / sim.h + 0.5f;

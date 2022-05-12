@@ -75,7 +75,7 @@ public:
 
       registry.emplace<CoRespawnsOoB>(newDebris);
       registry.emplace<CoAnimated>(newDebris, static_cast<float>(i % 2));
-      registry.emplace<CoKinematics>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
+      registry.emplace<CoKinematicsSimple>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                      0.0f);
     }
     TerrainGenerator::init(sim.flag);
