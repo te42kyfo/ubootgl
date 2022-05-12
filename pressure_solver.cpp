@@ -85,7 +85,8 @@ void rbgs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
       }
 
       rbgs_black_line(end_line-1, p, f, flag, h, alpha);
-      rbgs_black_line(end_line, p, f, flag, h, alpha);
+      if(end_line < p.height-1)
+        rbgs_black_line(end_line, p, f, flag, h, alpha);
     }
   }
 }

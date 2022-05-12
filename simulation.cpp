@@ -228,7 +228,7 @@ float Simulation::getDT() {
 
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
-      max_vel = glm::max(max_vel, length(bilinearVel({x, y})));
+      max_vel = glm::max(max_vel, glm::max(vx(x,y), vy(x,y)));
     }
   }
 
