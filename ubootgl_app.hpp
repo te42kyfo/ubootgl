@@ -43,7 +43,7 @@ public:
     textures.emplace(entt::type_hash<entt::tag<"tex_debris2"_hs>>::value(),
                      Texture("resources/debris2.png"));
     textures.emplace(entt::type_hash<entt::tag<"tex_debris"_hs>>::value(),
-                     Texture("resources/debris.png", 2, 1));
+                     Texture("resources/debris.png", 4, 1));
     textures.emplace(entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
                      Texture("resources/agent2.png"));
     textures.emplace(entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
@@ -66,9 +66,9 @@ public:
     static auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
     static std::default_random_engine gen(23);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
       auto newDebris = registry.create();
-      registry.emplace<CoItem>(newDebris, glm::vec2{0.0003, 0.0003} * 3.0f,
+      registry.emplace<CoItem>(newDebris, glm::vec2{0.0004, 0.0004} * 3.0f,
                                glm::vec2(dist(gen), dist(gen)), 1.2f);
 
       registry.emplace<entt::tag<"tex_debris"_hs>>(newDebris);
