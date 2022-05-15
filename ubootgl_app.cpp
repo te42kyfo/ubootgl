@@ -282,8 +282,8 @@ void UbootGlApp::shiftMap() {
       inletArea += sim.flag(0, y);
     }
     for (int y = 0; y < sim.vx.height; y++) {
-      sim.vx.f(0, y) = 20.0f / inletArea;
-      sim.vx.b(0, y) = 20.0f / inletArea;
+      sim.vx.f(0, y) = 25.0f / inletArea;
+      sim.vx.b(0, y) = 25.0f / inletArea;
     }
     sim.saveCurrentVelocityFields();
   }
