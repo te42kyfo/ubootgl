@@ -224,7 +224,7 @@ void Simulation::advectFloatingItemsSimple(entt::registry &registry,
       glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
 
       vec2 deltaVel = bilinearVel(item.pos / h) - kin.vel;
-      externalForce += 1000.0f * (item.size[0] + item.size[1]) * deltaVel;
+      externalForce += 2000.0f * (item.size[0] + item.size[1]) * deltaVel;
 
       if (item.pos.x / h > 1.0f && item.pos.x / h < vx.width - 2.0f &&
           item.pos.y / h < 1.0f && item.pos.y / h < vx.height - 2.0f) {
@@ -246,7 +246,7 @@ void Simulation::advectFloatingItemsSimple(entt::registry &registry,
                           h / 2;
 
       float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
-      float k = glm::min(1.0f, subDT / angMass * 0.005f *
+      float k = glm::min(1.0f, subDT / angMass * 0.0005f *
                                    (item.size.x + item.size.y) / 4.0f);
 
       kin.angVel += k * (fluidAngVel - kin.angVel);
