@@ -88,27 +88,18 @@ void UbootGlApp::draw() {
                        2 * scale * xsplits * (float)renderWidth / renderHeight,
                        1.0f));
     // View
-    // PVM = glm::rotate(PVM, playerShips[i].rotation - glm::half_pi<float>(),
-    //                  glm::vec3(0.0f, 0.0f, -1.0f));
     PVM = glm::translate(PVM, glm::vec3(-item.pos, 0.0f));
 
     Draw2DBuf::draw_mag_flag(rock_texture, VelocityTextures::getFlagTex(), VelocityTextures::getMagTex(), VelocityTextures::getNX(),
                         VelocityTextures::getNY(), PVM, sim.pwidth, texture_offset);
-    // Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
-    //Draw2DBuf::draw_flag(rock_texture, VelocityTextures::getFlagTex(),
-    //                     sim.width, sim.height, PVM, sim.pwidth, texture_offset);
+     Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
 
     DrawTracersCS::draw(PVM);
     DrawTracersCS::drawPlayerTracers(PVM);
 
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_debris"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_debris"_hs>>::value()], PVM, 1.0f, true);
-
-    DrawFloatingItems::draw(
-        registry, entt::type_hash<entt::tag<"tex_debris1"_hs>>(),
-        textures[entt::type_hash<entt::tag<"tex_debris1"_hs>>::value()], PVM, 1.0f,
-        true);
+        textures[entt::type_hash<entt::tag<"tex_debris"_hs>>::value()], PVM, 1.0f, false);
 
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
@@ -130,10 +121,6 @@ void UbootGlApp::draw() {
                             textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
                             PVM, 1.0f, false);
 
-    /*DrawFloatingItems::draw(
-        registry, entt::type_hash<entt::tag<"tex_explosion"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_explosion"_hs>>::value()], PVM, 1.0f,
-        true, true);*/
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_explosion"_hs>>::value(),
         textures[entt::type_hash<entt::tag<"tex_explosion"_hs>>::value()], PVM, 1.0f,
