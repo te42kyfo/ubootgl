@@ -35,6 +35,8 @@ int main(int, char **) {
 
   SDL_JoystickOpen(0);
   SDL_JoystickOpen(1);
+  SDL_JoystickOpen(2);
+  SDL_JoystickOpen(3);
 
   double lastFrameTime = dtime();
 
