@@ -106,6 +106,26 @@ void UbootGlApp::loop() {
 
   lastKeyUpdate = updateTime;
 
+  scoped_lock lock(mapShiftMutex);
+  {
+    memcpy(sim.flag.data(), terrain.flagSimRes.data(), sim.flag.width * sim.flag.height * sizeof(float));
+    sim.mg.updateFields(sim.flag);
+    VelocityTextures::uploadFlag(terrain.flagFullRes.data());
+    VelocityTextures::updateFromStaggered(sim.vx_current.data(),
+                                          sim.vy_current.data());
+    while (mapShifts > 0) {
+      float shift = sim.pwidth / (sim.flag.width-1);
+      registry.view<CoItem>().each(
+          [&](auto &item) { item.pos.x -= shift; });
+      texture_offset -=
+          (float) 6.0 / sim.flag.width;// / sim.flag.width;
+      DrawTracersCS::shiftPlayerTracers(-shift);
+      DrawTracersCS::shiftFluidTracers(-shift);
+      mapShifts--;
+    }
+  }
+
+
   sim.advectFloatingItems(registry, gameTimeStep);
   sim.advectFloatingItemsSimple(registry, gameTimeStep);
 
@@ -121,7 +141,7 @@ void UbootGlApp::loop() {
     bool respawned = false;
     while (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
            gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
-           sim.psampleFlagLinear(item.pos) < 0.01) {
+           sim.psampleFlagLinear(item.pos) < 0.001) {
 
       respawned = true;
       gridPos = glm::vec2(disx(gen), disy(gen));
@@ -143,7 +163,7 @@ void UbootGlApp::loop() {
     glm::vec2 gridPos = item.pos / sim.h + 0.5f;
     if (gridPos.x > sim.width - 1 || gridPos.x < 1.0 ||
         gridPos.y > sim.height - 1 || gridPos.y < 1.0 ||
-        sim.psampleFlagLinear(item.pos) < 0.01)
+        sim.psampleFlagLinear(item.pos) < 0.001)
       registry.destroy(entity);
   });
 
@@ -188,24 +208,6 @@ void UbootGlApp::loop() {
 
   classicSwarmAI(registry, sim.flag, sim.vx, sim.vy, sim.h);
 
-  scoped_lock lock(mapShiftMutex);
-  {
-    memcpy(sim.flag.data(), terrain.flagSimRes.data(), sim.flag.width * sim.flag.height * sizeof(float));
-    sim.mg.updateFields(sim.flag);
-    VelocityTextures::uploadFlag(terrain.flagFullRes.data());
-    VelocityTextures::updateFromStaggered(sim.vx_current.data(),
-                                          sim.vy_current.data());
-    while (mapShifts > 0) {
-      float shift = sim.pwidth / (sim.flag.width-1);
-      registry.view<CoItem>().each(
-          [&](auto &item) { item.pos.x -= shift; });
-      texture_offset -=
-          (float) 6.0 / sim.flag.width;// / sim.flag.width;
-      DrawTracersCS::shiftPlayerTracers(-shift);
-      DrawTracersCS::shiftFluidTracers(-shift);
-      mapShifts--;
-    }
-  }
 
   double gameLogicT2 = dtime();
 

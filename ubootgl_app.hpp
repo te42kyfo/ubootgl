@@ -26,7 +26,7 @@ using namespace entt::literals;
 class UbootGlApp {
 public:
   UbootGlApp()
-      : terrain("resources/level2_hihires.png", 2),
+      : terrain("resources/level2_hires2.png", 1),
         sim( terrain.flagSimRes, 0.8, 0.001f),
         rock_texture("resources/rock_texture2.png"), joyAxis(4),
         joyButtonPressed(4) {
