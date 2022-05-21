@@ -1,7 +1,5 @@
 #include "terrain.hpp"
 
-
-
 float Terrain::subSample(int ix, int iy) {
   float sum = 0.0;
   for (int sy = 0; sy <= scale; sy++) {
@@ -37,14 +35,13 @@ Terrain::Terrain(std::string filename, int scale) : scale(scale) {
   for (int y = 0; y < (int)image_height; y++) {
     for (int x = 0; x < (int)image_width; x++) {
       int idx = (image_height - y - 1) * image_width + x;
-      flagFullRes(x,y) = rgba_image[idx].r / 255.0f;
-
+      flagFullRes(x, y) = rgba_image[idx].r / 255.0f;
     }
   }
 
   for (int y = 0; y < flagSimRes.height; y++) {
     for (int x = 0; x < flagSimRes.width; x++) {
-      flagSimRes(x, y) = subSample(x,y);
+      flagSimRes(x, y) = subSample(x, y);
     }
   }
 
@@ -126,6 +123,24 @@ void Terrain::shiftMap() {
     }
   }
 
+  for (int i = 0; i < 10; i++) {
+    for (int xs = 0; xs < 4; xs++) {
+      for (int y = 0; y < flagFullRes.height; y++) {
+        int x = flagFullRes.width - 3 - xs;
+        float curvature =
+            0.25f * (flagFullRes(x + 1, y) + flagFullRes(x, y + 1) +
+                     flagFullRes(x - 1, y) + flagFullRes(x, y - 1)) -
+            flagFullRes(x, y);
+        float maxCurvature = 0.02f;
+        if (abs(curvature) > maxCurvature)
+          flagFullRes(x, y) =
+              0.25f * (flagFullRes(x + 1, y) + flagFullRes(x, y + 1) +
+                       flagFullRes(x - 1, y) + flagFullRes(x, y - 1)) -
+              glm::sign(curvature) * maxCurvature;
+      }
+    }
+  }
+
   for (int y = 0; y < flagSimRes.height; y++) {
     float sum = 0.0;
     for (int sy = 0; sy < scale; sy++) {
@@ -184,8 +199,6 @@ std::vector<float> Terrain::generateLine(const Single2DGrid &flag) {
     newLine[y] = newLine[y] > threshold ? 1.0 : 0.0;
   }
 
-
-  
   sliceProgress++;
   if (sliceProgress >= sliceWidth / 2) {
     sliceProgress = 0;
@@ -196,7 +209,6 @@ std::vector<float> Terrain::generateLine(const Single2DGrid &flag) {
   }
   return newLine;
 }
-
 
 void Terrain::drawCircle(glm::vec2 ic, int diam, float val) {
 
@@ -215,7 +227,8 @@ void Terrain::drawCircle(glm::vec2 ic, int diam, float val) {
 
   for (int y = -scaledDiam; y <= scaledDiam; y++) {
     for (int x = -scaledDiam; x <= scaledDiam; x++) {
-      flagSimRes(ic.x / scale + x, ic.y / scale + y) = subSample(ic.x / scale + x, ic.y / scale + y);
+      flagSimRes(ic.x / scale + x, ic.y / scale + y) =
+          subSample(ic.x / scale + x, ic.y / scale + y);
     }
   }
 }
