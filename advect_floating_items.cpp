@@ -44,23 +44,31 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
         // return;
         continue;
 
+      kin.force += glm::vec2(0.0, -0.5) * kin.mass;
       // Check terrain collision
-      if (psampleFlagLinear(item.pos) < 0.5f) {
-        glm::vec2 surfaceNormal =
-            normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
-        if (psampleFlagLinear(posBefore) > 0.5f)
-          item.pos = posBefore;
-        if (length(surfaceNormal) > 0.0f) {
-          if (dot(kin.vel, surfaceNormal) < 0.0)
-            kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
-          kin.vel += surfaceNormal * 0.001f;
-          if (dot(kin.force, surfaceNormal) < 0.0f)
-            kin.force += dot(kin.force, surfaceNormal) * surfaceNormal;
-        } else {
-          kin.vel = vec2(0.0f);
-          // kin.force = vec2(0.0f);
+      glm::vec2 samplePoints[] = {
+          glm::vec2(1.0f, 1.0f), glm::vec2(-1.0f, 1.0f),
+          glm::vec2(1.0f, -1.0f), glm::vec2(-1.0f, -1.0f)};
+
+      for (auto s : samplePoints) {
+        auto sp = glm::rotate(s*0.5f*item.size, item.rotation);
+        if (psampleFlagLinear(item.pos + sp) < 0.5f) {
+          glm::vec2 surfaceNormal =
+              normalize(psampleFlagNormal(0.5f * (posBefore + item.pos) + sp));
+          if (psampleFlagLinear(posBefore + sp) > 0.5f)
+            item.pos = posBefore;
+          if (length(surfaceNormal) > 0.0f) {
+            surfaceNormal /= length(surfaceNormal);
+            if (dot(kin.vel, surfaceNormal) < 0.0) {
+              kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
+            }
+            kin.vel += surfaceNormal * 0.07f * psampleFlagLinear(item.pos+sp) ;
+            if (dot(kin.force, surfaceNormal) < 0.0f) {
+              kin.force += 1.1f*dot(kin.force, surfaceNormal) * surfaceNormal;
+            }
+          }
+          kin.bumpCount++;
         }
-        kin.bumpCount++;
       }
 
       glm::vec2 externalForce = glm::vec2(0.0, -0.5) * kin.mass + kin.force;
@@ -206,13 +214,14 @@ void Simulation::advectFloatingItemsSimple(entt::registry &registry,
             kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
           kin.vel += surfaceNormal * 0.001f;
           if (dot(kin.force, surfaceNormal) < 0.0f)
-            kin.force += dot(kin.force, surfaceNormal) *1.0f* surfaceNormal;
-          auto lat = glm::rotate(surfaceNormal, 0.5f*(float)M_PI);
+            kin.force += dot(kin.force, surfaceNormal) * 1.0f * surfaceNormal;
+          auto lat = glm::rotate(surfaceNormal, 0.5f * (float)M_PI);
           auto latVel = dot(lat, kin.vel);
-          auto rotVel = kin.angVel * (item.size.x+item.size.y) * 0.5f;
+          auto rotVel = kin.angVel * (item.size.x + item.size.y) * 0.5f;
           auto latDiff = latVel - rotVel;
 
-          //kin.angForce += latDiff / (item.size.x+item.size.y) * 2.0f * 0.000001f;
+          // kin.angForce += latDiff / (item.size.x+item.size.y) * 2.0f *
+          // 0.000001f;
           kin.force += latDiff * lat * 1.0f;
         } else {
           kin.vel = vec2(0.0f);
@@ -242,7 +251,7 @@ void Simulation::advectFloatingItemsSimple(entt::registry &registry,
 
       auto iGridPos = glm::ivec2(gridPos);
       float fluidAngVel = -((vx(iGridPos) - vx(iGridPos - glm::ivec2{0, 1})) -
-                           (vy(iGridPos) - vy(iGridPos - glm::ivec2{1, 0}))) /
+                            (vy(iGridPos) - vy(iGridPos - glm::ivec2{1, 0}))) /
                           h / 2;
 
       float angMass = item.size.x * item.size.y * kin.mass * (1.0f / 12.0f);
