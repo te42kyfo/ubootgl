@@ -1,4 +1,5 @@
 #pragma once
+#include "terrain.hpp"
 #include "components.hpp"
 #include "draw_2dbuf.hpp"
 #include "draw_floating_items.hpp"
@@ -12,7 +13,6 @@
 #include "sdl_gl.hpp"
 #include "simulation.hpp"
 #include "swarm.hpp"
-#include "terrain_generator.hpp"
 #include "texture.hpp"
 #include "velocity_textures.hpp"
 #include <glm/vec2.hpp>
@@ -26,13 +26,15 @@ using namespace entt::literals;
 class UbootGlApp {
 public:
   UbootGlApp()
-      : sim("resources/level2_hires.png", 0.8, 0.001f),
+      : terrain("resources/level2_hihires.png", 2),
+        sim( terrain.flagSimRes, 0.8, 0.001f),
         rock_texture("resources/rock_texture2.png"), joyAxis(4),
         joyButtonPressed(4) {
+
     Draw2DBuf::init();
     DrawTracersCS::init();
     DrawFloatingItems::init();
-    VelocityTextures::init(sim.width, sim.height);
+    VelocityTextures::init(sim.width, sim.height, terrain.scale);
 
     scale = 3.0;
 
@@ -78,7 +80,6 @@ public:
       registry.emplace<CoKinematicsSimple>(newDebris, 0.5, glm::vec2(0.0f, 0.0f),
                                      0.0f);
     }
-    TerrainGenerator::init(sim.flag);
   }
 
   void loop();
@@ -155,6 +156,7 @@ public:
   std::atomic<int> mapShifts = 0;
   std::mutex mapShiftMutex;
   SdlGl vis;
+  Terrain terrain;
   Simulation sim;
   Texture rock_texture;
   Texture black_texture = Texture("resources/black.png");

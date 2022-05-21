@@ -2,6 +2,7 @@
 #include <iostream>
 #include <omp.h>
 #include "dtime.hpp"
+ #include <unistd.h>
 
 using namespace std;
 
@@ -20,21 +21,31 @@ void UbootGlApp::sim_loop(void) {
   omp_set_num_threads(simulationThreads);
   double tprev = dtime();
   double smoothedSimTime = 0.0;
+
+  double lastMapShift = dtime();
   while (gameRunning) {
 
     simTimeStep = 0.1f * min(0.2, smoothedSimTime);
     sim.step(simTimeStep);
 
     double tnow = dtime();
+    // Limit simulation rate to 100fps
+    if( tnow - tprev < 0.01) {
+      usleep( 1000000 * (0.01 - (tnow-tprev)) );
+    }
+
+    tnow = dtime();
     double dt = tnow - tprev;
+
     simTimes.add(dt * 1000.f);
     tprev = tnow;
     smoothedSimTime = smoothedSimTime * 0.95 + 0.05 * dt;
 
     static int frameCounter = 0;
     frameCounter++;
-    if (frameCounter % 10 == 0) {
+    if (  (dtime() - lastMapShift) > 0.2f*terrain.scale) {
       shiftMap();
+      lastMapShift = dtime();
     }
   }
   std::cout << " returning \n";

@@ -12,7 +12,7 @@ int getNY();
 GLuint getMagTex();
 GLuint getVXYTex();
 GLuint getFlagTex();
-void init(int nx, int ny);
+void init(int nx, int ny, int flagScale);
 void updateFromStaggered(float *vx_staggered, float *vy_staggered);
 void uploadFlag(float *flag);
 } // namespace VelocityTextures

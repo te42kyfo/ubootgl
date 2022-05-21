@@ -190,8 +190,9 @@ void UbootGlApp::loop() {
 
   scoped_lock lock(mapShiftMutex);
   {
+    memcpy(sim.flag.data(), terrain.flagSimRes.data(), sim.flag.width * sim.flag.height * sizeof(float));
     sim.mg.updateFields(sim.flag);
-    VelocityTextures::uploadFlag(sim.getFlag());
+    VelocityTextures::uploadFlag(terrain.flagFullRes.data());
     VelocityTextures::updateFromStaggered(sim.vx_current.data(),
                                           sim.vy_current.data());
     while (mapShifts > 0) {
@@ -199,7 +200,7 @@ void UbootGlApp::loop() {
       registry.view<CoItem>().each(
           [&](auto &item) { item.pos.x -= shift; });
       texture_offset -=
-          (float)rock_texture.width * 10.0f / sim.flag.width / sim.flag.width;
+          (float) 6.0 / sim.flag.width;// / sim.flag.width;
       DrawTracersCS::shiftPlayerTracers(-shift);
       DrawTracersCS::shiftFluidTracers(-shift);
       mapShifts--;
@@ -241,10 +242,13 @@ void UbootGlApp::handleJoyButton(SDL_JoyButtonEvent event) {
 }
 void UbootGlApp::shiftMap() {
 
-  auto newLine = TerrainGenerator::generateLine(sim.flag);
+
 
   {
     scoped_lock lock(mapShiftMutex);
+
+    terrain.shiftMap();
+
     for (int y = 0; y < sim.vx.height; y++) {
       for (int x = 2; x < sim.vx.width; x++) {
         sim.vx(x - 1, y) = sim.vx(x, y);
@@ -266,28 +270,27 @@ void UbootGlApp::shiftMap() {
     }
 
     for (int y = 0; y < sim.flag.height; y++) {
-      for (int x = 1; x < sim.flag.width; x++) {
-        sim.setGrids(glm::vec2(x - 1, y), sim.flag(x, y));
+      for (int x = 0; x < sim.flag.width; x++) {
+        sim.setGrids(glm::vec2(x, y), terrain.flagSimRes(x, y));
       }
-      sim.setGrids(glm::vec2(sim.flag.width - 1, y),
-                   sim.flag(sim.flag.width - 2, y));
     }
 
-    for (int y = 0; y < sim.flag.height; y++) {
-      sim.setGrids(glm::vec2(sim.flag.width - 1, y), newLine[y]);
-    }
 
     float inletArea = 1.0f;
     for (int y = 0; y < sim.vy.height; y++) {
       inletArea += sim.flag(0, y);
     }
+
     for (int y = 0; y < sim.vx.height; y++) {
-      sim.vx.f(0, y) = 25.0f / inletArea;
-      sim.vx.b(0, y) = 25.0f / inletArea;
+      float inletVelocity = 0.04f * sim.flag.height / inletArea;
+      sim.vx.f(0, y) = sim.vx.b(0, y) = inletVelocity * sim.flag(0,y);
     }
+
+
+
     sim.saveCurrentVelocityFields();
   }
-  sim.mg.updateFields(sim.flag);
 
+  sim.mg.updateFields(sim.flag);
   mapShifts++;
 }

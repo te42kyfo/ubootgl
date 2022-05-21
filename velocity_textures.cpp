@@ -12,6 +12,7 @@ namespace VelocityTextures {
 GLuint tex_vx_staggered, tex_vy_staggered, tex_vxy, tex_mag, tex_flag;
 float minVel, maxVel;
 
+int flagScale;
 int nx, ny;
 GLuint interp_shader;
 GLuint uloc_nx, uloc_ny, uloc_vx, uloc_vy;
@@ -22,9 +23,10 @@ int getNY() { return ny; }
 GLuint getMagTex() { return tex_mag; }
 GLuint getVXYTex() { return tex_vxy; }
 GLuint getFlagTex() { return tex_flag; }
-void init(int _nx, int _ny) {
+void init(int _nx, int _ny, int _flagScale) {
   nx = _nx;
   ny = _ny;
+  flagScale = _flagScale;
 
   // allocate velocity texture storage
   GL_CALL(glGenTextures(1, &tex_vx_staggered));
@@ -54,8 +56,8 @@ void init(int _nx, int _ny) {
   GL_CALL(glGenTextures(1, &tex_flag));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, tex_flag));
 
-  int mip_levels = min(4, (int)min(floor(log2(nx)), log2(ny)));
-  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, mip_levels, GL_R32F, nx, ny));
+  int mip_levels = min(4, (int)min(floor(log2(nx*flagScale)), log2(ny*flagScale)));
+  GL_CALL(glTexStorage2D(GL_TEXTURE_2D, mip_levels, GL_R32F, nx*flagScale, ny*flagScale));
 }
 
 void updateFromStaggered(float *vx_staggered, float *vy_staggered) {
@@ -94,7 +96,7 @@ void uploadFlag(float *flag) {
 
   // Upload Texture
   GL_CALL(
-      glTextureSubImage2D(tex_flag, 0, 0, 0, nx, ny, GL_RED, GL_FLOAT, flag));
+      glTextureSubImage2D(tex_flag, 0, 0, 0, nx*flagScale, ny*flagScale, GL_RED, GL_FLOAT, flag));
   GL_CALL(glGenerateTextureMipmap(tex_flag));
 }
 

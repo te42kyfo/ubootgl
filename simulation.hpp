@@ -2,7 +2,6 @@
 #include "components.hpp"
 #include "db2dgrid.hpp"
 #include "entt/entity/registry.hpp"
-#include "external/lodepng.h"
 #include "pressure_solver.hpp"
 #include <cmath>
 #include <functional>
@@ -15,12 +14,6 @@
 #include <string>
 #include <vector>
 
-struct rgba {
-  unsigned char r, g, b, a;
-  bool operator==(const rgba &o) {
-    return r == o.r && g == o.g && b == o.b && a == o.a;
-  }
-};
 
 class Simulation {
 public:
@@ -36,21 +29,11 @@ public:
         r(width, height), mg(width, height), h(pwidth / (width - 1.0f)),
         disx(0.0f, 1.0f), disy(0.0f, (float)height / width) {}
 
-  Simulation(std::string filename, float pwidth, float mu)
+  Simulation(const Single2DGrid& flagInput, float pwidth, float mu)
       : pwidth(pwidth), mu(mu) {
-    std::vector<unsigned char> image;
-    unsigned image_width, image_height;
 
-    unsigned error =
-        lodepng::decode(image, image_width, image_height, filename);
-    rgba *rgba_image = reinterpret_cast<rgba *>(image.data());
-
-    if (error)
-      std::cout << "decoder error " << error << ": "
-                << lodepng_error_text(error) << std::endl;
-
-    width = image_width;
-    height = image_height;
+    width = flagInput.width;
+    height = flagInput.height;
 
     vx = {width - 1, height}; // staggered
     vy = {width, height - 1}; // grids
@@ -61,18 +44,9 @@ public:
     p = {width, height};
     f = {width, height};
     flag = {width, height};
+    flag = flagInput;
     r = {width, height};
 
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        int idx = (height - y - 1) * width + x;
-        if (rgba_image[idx] == rgba{0, 0, 0, 255}) {
-          flag(x, y) = 0.0f;
-        } else {
-          flag(x, y) = 1.0f;
-        }
-      }
-    }
     bcSouth = BC::NOSLIP;
     bcNorth = BC::NOSLIP;
     bcWest = BC::INFLOW;

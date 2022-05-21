@@ -19,6 +19,9 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
   registry.emplace<CoAnimated>(newExp, 0.0f);
 
   float diam = explosionDiam * 0.8f / sim.h;
+
+  
+  
   for (int y = -diam; y <= diam; y++) {
     for (int x = -diam; x <= diam; x++) {
       auto gridC = (pos + glm::vec2(x, y) * sim.h) / sim.h + 0.5f;
@@ -51,10 +54,10 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           registry.emplace<CoDeletedOoB>(newDebris);
           registry.emplace<CoDecays>(newDebris, 0.41f);
         }
-        sim.setGrids(gridC, 1.0);
       }
     }
   }
+  terrain.drawCircle(pos / sim.h * (float) terrain.scale, diam * terrain.scale, 1.0);
 }
 
 void UbootGlApp::processExplosions() {
