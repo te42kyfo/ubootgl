@@ -90,10 +90,10 @@ void draw_mag_flag(Texture fill_tex, GLuint flag_tex_id, GLuint mag_tex_id,
   // mag tex
   GL_CALL(glActiveTexture(GL_TEXTURE2));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, mag_tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                           GL_LINEAR_MIPMAP_LINEAR));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-
   // stone tex
   GL_CALL(glActiveTexture(GL_TEXTURE1));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, fill_tex.tex_id));
@@ -104,9 +104,11 @@ void draw_mag_flag(Texture fill_tex, GLuint flag_tex_id, GLuint mag_tex_id,
   // flag tex
   GL_CALL(glActiveTexture(GL_TEXTURE0));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, flag_tex_id));
+  GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                           GL_LINEAR_MIPMAP_LINEAR));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
 
   // Draw Quad with texture
   GL_CALL(glBindVertexArray(vao));
