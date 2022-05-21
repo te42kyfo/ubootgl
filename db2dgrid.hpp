@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <array>
 
 class Single2DGrid {
 public:
@@ -31,10 +32,7 @@ public:
   float &operator()(glm::ivec2 c) { return (*this)(c.x, c.y); }
   float operator()(glm::ivec2 c) const { return (*this)(c.x, c.y); }
 
-  float operator=(float val) {
-    std::fill(std::begin(v), std::end(v), val);
-    return val;
-  }
+  void fill(float val) { std::fill(std::begin(v), std::end(v), val); }
   int width, height;
 
   void print() {
@@ -56,12 +54,11 @@ public:
   DoubleBuffered2DGrid(int width, int height)
       : width(width), height(height), front(0),
         back(1), v{std::vector<float>(width * height),
-  std::vector<float>(width * height)} {};
+                   std::vector<float>(width * height)} {};
 
-    DoubleBuffered2DGrid() : width(0), height(0) {};
+  DoubleBuffered2DGrid() : width(0), height(0){};
 
   DoubleBuffered2DGrid(const DoubleBuffered2DGrid &) = delete;
-
 
   int idx(int x, int y) const { return y * width + x; }
   void swap() { std::swap(front, back); }

@@ -23,7 +23,7 @@ public:
       ecs.push_back(Single2DGrid(currentWidth, currentHeight));
       es.push_back(Single2DGrid(currentWidth, currentHeight));
       flagcs.push_back(Single2DGrid(currentWidth, currentHeight));
-      flagcs.back() = 1.0;
+      flagcs.back().fill(1.0);
       currentWidth /= 2;
       currentHeight /= 2;
     }
@@ -36,7 +36,7 @@ public:
     for (int level = 1; level < levels; level++) {
       auto &fc = flagcs[level];
       auto &f = flagcs[level - 1];
-      fc = 1.0;
+      fc.fill(1.0);
       for (int y = 1; y < fc.height - 1; y++) {
         for (int x = 1; x < fc.width - 1; x++) {
           float v = 0.0;

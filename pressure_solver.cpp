@@ -136,7 +136,7 @@ void restrict(Single2DGrid &r, Single2DGrid &rc) {
 
 void prolongate(Single2DGrid &r, Single2DGrid &rc, Single2DGrid &flagc,
                 Single2DGrid &flag) {
-  r = 0.0;
+  r.fill(0.0);
 
 #pragma omp parallel if (r.height > 5)
   {
@@ -218,15 +218,15 @@ void MG::solveLevel(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag,
   }
 
   auto &r = rs[level];
-  r = 0.0;
+  r.fill(0.0);
   calculateResidualField(p, f, flag, r, h);
 
   auto &rc = rcs[level + 1];
-  rc = 0.0;
+  rc.fill(0.0);
   restrict(r, rc);
 
   auto &ec = ecs[level + 1];
-  ec = 0.0;
+  ec.fill(0.0);
   auto &flagc = flagcs[level + 1];
 
   MG::solveLevel(ec, rc, flagc, h * (r.width - 1.0f) / (rc.width - 1.0f),
