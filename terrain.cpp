@@ -2,12 +2,12 @@
 
 float Terrain::subSample(int ix, int iy) {
   float sum = 0.0;
-  for (int sy = 0; sy <= scale; sy++) {
-    for (int sx = 0; sx <= scale; sx++) {
+  for (int sy = 0; sy < scale; sy++) {
+    for (int sx = 0; sx < scale; sx++) {
       sum += flagFullRes(ix * scale + sx, iy * scale + sy);
     }
   }
-  return (sum / scale / scale) > 0.5f ? 1.0f : 0.0f;
+  return (sum / scale / scale) > 0.99f ? 1.0f : 0.0f;
 }
 
 struct rgba {
@@ -193,7 +193,7 @@ std::vector<float> Terrain::generateLine(const Single2DGrid &flag) {
 
   auto values = newLine;
   sort(begin(values), end(values));
-  float threshold = values[values.size() * 0.35] * 0.5 + 0.2;
+  float threshold = values[values.size() * 0.35] * 0.5 + 0.1;
 
   for (int y = 0; y < flag.height; y++) {
     newLine[y] = newLine[y] > threshold ? 1.0 : 0.0;
@@ -216,7 +216,7 @@ void Terrain::drawCircle(glm::vec2 ic, int diam, float val) {
     for (int x = -diam; x <= diam; x++) {
       if (x * x + y * y > diam * diam || ic.x + x < 0 ||
           x + ic.x > flagFullRes.width || y + ic.y < 2 ||
-          y + ic.y > flagFullRes.height - 3)
+          y + ic.y >= flagFullRes.height - 3)
         continue;
 
       flagFullRes(x + ic.x, y + ic.y) = val;
