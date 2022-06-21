@@ -1,11 +1,11 @@
 #include "controls.hpp"
 #include "dtime.hpp"
 #include "gl_error.hpp"
+#include "implot/implot.h"
 #include "ubootgl_app.hpp"
 #include <GL/glew.h>
 #include <glm/gtx/transform.hpp>
 #include <glm/vec2.hpp>
-#include "implot/implot.h"
 
 using namespace std;
 
@@ -35,32 +35,36 @@ void UbootGlApp::draw() {
 
   DrawTracersCS::updatePlayerTracers(registry);
 
-
-  DrawTracersCS::updateTracers(VelocityTextures::getVXYTex(),
-                               VelocityTextures::getFlagTex(), VelocityTextures::getNX(),
-                               VelocityTextures::getNY(), gameTimeStep, sim.pwidth);
+  DrawTracersCS::updateTracers(
+      VelocityTextures::getVXYTex(), VelocityTextures::getFlagTex(),
+      VelocityTextures::getNX(), VelocityTextures::getNY(), gameTimeStep,
+      sim.pwidth);
 
   ImU32 colors[] = {ImColor(100, 0, 0, 155), ImColor(0, 100, 0, 155),
-                      ImColor(100, 100, 0, 155), ImColor(100, 0, 100, 155)};
+                    ImColor(80, 120, 0, 155), ImColor(100, 0, 100, 155)};
 
   registry.view<CoPlayer, CoItem>().each([&](auto &player, auto &item) {
     renderOriginX = (renderWidth + 5) * (player.keySet % xsplits);
     renderOriginY = (renderHeight + 5) * (player.keySet / xsplits);
 
-    ImGui::SetNextWindowPos(
-        ImVec2(renderOriginX + 2,
-               displayHeight - (player.keySet / xsplits + 1) *
-                                   ((displayHeight - 5) / ysplits)));
+    if ((int)registry.size<CoPlayer>() < 4) {
+      ImGui::SetNextWindowPos(
+          ImVec2(renderOriginX + 4,
+                 renderOriginY + 4));
 
+    } else {
+      ImGui::SetNextWindowPos(ImVec2(renderOriginX + renderWidth / 2 - 100,
+                                     displayHeight - renderOriginY  - 110));
+    }
     ImGui::PushStyleColor(ImGuiCol_WindowBg, colors[player.keySet]);
-    ImGui::SetNextWindowSize(ImVec2(200, 120));
+    ImGui::SetNextWindowSize(ImVec2(200, 105));
     ImGui::Begin(("Player" + to_string(player.keySet)).c_str(), &p_open,
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoSavedSettings);
 
-    ImGui::Text("Player %d \n %s", player.keySet,
-                getControlString(player.keySet).c_str());
+    ImGui::Text("Player %d", player.keySet);
+                               // getControlString(player.keySet).c_str());
     ImGui::Separator();
     ImGui::Text("Kills: %d, Deaths: %d", player.kills, player.deaths);
     ImGui::Text("Torpedos: %.0f", player.torpedosLoaded);
@@ -90,47 +94,60 @@ void UbootGlApp::draw() {
     // View
     PVM = glm::translate(PVM, glm::vec3(-item.pos, 0.0f));
 
-    Draw2DBuf::draw_mag_flag(rock_texture, VelocityTextures::getFlagTex(), VelocityTextures::getMagTex(), VelocityTextures::getNX(),
-                        VelocityTextures::getNY(), PVM, sim.pwidth, texture_offset);
-     Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
+    Draw2DBuf::draw_mag_flag(
+        rock_texture, VelocityTextures::getFlagTex(),
+        VelocityTextures::getMagTex(), VelocityTextures::getNX(),
+        VelocityTextures::getNY(), PVM, sim.pwidth, texture_offset);
+    Draw2DBuf::draw_buf(sim.p, PVM, sim.pwidth);
 
     DrawTracersCS::draw(PVM);
     DrawTracersCS::drawPlayerTracers(PVM);
 
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_debris"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_debris"_hs>>::value()], PVM, 1.0f, false);
+        textures[entt::type_hash<entt::tag<"tex_debris"_hs>>::value()], PVM,
+        1.0f, false);
 
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_agent"_hs>>::value()], PVM, 1.0f, false);
+        textures[entt::type_hash<entt::tag<"tex_agent"_hs>>::value()], PVM,
+        1.0f, false);
 
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 1.0f,
+        textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM,
+        1.0f, false, true);
+    DrawFloatingItems::draw(
+        registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM,
+        1.0f, false);
+    DrawFloatingItems::draw(
+        registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()], PVM, 1.0f,
         false, true);
-    DrawFloatingItems::draw(
-        registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 1.0f,
-        false);
-    DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
-                            textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
-                            PVM, 1.0f, false, true);
 
-    DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
-                            textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
-                            PVM, 1.0f, false);
+    DrawFloatingItems::draw(
+        registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
+        textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()], PVM, 1.0f,
+        false);
 
     DrawFloatingItems::draw(
         registry, entt::type_hash<entt::tag<"tex_explosion"_hs>>::value(),
-        textures[entt::type_hash<entt::tag<"tex_explosion"_hs>>::value()], PVM, 1.0f,
-        true);
+        textures[entt::type_hash<entt::tag<"tex_explosion"_hs>>::value()], PVM,
+        1.0f, true);
   });
 
-  renderOriginX = displayWidth * 0.4;
-  renderOriginY = displayHeight * 0.0;
-  renderWidth = displayWidth * 0.2;
-  renderHeight = displayWidth * 0.2;
+  if ((int)registry.size<CoPlayer>() < 4) {
+    renderOriginX = displayWidth * 0.4;
+    renderOriginY = displayHeight * 0.0;
+    renderWidth = displayWidth * 0.2;
+    renderHeight = displayWidth * 0.2;
+  } else {
+    renderOriginX = displayWidth * 0.45;
+    renderOriginY = displayHeight * 0.45;
+    renderWidth = displayWidth * 0.2;
+    renderHeight = displayWidth * 0.2;
+  }
 
   GL_CALL(glViewport(renderOriginX, renderOriginY, renderWidth, renderHeight));
 
@@ -142,22 +159,25 @@ void UbootGlApp::draw() {
       PVM,
       glm::vec3(1.0f, 1.0f * (float)renderWidth / renderHeight, 1.0f) * 2.0f);
   PVM = glm::translate(PVM, glm::vec3(-0.5f, -0.5f, 0.0f));
-  Draw2DBuf::draw_flag(VelocityTextures::getFlagTex(), sim.width,
-                       sim.height, PVM, sim.pwidth);
+  Draw2DBuf::draw_flag(VelocityTextures::getFlagTex(), sim.width, sim.height,
+                       PVM, sim.pwidth);
 
-  DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
-                          textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()],
-                          PVM, 5.0f, false, true);
-  DrawFloatingItems::draw(registry, entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
-                          textures[entt::type_hash<entt::tag<"tex_agent"_hs>>::value()],
-                          PVM, 3.0f, false, true);
   DrawFloatingItems::draw(
-      registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
-      textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()], PVM, 3.0f, false,
-      true);
+      registry, entt::type_hash<entt::tag<"tex_ship"_hs>>::value(),
+      textures[entt::type_hash<entt::tag<"tex_ship"_hs>>::value()], PVM, 5.0f,
+      false, true);
+  DrawFloatingItems::draw(
+      registry, entt::type_hash<entt::tag<"tex_agent"_hs>>::value(),
+      textures[entt::type_hash<entt::tag<"tex_agent"_hs>>::value()], PVM, 3.0f,
+      false, true);
+  // DrawFloatingItems::draw(
+  //     registry, entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value(),
+  //     textures[entt::type_hash<entt::tag<"tex_torpedo"_hs>>::value()],
+  //     PVM, 3.0f, false, true);
 
-  ImGui::SetNextWindowPos(ImVec2(displayWidth - 610, 0));
-  ImGui::SetNextWindowSize(ImVec2(600, 120));
+  ImGui::SetNextWindowPos(ImVec2(displayWidth - 410, 0));
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImU32(ImColor(10, 10, 10, 10)));
+  ImGui::SetNextWindowSize(ImVec2(400, 110));
   ImGui::Begin("SideBar", &p_open,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -169,19 +189,20 @@ void UbootGlApp::draw() {
       gfxTimes.avg(), gfxTimes.high1pct(), gfxTimes.largest(), simTimes.avg(),
       simTimes.high1pct(), simTimes.largest());
 
-
-
   ImGui::SameLine();
-  ImPlot::SetNextPlotLimits(0, frameTimes.data().size(), 0, max(simTimes.largest(), frameTimes.largest()), ImGuiCond_Always);
+  ImPlot::SetNextPlotLimits(0, frameTimes.data().size(), 0,
+                            max(simTimes.largest(), frameTimes.largest()),
+                            ImGuiCond_Always);
   ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(5, 5));
-  ImPlot::BeginPlot("##frameTimePlot", NULL, "ms", ImVec2(450, 105), ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations);
+  ImPlot::BeginPlot("##frameTimePlot", NULL, "ms", ImVec2(250, 90),
+                    ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations);
   ImPlot::SetNextLineStyle(ImVec4(1.0, 0.2, 0.2, 1.0));
   ImPlot::PlotLine("", frameTimes.data().data(), frameTimes.data().size());
   ImPlot::SetNextLineStyle(ImVec4(0.2, 1.0, 0.2, 1.0));
   ImPlot::PlotLine("", gfxTimes.data().data(), gfxTimes.data().size());
   ImPlot::SetNextLineStyle(ImVec4(0.2, 0.2, 1.0, 1.0));
   ImPlot::PlotLine("", simTimes.data().data(), simTimes.data().size());
-  float  data[] = {16.6};
+  float data[] = {16.6};
   ImPlot::SetNextLineStyle(ImVec4(1.0, 1.0, 0.2, 1.0));
   ImPlot::PlotHLines("", data, 1);
 
