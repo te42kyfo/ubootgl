@@ -71,22 +71,19 @@ void rbgs(Single2DGrid &p, Single2DGrid &f, Single2DGrid &flag, float h,
         rbgs_black_line(y, p, f, flag, h, alpha);
     } else {
 
-      int start_line = 1 + (p.height - 2) * thread_num / num_threads;
-      int end_line = 1 + (p.height - 2) * (thread_num + 1) / num_threads;
+      int start_line = 1 + (p.height - 2 ) * thread_num / num_threads;
+      int end_line = thread_num + 1 == num_threads ?
+        p.height - 1 : (1 + (p.height - 2) * (thread_num + 1) / num_threads) ;
 
       rbgs_red_line(start_line, p, f, flag, h, alpha);
-      rbgs_red_line(start_line+1, p, f, flag, h, alpha);
 
 #pragma omp barrier
-
-      for (int y = start_line+1; y < end_line - 1; y++) {
+      for (int y = start_line; y < end_line; y++) {
         rbgs_red_line(y + 1, p, f, flag, h, alpha);
         rbgs_black_line(y, p, f, flag, h, alpha);
       }
 
-      rbgs_black_line(end_line-1, p, f, flag, h, alpha);
-      if(end_line < p.height-1)
-        rbgs_black_line(end_line, p, f, flag, h, alpha);
+      rbgs_black_line(end_line, p, f, flag, h, alpha);
     }
   }
 }
