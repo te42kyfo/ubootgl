@@ -28,7 +28,7 @@ void UbootGlApp::launchTorpedo(entt::entity pEnt) {
 
 void UbootGlApp::processTorpedos() {
 
-  float explosionDiam = 0.007;
+  float explosionDiam = 0.008;
   registry.view<CoTorpedo, CoItem, CoKinematics, CoPlayerAligned>().each(
       [&](auto entity, auto &torpedo, auto &item, auto &kin,
           auto &playerAligned) {
