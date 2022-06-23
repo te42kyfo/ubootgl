@@ -48,7 +48,7 @@ void Simulation::advectFloatingItems(entt::registry &registry, float gameDT) {
       // Check terrain collision
       glm::vec2 samplePoints[] = {
           glm::vec2(1.0f, 1.0f), glm::vec2(-1.0f, 1.0f),
-          glm::vec2(1.0f, -1.0f), glm::vec2(-1.0f, -1.0f)};
+          glm::vec2(1.0f, -1.0f), glm::vec2(-1.0f, -1.0f), glm::vec2(0.0f, 0.0f)};
 
       for (auto s : samplePoints) {
         auto sp = glm::rotate(s*0.5f*item.size, item.rotation);
@@ -204,17 +204,16 @@ void Simulation::advectFloatingItemsSimple(entt::registry &registry,
         continue;
 
       // Check terrain collision
-      if (psampleFlagLinear(item.pos) < 0.5f) {
-        glm::vec2 surfaceNormal =
-            normalize(psampleFlagNormal(0.5f * (posBefore + item.pos)));
-        if (psampleFlagLinear(posBefore) > 0.5f)
-          item.pos = posBefore;
+      if (psampleFlagLinear(item.pos) < 1.0f) {
+        glm::vec2 surfaceNormal = psampleFlagNormal(item.pos);
         if (length(surfaceNormal) > 0.0f) {
+          surfaceNormal /= length(surfaceNormal);
           if (dot(kin.vel, surfaceNormal) < 0.0)
             kin.vel = reflect(kin.vel, surfaceNormal) * 0.7f;
-          kin.vel += surfaceNormal * 0.001f;
+
           if (dot(kin.force, surfaceNormal) < 0.0f)
-            kin.force += dot(kin.force, surfaceNormal) * 1.0f * surfaceNormal;
+            kin.force = reflect(kin.force, surfaceNormal) * 0.7f;
+
           auto lat = glm::rotate(surfaceNormal, 0.5f * (float)M_PI);
           auto latVel = dot(lat, kin.vel);
           auto rotVel = kin.angVel * (item.size.x + item.size.y) * 0.5f;
