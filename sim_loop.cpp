@@ -43,7 +43,7 @@ void UbootGlApp::sim_loop(void) {
 
     static int frameCounter = 0;
     frameCounter++;
-    if (  (dtime() - lastMapShift) > 0.2f*terrain.scale) {
+    if (  (dtime() - lastMapShift) > 0.4f*terrain.scale) {
       shiftMap();
       lastMapShift = dtime();
     }
