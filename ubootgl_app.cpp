@@ -284,7 +284,7 @@ void UbootGlApp::shiftMap() {
     }
 
     for (int y = 0; y < sim.vx.height; y++) {
-      float inletVelocity = 0.04f * sim.flag.height / inletArea;
+      float inletVelocity = 0.07f * sim.flag.height / inletArea;
       sim.vx.f(0, y) = sim.vx.b(0, y) = inletVelocity * sim.flag(0,y);
     }
 
