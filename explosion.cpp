@@ -30,7 +30,7 @@ void UbootGlApp::newExplosion(glm::vec2 pos, float explosionDiam,
           gridC.y >= sim.flag.height - 3)
         continue;
       if (explosionDiam > 0.002)
-        sim.sinks.push_back(glm::vec3(gridC * sim.h, 150.0f));
+        sim.sinks.push_back(glm::vec3(gridC * sim.h, 120.0f));
       if (sim.flag(gridC) < 1.0) {
         for (int i = 0; i < 2; i++) {
           float velangle = randRotationDist(gen);
